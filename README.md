@@ -1,2 +1,2 @@
 # refitME
-onte Carlo Expectation Maximixation - A measurement error modelling wrapper function
+Monte Carlo Expectation Maximixation - A measurement error modelling wrapper function
