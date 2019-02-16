@@ -32,6 +32,8 @@ library(sandwich);
 #'
 MCEMfit_glm<-function(mod,family,sigma.sq.u,sigma.sq.e,B,epsilon=0.00001,theta.est=1)
   {
+  options(warn=-1);
+
   reps<-0;
   cond<-TRUE;
 
@@ -227,6 +229,8 @@ MCEMfit_glm<-function(mod,family,sigma.sq.u,sigma.sq.e,B,epsilon=0.00001,theta.e
 #'
 MCEMfit_gam<-function(mod,family,sigma.sq.u,sigma.sq.e,B,epsilon=0.00001,theta.est=1)
   {
+  options(warn=-1);
+
   reps<-0;
   cond<-TRUE;
 

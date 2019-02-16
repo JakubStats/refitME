@@ -1,0 +1,231 @@
+---
+title: 'refitME: Tutorial for fitting MCEM models with measurement error in covariates'
+author: "Jakub Stoklosa & David Warton"
+date: "17th Feb 2019"
+header-includes: # Allows you to add in your own Latex packages.
+- \usepackage{float} # Use the 'float' package.
+- \floatplacement{figure}{H} #make every figure with caption = h
+- \usepackage{ragged2e}
+- \usepackage{geometry}
+- \geometry{verbose,tmargin=3cm,bmargin=3cm,lmargin=3cm,rmargin=3cm}
+output:
+  pdf_document: default
+  fig_caption: yes
+  html_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(fig.pos = 'H')
+```
+
+## Example 1: A simple GLM example taken from Carroll _et al._ (2006). 
+
+The Framingham heart study data set.
+
+### Load data and R-packages.
+
+```{r, echo=TRUE}
+suppressMessages(library(refitME));
+suppressMessages(library(simex));
+
+epsilon<-0.00001;
+B<-100;
+
+family<-"binomial";
+
+data.Fram<-as.matrix(read.table(file="Framinghamdata.txt"));
+```
+
+### Setup all variables.
+
+The construction below follows the Carroll et al. (2006) monograph.
+
+```{r, echo=TRUE}
+Y<-data.Fram[,10];
+
+n<-length(Y);
+
+z1<-(data.Fram[,9]); # Cholesterol.
+z2<-(data.Fram[,2]); # Age.
+z3<-data.Fram[,7];   # Smoke.
+
+w1<-(log((data.Fram[,3]+data.Fram[,4]+data.Fram[,5]+data.Fram[,6])/4-50)); # Mean exam 2 and 3.
+
+dat<-data.frame(cbind(Y,z1,z2,z3,w1));
+
+sigma.sq.u<-0.01259/2 # ME variance, obtained from Carroll et al. (2006) monograph.
+```
+
+### Fit the naive model.
+
+```{r, echo=TRUE}
+mod_naiv1<-glm(Y~w1+z1+z2+z3,x=TRUE,family=binomial,data=dat);
+```
+
+### Fit the SIMEX model.
+
+```{r, echo=TRUE}
+start<-Sys.time();
+
+mod_simex1<-simex(mod_naiv1,SIMEXvariable=c("w1"),
+                  measurement.error=cbind(sqrt(sigma.sq.u)),B=B); # SIMEX.
+
+end<-Sys.time();
+t1<-difftime(end,start,units="secs");
+comp.time<-c(t1);
+
+```
+
+### Fit the MCEM model.
+
+```{r, echo=TRUE}
+
+start<-Sys.time();
+
+est<-refitME(mod_naiv1,sigma.sq.u,B);
+
+end<-Sys.time();
+t2<-difftime(end,start,units="secs");
+comp.time<-c(comp.time,t2);
+```
+
+### Report and compare times and model estimates.
+
+```{r, echo=TRUE}
+est.beta<-rbind(coef(mod_naiv1),coef(mod_simex1),est$beta);
+est.beta.se<-rbind(sqrt(diag(vcov(mod_naiv1))),
+                   sqrt(diag(mod_simex1$variance.jackknife)),
+                   est$beta.se2);
+
+round(est.beta,digits=3);
+round(est.beta.se,digits=3);
+
+comp.time;
+```
+
+\clearpage
+
+## Example 2: A GAM example taken from Ganguli _et al._ (2005).
+
+The Milan mortality air pollution data set.
+
+### Load data and R-packages.
+
+```{r, echo=TRUE}
+rm(list=ls());
+
+suppressMessages(library(refitME));
+suppressMessages(library(SemiPar));
+
+epsilon<-0.00001;
+B<-5;
+
+family<-"poisson";
+
+data(milan.mort);
+
+dat.air<-milan.mort;
+```
+
+### Setup all variables.
+
+```{r, echo=TRUE}
+Y<-dat.air[,6];
+
+n<-length(Y);
+
+w1<-log(dat.air[,9]);
+w1<-scale(w1);
+colnames(w1)<-"w1";
+
+z1<-(dat.air[,1]);
+z2<-(dat.air[,4]);
+z3<-(dat.air[,5]);
+
+dat<-data.frame(cbind(Y,z1,z2,z3,w1));
+
+## Reliability ratio.
+
+sigma.sq.u<-0.1; # Rel. ratio of 0.9.
+#sigma.sq.u<-0.2; # Rel. ratio of 0.8.
+#sigma.sq.u<-0.3; # Rel. ratio of 0.7.
+
+rel.rat<-(1-sigma.sq.u/var(dat$w1))*100;
+```
+
+### Fit the naive model.
+
+```{r, echo=TRUE}
+
+mod_naiv1<-gam(Y~s(w1,k=5)+s(z1,bs='cc',k=25)+s(z2,k=5)+s(z3,k=5),family="poisson",data=dat);
+```
+
+### Fit the MCEM model.
+
+This models can take a while to fit.
+
+```{r, echo=TRUE}
+est<-refitME(mod_naiv1,sigma.sq.u,B);
+```
+
+### Plots.
+
+```{r fig1, fig.pos='H', echo=FALSE, fig.cap="\\label{fig:fig1} Plots of smooths against covariate."}
+xlab.names<-c("log(TSP)","Day","Temp","Humidity");
+
+op<-par(mfrow=c(2,2),las=1);
+
+for(i in 1:4)
+  {
+  if(i==1)
+    {
+    plot(est$mod,select=i,ylim=c(-0.4,0.2),rug=FALSE,col=3,all.terms=TRUE,
+         xlab=xlab.names[i],ylab="s(Mortaity counts)",lwd=3,cex.lab=1,cex.axis=1,
+         cex.main=2,font.lab=1,cex=1);
+    title(main=bquote("Reliability ratio for log(TSP) = "~.(rel.rat)~"%"),
+          outer=F,line=1,cex=1.4);
+    for(j in 1:2)
+      {
+      axis(j,labels=FALSE);
+      }
+    }
+  if(i==2)
+    {
+    plot(est$mod,select=i,ylim=c(-0.25,0.3),rug=FALSE,col=3,all.terms=TRUE,
+         xlab=xlab.names[i],ylab="s(Mortaity counts)",lwd=3,cex.lab=1,cex.axis=1,
+         cex.main=2,font.lab=1,cex=1);
+    for(j in 1:2)
+      {
+      axis(j,labels=FALSE);
+      }
+    }
+  if(i==3)
+    {
+    plot(est$mod,select=i,ylim=c(-0.2,0.4),rug=FALSE,col=3,all.terms=TRUE,
+         xlab=xlab.names[i],ylab="s(Mortaity counts)",lwd=3,cex.lab=1,cex.axis=1,
+         cex.main=2,font.lab=1,cex=1);
+    for(j in 1:2)
+      {
+      axis(j,labels=FALSE);
+      }
+    }
+  if(i==4)
+    {
+    plot(est$mod,select=i,ylim=c(-0.3,0.08),rug=FALSE,col=3,all.terms=TRUE,
+         xlab=xlab.names[i],ylab="s(Mortaity counts)",lwd=3,cex.lab=1,cex.axis=1,
+         cex.main=2,font.lab=1,cex=1);
+    for(j in 1:2)
+      {
+      axis(j,labels=FALSE);
+      }
+    }
+  }
+
+title(main="MCEM (Poisson GAM) fitted to the air pollution data",outer=T,line=-2);
+par(op);
+```
