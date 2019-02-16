@@ -8,19 +8,19 @@ MCEMfit_gam(mod, family, sigma.sq.u, sigma.sq.e, B, epsilon = 1e-05,
   theta.est = 1)
 }
 \arguments{
-\item{mod}{:}
+\item{mod}{: a gam object (this is the naive model).}
 
-\item{family}{:}
+\item{family}{: the specified model family.}
 
-\item{sigma.sq.u}{:}
+\item{sigma.sq.u}{: measurement error variance.}
 
-\item{sigma.sq.e}{:}
+\item{sigma.sq.e}{: variance of the true covariate.}
 
-\item{B}{:}
+\item{B}{: the number of Monte Carlo values.}
 
-\item{epsilon}{:}
+\item{epsilon}{: convergence threshold.}
 
-\item{theta.est}{:}
+\item{theta.est}{: an initial value for the dispersion parameter (required for negative binomial).}
 }
 \value{
 \code{MCEMfit_glm} returns a list of model coef estimates with standard errors.

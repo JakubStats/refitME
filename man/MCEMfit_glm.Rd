@@ -14,7 +14,7 @@ MCEMfit_glm(mod, family, sigma.sq.u, sigma.sq.e, B, epsilon = 1e-05,
 
 \item{sigma.sq.u}{: measurement error variance.}
 
-\item{sigma.sq.e}{: variance of the true covariate.}
+\item{sigma.sq.e}{: variance of the true covariate (X).}
 
 \item{B}{: the number of Monte Carlo values.}
 

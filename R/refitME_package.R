@@ -20,7 +20,7 @@ library(sandwich);
 #' @param mod : a glm object (this is the naive model).
 #' @param family : the specified model family.
 #' @param sigma.sq.u : measurement error variance.
-#' @param sigma.sq.e : variance of the true covariate.
+#' @param sigma.sq.e : variance of the true covariate (X).
 #' @param B : the number of Monte Carlo values.
 #' @param epsilon : convergence threshold.
 #' @param theta.est : an initial value for the dispersion parameter (required for negative binomial).
@@ -212,13 +212,13 @@ MCEMfit_glm<-function(mod,family,sigma.sq.u,sigma.sq.e,B,epsilon=0.00001,theta.e
 #'
 #' Function for fitting the MCEM algorithm for non-Gaussian (GAMs) data with measurement error.
 #' @name MCEMfit_gam
-#' @param mod :
-#' @param family :
-#' @param sigma.sq.u :
-#' @param sigma.sq.e :
-#' @param B :
-#' @param epsilon :
-#' @param theta.est :
+#' @param mod : a gam object (this is the naive model).
+#' @param family : the specified model family.
+#' @param sigma.sq.u : measurement error variance.
+#' @param sigma.sq.e : variance of the true covariate.
+#' @param B : the number of Monte Carlo values.
+#' @param epsilon : convergence threshold.
+#' @param theta.est : an initial value for the dispersion parameter (required for negative binomial).
 #'
 #' @return \code{MCEMfit_glm} returns a list of model coef estimates with standard errors.
 #' @author Jakub Stoklosa and David I. Warton
@@ -408,12 +408,12 @@ MCEMfit_gam<-function(mod,family,sigma.sq.u,sigma.sq.e,B,epsilon=0.00001,theta.e
 
 #' refitME
 #'
-#' Function that extracts the model object and wraps the MCEM algorithm (currently available for lm, glm and gam).
+#' Function that extracts the model object and wraps the MCEM algorithm on it to correct for measurement error (currently available for lm, glm and gam).
 #' @name refitME
-#' @param mod :
-#' @param sigma.sq.u :
-#' @param B :
-#' @param epsilon :
+#' @param mod : a glm object (this is the naive model).
+#' @param sigma.sq.u : measurement error variance.
+#' @param B : the number of Monte Carlo values.
+#' @param epsilon : convergence threshold.
 #'
 #' @return \code{refitME} returns returns a list of model coef estimates with standard errors.
 #' @author Jakub Stoklosa and David I. Warton

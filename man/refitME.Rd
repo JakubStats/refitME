@@ -7,19 +7,19 @@
 refitME(mod, sigma.sq.u, B, epsilon = 1e-05)
 }
 \arguments{
-\item{mod}{:}
+\item{mod}{: a glm object (this is the naive model).}
 
-\item{sigma.sq.u}{:}
+\item{sigma.sq.u}{: measurement error variance.}
 
-\item{B}{:}
+\item{B}{: the number of Monte Carlo values.}
 
-\item{epsilon}{:}
+\item{epsilon}{: convergence threshold.}
 }
 \value{
 \code{refitME} returns returns a list of model coef estimates with standard errors.
 }
 \description{
-Function that extracts the model object and wraps the MCEM algorithm (currently available for lm, glm and gam).
+Function that extracts the model object and wraps the MCEM algorithm on it to correct for measurement error (currently available for lm, glm and gam).
 }
 \author{
 Jakub Stoklosa and David I. Warton
