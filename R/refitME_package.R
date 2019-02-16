@@ -17,13 +17,13 @@ library(sandwich);
 #'
 #' Function for fitting the MCEM algorithm for non-Gaussian (GLMs) data with measurement error.
 #' @name MCEMfit_glm
-#' @param mod :
-#' @param family :
-#' @param sigma.sq.u :
-#' @param sigma.sq.e :
-#' @param B :
-#' @param epsilon :
-#' @param theta.est :
+#' @param mod : a glm object (this is the naive model).
+#' @param family : the specified model family.
+#' @param sigma.sq.u : measurement error variance.
+#' @param sigma.sq.e : variance of the true covariate.
+#' @param B : the number of Monte Carlo values.
+#' @param epsilon : convergence threshold.
+#' @param theta.est : an initial value for the dispersion parameter (required for negative binomial).
 #'
 #' @return \code{MCEMfit_glm} returns a list of model coef estimates with standard errors.
 #' @author Jakub Stoklosa and David I. Warton
