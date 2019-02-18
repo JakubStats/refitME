@@ -1,17 +1,17 @@
 ---
-title: 'refitME: Tutorial for fitting MCEM models with measurement error in covariates'
+title: 'refitME: Tutorial for fitting MCEM models when covariates are subject to measurement error/error-in-variables'
 author: "Jakub Stoklosa & David Warton"
-date: "17th Feb 2019"
+date: "18th Feb 2019"
 header-includes: # Allows you to add in your own Latex packages.
 - \usepackage{float} # Use the 'float' package.
-- \floatplacement{figure}{H} #make every figure with caption = h
+- \floatplacement{figure}{H} # Make every figure with caption = h
 - \usepackage{ragged2e}
 - \usepackage{geometry}
 - \geometry{verbose,tmargin=3cm,bmargin=3cm,lmargin=3cm,rmargin=3cm}
 output:
-  pdf_document: default
-  fig_caption: yes
   html_document: default
+  fig_caption: yes
+  pdf_document: default
   word_document: default
 ---
 
@@ -23,9 +23,15 @@ knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(fig.pos = 'H')
 ```
 
+This tutorial documents fitting an MCEM algorithm via the `refitME` R-package. For more specific details see:
+
+Stoklosa, J. and Warton, D.I. (2019). A general algorithm for error-in-variables using Monte Carlo expectation maximization.
+
+Also, see ```?refitME``` for futher details on the fitting function, input arguments and output.
+
 ## Example 1: A simple GLM example taken from Carroll _et al._ (2006). 
 
-The Framingham heart study data set.
+The Framingham heart study data set. Here, we also fit SIMEX models and compare them with MCEM. Computationanl times for both models are also reported.
 
 ### Load data and R-packages.
 
@@ -33,29 +39,25 @@ The Framingham heart study data set.
 suppressMessages(library(refitME));
 suppressMessages(library(simex));
 
-epsilon<-0.00001;
-B<-100;
+epsilon<-0.00001;  # A set convergence threshold.
+B<-100;  # The number of Monte Carlo replication values/SIMEX simulations.
 
 family<-"binomial";
 
 data.Fram<-as.matrix(read.table(file="Framinghamdata.txt"));
 ```
 
-### Setup all variables.
-
-The construction below follows the Carroll et al. (2006) monograph.
+### Setup all variables (the construction below follows the Carroll et al. (2006) monograph).
 
 ```{r, echo=TRUE}
-Y<-data.Fram[,10];
+Y<-data.Fram[,10]; # Binary variable.
 
 n<-length(Y);
 
 z1<-(data.Fram[,9]); # Cholesterol.
 z2<-(data.Fram[,2]); # Age.
 z3<-data.Fram[,7];   # Smoke.
-
 w1<-(log((data.Fram[,3]+data.Fram[,4]+data.Fram[,5]+data.Fram[,6])/4-50)); # Mean exam 2 and 3.
-
 dat<-data.frame(cbind(Y,z1,z2,z3,w1));
 
 sigma.sq.u<-0.01259/2 # ME variance, obtained from Carroll et al. (2006) monograph.
@@ -63,32 +65,28 @@ sigma.sq.u<-0.01259/2 # ME variance, obtained from Carroll et al. (2006) monogra
 
 ### Fit the naive model.
 
+The first stored variable `w1` is the error contaminated variable in the analysis.
+
 ```{r, echo=TRUE}
-mod_naiv1<-glm(Y~w1+z1+z2+z3,x=TRUE,family=binomial,data=dat);
+mod_naiv1<-glm(Y~w1+z1+z2+z3,x=TRUE,family=binomial,data=dat); 
 ```
 
 ### Fit the SIMEX model.
 
 ```{r, echo=TRUE}
 start<-Sys.time();
-
 mod_simex1<-simex(mod_naiv1,SIMEXvariable=c("w1"),
                   measurement.error=cbind(sqrt(sigma.sq.u)),B=B); # SIMEX.
-
 end<-Sys.time();
 t1<-difftime(end,start,units="secs");
 comp.time<-c(t1);
-
 ```
 
 ### Fit the MCEM model.
 
 ```{r, echo=TRUE}
-
 start<-Sys.time();
-
 est<-refitME(mod_naiv1,sigma.sq.u,B);
-
 end<-Sys.time();
 t2<-difftime(end,start,units="secs");
 comp.time<-c(comp.time,t2);
@@ -99,20 +97,17 @@ comp.time<-c(comp.time,t2);
 ```{r, echo=TRUE}
 est.beta<-rbind(coef(mod_naiv1),coef(mod_simex1),est$beta);
 est.beta.se<-rbind(sqrt(diag(vcov(mod_naiv1))),
-                   sqrt(diag(mod_simex1$variance.jackknife)),
-                   est$beta.se2);
-
+                   sqrt(diag(mod_simex1$variance.jackknife)),est$beta.se2);
 round(est.beta,digits=3);
-round(est.beta.se,digits=3);
-
-comp.time;
+round(est.beta.se,digits=3);  # Standard error estimates.
+comp.time;  # SIMEX and MCEM.
 ```
 
 \clearpage
 
 ## Example 2: A GAM example taken from Ganguli _et al._ (2005).
 
-The Milan mortality air pollution data set.
+The Milan mortality air pollution data set. Here, we fit GAM models via the `mgcv` package where one covariate is error-contaminated.
 
 ### Load data and R-packages.
 
@@ -122,8 +117,8 @@ rm(list=ls());
 suppressMessages(library(refitME));
 suppressMessages(library(SemiPar));
 
-epsilon<-0.00001;
-B<-5;
+epsilon<-0.00001;  # A set convergence threshold.
+B<-2;  # The number of Monte Carlo replication values.
 
 family<-"poisson";
 
@@ -135,18 +130,16 @@ dat.air<-milan.mort;
 ### Setup all variables.
 
 ```{r, echo=TRUE}
-Y<-dat.air[,6];
+Y<-dat.air[,6];  # Mortality counts.
 
 n<-length(Y);
-
-w1<-log(dat.air[,9]);
-w1<-scale(w1);
-colnames(w1)<-"w1";
 
 z1<-(dat.air[,1]);
 z2<-(dat.air[,4]);
 z3<-(dat.air[,5]);
-
+w1<-log(dat.air[,9]);
+w1<-scale(w1);
+colnames(w1)<-"w1";
 dat<-data.frame(cbind(Y,z1,z2,z3,w1));
 
 ## Reliability ratio.
@@ -167,15 +160,11 @@ mod_naiv1<-gam(Y~s(w1,k=5)+s(z1,bs='cc',k=25)+s(z2,k=5)+s(z3,k=5),family="poisso
 
 ### Fit the MCEM model.
 
-This models can take a while to fit.
-
 ```{r, echo=TRUE}
 est<-refitME(mod_naiv1,sigma.sq.u,B);
 ```
 
-### Plots.
-
-```{r fig1, fig.pos='H', echo=FALSE, fig.cap="\\label{fig:fig1} Plots of smooths against covariate."}
+```{r fig1, fig.height=7, fig.pos='H', echo=FALSE, fig.cap="\\label{fig:fig1} Plots of smooths against covariate. TSP (top left is the error contaminated variable)."}
 xlab.names<-c("log(TSP)","Day","Temp","Humidity");
 
 op<-par(mfrow=c(2,2),las=1);
@@ -226,6 +215,6 @@ for(i in 1:4)
     }
   }
 
-title(main="MCEM (Poisson GAM) fitted to the air pollution data",outer=T,line=-2);
+title(main="MCEM (Poisson GAM) fitted to the air pollution data.",outer=T,line=-2);
 par(op);
 ```
