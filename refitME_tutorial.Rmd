@@ -1,7 +1,7 @@
 ---
 title: 'refitME: Tutorial for fitting MCEM models when covariates are subject to measurement error/error-in-variables'
 author: "Jakub Stoklosa & David Warton"
-date: "18th Feb 2019"
+date: "18th February 2019"
 header-includes: # Allows you to add in your own Latex packages.
 - \usepackage{float} # Use the 'float' package.
 - \floatplacement{figure}{H} # Make every figure with caption = h
@@ -9,9 +9,9 @@ header-includes: # Allows you to add in your own Latex packages.
 - \usepackage{geometry}
 - \geometry{verbose,tmargin=3cm,bmargin=3cm,lmargin=3cm,rmargin=3cm}
 output:
-  html_document: default
-  fig_caption: yes
   pdf_document: default
+  fig_caption: yes
+  html_document: default
   word_document: default
 ---
 
