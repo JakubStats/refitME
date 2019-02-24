@@ -1,7 +1,7 @@
 ---
-title: 'refitME: Tutorial for fitting MCEM models when covariates are subject to measurement error/error-in-variables'
+title: '`refitME`: Tutorial for fitting MCEM models when covariates are subject to measurement error/error-in-variables'
 author: "Jakub Stoklosa & David Warton"
-date: "18th February 2019"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
 header-includes: # Allows you to add in your own Latex packages.
 - \usepackage{float} # Use the 'float' package.
 - \floatplacement{figure}{H} # Make every figure with caption = h
@@ -118,7 +118,7 @@ suppressMessages(library(refitME));
 suppressMessages(library(SemiPar));
 
 epsilon<-0.00001;  # A set convergence threshold.
-B<-2;  # The number of Monte Carlo replication values.
+B<-50;  # The number of Monte Carlo replication values.
 
 family<-"poisson";
 
