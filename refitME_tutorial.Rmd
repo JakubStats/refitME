@@ -123,7 +123,7 @@ suppressMessages(library(refitME));
 suppressMessages(library(SemiPar));
 
 epsilon<-0.00001;
-B<-5;
+B<-2;
 
 family<-"poisson";
 
