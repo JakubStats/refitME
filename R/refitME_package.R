@@ -15,21 +15,21 @@ library(sandwich);
 
 #' MCEMfit_glm
 #'
-#' Function for fitting the MCEM algorithm for non-Gaussian (GLMs) data with measurement error.
+#' Function for wrapping the MCEM algorithm on GLMs where covariates are subject to measurement error/error-in-varaibles.
 #' @name MCEMfit_glm
-#' @param mod : a glm object (this is the naive model).
-#' @param family : the specified model family.
+#' @param mod : a glm object (this is the naive fitted model). Make sure the first stored variable is the contaminated one (W).
+#' @param family : a specified family/distribution.
 #' @param sigma.sq.u : measurement error variance.
 #' @param sigma.sq.e : variance of the true covariate (X).
-#' @param B : the number of Monte Carlo values.
-#' @param epsilon : convergence threshold.
-#' @param theta.est : an initial value for the dispersion parameter (required for negative binomial).
-#'
-#' @return \code{MCEMfit_glm} returns a list of model coef estimates with standard errors.
+#' @param B : the number of Monte Carlo replication values.
+#' @param epsilon : a set convergence threshold.
+#' @param theta.est : an initial value for the dispersion parameter (this is required for fitting negative binomial models).
+#' @return \code{MCEMfit_glm} returns model coef estimates with standard errors.
 #' @author Jakub Stoklosa and David I. Warton
-#' @examples
+#' @references Stoklosa, J. and Warton, D.I. (2019). A general algorithm for error-in-variables using Monte Carlo expectation maximization.
 #' @export
-#'
+#' @seealso \code{\link{MCEMfit_gam}}
+#' @source See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
 MCEMfit_glm<-function(mod,family,sigma.sq.u,sigma.sq.e,B,epsilon=0.00001,theta.est=1)
   {
   options(warn=-1);
@@ -212,21 +212,21 @@ MCEMfit_glm<-function(mod,family,sigma.sq.u,sigma.sq.e,B,epsilon=0.00001,theta.e
 
 #' MCEMfit_gam
 #'
-#' Function for fitting the MCEM algorithm for non-Gaussian (GAMs) data with measurement error.
+#' Function for wrapping the MCEM algorithm on GAMs where covariates are subject to measurement error/error-in-varaibles.
 #' @name MCEMfit_gam
-#' @param mod : a gam object (this is the naive model).
-#' @param family : the specified model family.
+#' @param mod : a gam object (this is the naive fitted model). Make sure the first stored variable is the contaminated one (W).
+#' @param family : a specified family/distribution.
 #' @param sigma.sq.u : measurement error variance.
 #' @param sigma.sq.e : variance of the true covariate.
-#' @param B : the number of Monte Carlo values.
-#' @param epsilon : convergence threshold.
-#' @param theta.est : an initial value for the dispersion parameter (required for negative binomial).
-#'
-#' @return \code{MCEMfit_glm} returns a list of model coef estimates with standard errors.
+#' @param B : the number of Monte Carlo replication values.
+#' @param epsilon : a set convergence threshold.
+#' @param theta.est : an initial value for the dispersion parameter (this is required for fitting negative binomial models).
+#' @return \code{MCEMfit_glm} returns model coef estimates with standard errors.
 #' @author Jakub Stoklosa and David I. Warton
-#' @examples
+#' @references Stoklosa, J. and Warton, D.I. (2019). A general algorithm for error-in-variables using Monte Carlo expectation maximization.
 #' @export
-#'
+#' @seealso \code{\link{MCEMfit_glm}}
+#' @source See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
 MCEMfit_gam<-function(mod,family,sigma.sq.u,sigma.sq.e,B,epsilon=0.00001,theta.est=1)
   {
   options(warn=-1);
@@ -412,18 +412,18 @@ MCEMfit_gam<-function(mod,family,sigma.sq.u,sigma.sq.e,B,epsilon=0.00001,theta.e
 
 #' refitME
 #'
-#' Function that extracts the model object and wraps the MCEM algorithm on it to correct for measurement error (currently available for lm, glm and gam).
+#' Function that extracts the fitted (naive) model object and wraps the MCEM algorithm to correct for measurement error/error-in-varaibles (currently available for lm, glm and gam).
 #' @name refitME
-#' @param mod : a glm object (this is the naive model).
+#' @param mod : a gam object (this is the naive fitted model). Make sure the first stored variable is the contaminated one (W).
 #' @param sigma.sq.u : measurement error variance.
-#' @param B : the number of Monte Carlo values.
+#' @param B : the number of Monte Carlo replication values.
 #' @param epsilon : convergence threshold.
-#'
-#' @return \code{refitME} returns returns a list of model coef estimates with standard errors.
+#' @return \code{refitME} returns model coef estimates with standard errors.
 #' @author Jakub Stoklosa and David I. Warton
-#' @examples
+#' @references Stoklosa, J. and Warton, D.I. (2019). A general algorithm for error-in-variables using Monte Carlo expectation maximization.
 #' @export
-#'
+#' @seealso \code{\link{MCEMfit_glm}} and \code{\link{MCEMfit_gam}}
+#' @source See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
 refitME<-function(mod,sigma.sq.u,B,epsilon=0.00001)
   {
   sigma.sq.e<-stats::var(mod$model[,2])-sigma.sq.u;

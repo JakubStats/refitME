@@ -3,30 +3,39 @@
 \name{MCEMfit_gam}
 \alias{MCEMfit_gam}
 \title{MCEMfit_gam}
+\source{
+See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
+}
 \usage{
 MCEMfit_gam(mod, family, sigma.sq.u, sigma.sq.e, B, epsilon = 1e-05,
   theta.est = 1)
 }
 \arguments{
-\item{mod}{: a gam object (this is the naive model).}
+\item{mod}{: a gam object (this is the naive fitted model). Make sure the first stored variable is the contaminated one (W).}
 
-\item{family}{: the specified model family.}
+\item{family}{: a specified family/distribution.}
 
 \item{sigma.sq.u}{: measurement error variance.}
 
 \item{sigma.sq.e}{: variance of the true covariate.}
 
-\item{B}{: the number of Monte Carlo values.}
+\item{B}{: the number of Monte Carlo replication values.}
 
-\item{epsilon}{: convergence threshold.}
+\item{epsilon}{: a set convergence threshold.}
 
-\item{theta.est}{: an initial value for the dispersion parameter (required for negative binomial).}
+\item{theta.est}{: an initial value for the dispersion parameter (this is required for fitting negative binomial models).}
 }
 \value{
-\code{MCEMfit_glm} returns a list of model coef estimates with standard errors.
+\code{MCEMfit_glm} returns model coef estimates with standard errors.
 }
 \description{
-Function for fitting the MCEM algorithm for non-Gaussian (GAMs) data with measurement error.
+Function for wrapping the MCEM algorithm on GAMs where covariates are subject to measurement error/error-in-varaibles.
+}
+\references{
+Stoklosa, J. and Warton, D.I. (2019). A general algorithm for error-in-variables using Monte Carlo expectation maximization.
+}
+\seealso{
+\code{\link{MCEMfit_glm}}
 }
 \author{
 Jakub Stoklosa and David I. Warton

@@ -3,23 +3,32 @@
 \name{refitME}
 \alias{refitME}
 \title{refitME}
+\source{
+See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
+}
 \usage{
 refitME(mod, sigma.sq.u, B, epsilon = 1e-05)
 }
 \arguments{
-\item{mod}{: a glm object (this is the naive model).}
+\item{mod}{: a gam object (this is the naive fitted model). Make sure the first stored variable is the contaminated one (W).}
 
 \item{sigma.sq.u}{: measurement error variance.}
 
-\item{B}{: the number of Monte Carlo values.}
+\item{B}{: the number of Monte Carlo replication values.}
 
 \item{epsilon}{: convergence threshold.}
 }
 \value{
-\code{refitME} returns returns a list of model coef estimates with standard errors.
+\code{refitME} returns model coef estimates with standard errors.
 }
 \description{
-Function that extracts the model object and wraps the MCEM algorithm on it to correct for measurement error (currently available for lm, glm and gam).
+Function that extracts the fitted (naive) model object and wraps the MCEM algorithm to correct for measurement error/error-in-varaibles (currently available for lm, glm and gam).
+}
+\references{
+Stoklosa, J. and Warton, D.I. (2019). A general algorithm for error-in-variables using Monte Carlo expectation maximization.
+}
+\seealso{
+\code{\link{MCEMfit_glm}} and \code{\link{MCEMfit_gam}}
 }
 \author{
 Jakub Stoklosa and David I. Warton
