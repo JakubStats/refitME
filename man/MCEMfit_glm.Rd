@@ -8,10 +8,10 @@ See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with e
 }
 \usage{
 MCEMfit_glm(mod, family, sigma.sq.u, sigma.sq.e, B, epsilon = 1e-05,
-  theta.est = 1)
+  theta.est = 1, shape.est = 1)
 }
 \arguments{
-\item{mod}{: a glm object (this is the naive fitted model). Make sure the first stored variable is the contaminated one (W).}
+\item{mod}{: a glm object (this is the naive fitted model). Make sure the first stored variable is the contaminated covariate (W).}
 
 \item{family}{: a specified family/distribution.}
 
@@ -24,6 +24,8 @@ MCEMfit_glm(mod, family, sigma.sq.u, sigma.sq.e, B, epsilon = 1e-05,
 \item{epsilon}{: a set convergence threshold.}
 
 \item{theta.est}{: an initial value for the dispersion parameter (this is required for fitting negative binomial models).}
+
+\item{shape.est}{: an initial value for the shape parameter (this is required for fitting gamma models).}
 }
 \value{
 \code{MCEMfit_glm} returns model coef estimates with standard errors.
@@ -38,5 +40,5 @@ Stoklosa, J. and Warton, D.I. (2019). A general algorithm for error-in-variables
 \code{\link{MCEMfit_gam}}
 }
 \author{
-Jakub Stoklosa and David I. Warton
+Jakub Stoklosa and David I. Warton.
 }

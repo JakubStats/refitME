@@ -1,1 +1,4 @@
 exportPattern("^[[:alpha:]]+")
+
+importFrom("stats", "Gamma")
+importFrom("mgcv", "nb")

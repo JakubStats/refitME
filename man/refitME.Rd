@@ -22,7 +22,7 @@ refitME(mod, sigma.sq.u, B, epsilon = 1e-05)
 \code{refitME} returns model coef estimates with standard errors.
 }
 \description{
-Function that extracts the fitted (naive) model object and wraps the MCEM algorithm to correct for measurement error/error-in-varaibles (currently available for lm, glm and gam).
+Function that extracts the fitted (naive) model object and wraps the MCEM algorithm to correct for measurement error/error-in-varaibles (currently available for lm, glm and gam, excludes quassi models).
 }
 \references{
 Stoklosa, J. and Warton, D.I. (2019). A general algorithm for error-in-variables using Monte Carlo expectation maximization.
@@ -31,5 +31,5 @@ Stoklosa, J. and Warton, D.I. (2019). A general algorithm for error-in-variables
 \code{\link{MCEMfit_glm}} and \code{\link{MCEMfit_gam}}
 }
 \author{
-Jakub Stoklosa and David I. Warton
+Jakub Stoklosa and David I. Warton.
 }

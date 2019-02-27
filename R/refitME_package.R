@@ -17,20 +17,21 @@ library(sandwich);
 #'
 #' Function for wrapping the MCEM algorithm on GLMs where covariates are subject to measurement error/error-in-varaibles.
 #' @name MCEMfit_glm
-#' @param mod : a glm object (this is the naive fitted model). Make sure the first stored variable is the contaminated one (W).
+#' @param mod : a glm object (this is the naive fitted model). Make sure the first stored variable is the contaminated covariate (W).
 #' @param family : a specified family/distribution.
 #' @param sigma.sq.u : measurement error variance.
 #' @param sigma.sq.e : variance of the true covariate (X).
 #' @param B : the number of Monte Carlo replication values.
 #' @param epsilon : a set convergence threshold.
 #' @param theta.est : an initial value for the dispersion parameter (this is required for fitting negative binomial models).
+#' @param shape.est : an initial value for the shape parameter (this is required for fitting gamma models).
 #' @return \code{MCEMfit_glm} returns model coef estimates with standard errors.
-#' @author Jakub Stoklosa and David I. Warton
+#' @author Jakub Stoklosa and David I. Warton.
 #' @references Stoklosa, J. and Warton, D.I. (2019). A general algorithm for error-in-variables using Monte Carlo expectation maximization.
 #' @export
 #' @seealso \code{\link{MCEMfit_gam}}
 #' @source See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
-MCEMfit_glm<-function(mod,family,sigma.sq.u,sigma.sq.e,B,epsilon=0.00001,theta.est=1)
+MCEMfit_glm<-function(mod,family,sigma.sq.u,sigma.sq.e,B,epsilon=0.00001,theta.est=1,shape.est=1)
   {
   options(warn=-1);
 
@@ -80,6 +81,8 @@ MCEMfit_glm<-function(mod,family,sigma.sq.u,sigma.sq.e,B,epsilon=0.00001,theta.e
 
   colnames(X)[2]<-"x1";
 
+  if(p1==2){colnames(X)[2:3]<-c("x1","I(x1^2)");}
+
   mu.e1<-mean(X1_j);
 
   bigY<-rep(Y,B);
@@ -93,42 +96,58 @@ MCEMfit_glm<-function(mod,family,sigma.sq.u,sigma.sq.e,B,epsilon=0.00001,theta.e
     if(family=="gaussian"){prY<-stats::dnorm(bigY,muPred,1);}
     if(family=="binomial"){prY<-stats::dbinom(bigY,1,muPred);}
     if(family=="poisson"){prY<-stats::dpois(bigY,muPred);}
+    #if(family=="Gamma"){prY<-stats::dgamma(bigY,shape=shape.est,rate=shape.est/muPred);}
+    if(family=="Gamma"){prY<-stats::dgamma(bigY,shape=shape.est,scale=muPred/shape.est);}
     if(family=="negbin"){prY<-stats::dnbinom(bigY,size=theta.est,mu=muPred);}
 
     ## M-step (updates).
 
     bigW<-matrix(prY*prX,n,B);
 
-    sumW<-rep(apply(bigW,1,sum),B);
+    sumW<-rep(apply(bigW,1,sum,na.rm=T),B);
+
+    weights1<-as.vector(bigW)/sumW;
+    weights1[is.nan(weights1)]<-0;
 
     if(family=="gaussian")
       {
-      mod<-stats::lm(bigY~X-1,weights=as.vector(bigW)/sumW);
+      mod<-stats::lm(bigY~X-1,weights=weights1);
       sigma.sq.est<-(summary(mod)$sigma)^2;
       }
-    if(family=="binomial"){mod<-stats::glm(bigY~X-1,weights=as.vector(bigW)/sumW,family="binomial");}
-    if(family=="poisson"){mod<-stats::glm(bigY~X-1,weights=as.vector(bigW)/sumW,family="poisson");}
-    if(family=="negbin"){mod<-MASS::glm.nb(bigY~X-1,weights=as.vector(bigW)/sumW,init.theta=theta.est);}
+
+    if(family=="binomial"){mod<-stats::glm(bigY~X-1,weights=weights1,family="binomial");}
+    if(family=="poisson"){mod<-stats::glm(bigY~X-1,weights=weights1,family="poisson");}
+    if(family=="Gamma"){mod<-stats::glm(bigY~X-1,weights=weights1,family=Gamma(link="log"));}
+    if(family=="negbin"){mod<-MASS::glm.nb(bigY~X-1,weights=weights1,init.theta=theta.est);}
 
     beta.update<-stats::coef(mod);
-    if(family=="negbin"){theta.update<-(mod)$theta;}
+    if(family=="negbin"){theta.update<-mod$theta;}
     muPred<-stats::predict(mod,type="response");
+    #if(family=="Gamma"){shape.update<-summary(mod)[14]$dispersion;}
+    if(family=="Gamma")
+      {
+      #shape.update<-MASS::gamma.shape(mod,it.lim=10000,eps.max=0.0000001,verbose =T)$alpha;
+      shape.update<-summary(mod)[14]$dispersion
+      muPred<-stats::predict(mod,type="response",dispersion=shape.update);
+      }
 
-    sigma.sq.e1.update<-SDMTools::wt.var(X[,2],w=as.vector(bigW)/sumW);
+    sigma.sq.e1.update<-SDMTools::wt.var(X[,2],w=weights1);
 
-    mu.e1.update<-stats::weighted.mean(X[,2],w=((as.vector(bigW)/sumW)));
+    mu.e1.update<-stats::weighted.mean(X[,2],w=weights1);
 
     ## Convergence monitoring.
 
     beta.norm<-sum((beta.est-beta.update)^2);
     if(family=="negbin"){theta.norm<-sum((theta.est-theta.update)^2);}
+    if(family=="Gamma"){shape.norm<-sum((shape.est-shape.update)^2);}
+    #if(family=="Gamma"){shape.norm<-abs(shape.est-shape.update);}
 
     diff.sig_e<-abs(sigma.sq.e1.update-sigma.sq.e1);
     diff.mu_e<-sum((mu.e1.update-mu.e1)^2);
 
     reps<-reps+1;   # Keeps track of number of iterations.
 
-    if(family!="negbin")
+    if(family=="binomial" | family=="poisson" | family=="gaussian")
       {
       if(diff.mu_e<epsilon && diff.sig_e<epsilon && beta.norm<epsilon)
         {
@@ -150,15 +169,27 @@ MCEMfit_glm<-function(mod,family,sigma.sq.u,sigma.sq.e,B,epsilon=0.00001,theta.e
         }
       }
 
+    if(family=="Gamma")
+      {
+      if(diff.mu_e<epsilon && diff.sig_e<epsilon && beta.norm<epsilon && shape.norm<epsilon)
+        {
+        cond<-FALSE;
+        print("convergence :-)");
+        print(reps);
+        break;
+        }
+      }
+
     ## Update parameters.
 
     beta.est<-beta.update;
     if(family=="negbin"){theta.est<-theta.update;}
+    if(family=="Gamma"){shape.est<-shape.update;}
     sigma.sq.e1<-sigma.sq.e1.update;
     mu.e1<-mu.e1.update;
     }
 
-  eff.samp.size<-1/sum((as.vector(bigW)/sumW)^2);
+  eff.samp.size<-1/sum(weights1^2);
 
   ## Standard error calculations start here.
 
@@ -214,20 +245,21 @@ MCEMfit_glm<-function(mod,family,sigma.sq.u,sigma.sq.e,B,epsilon=0.00001,theta.e
 #'
 #' Function for wrapping the MCEM algorithm on GAMs where covariates are subject to measurement error/error-in-varaibles.
 #' @name MCEMfit_gam
-#' @param mod : a gam object (this is the naive fitted model). Make sure the first stored variable is the contaminated one (W).
+#' @param mod : a gam object (this is the naive fitted model). Make sure the first stored variable is the contaminated covariate (W).
 #' @param family : a specified family/distribution.
 #' @param sigma.sq.u : measurement error variance.
 #' @param sigma.sq.e : variance of the true covariate.
 #' @param B : the number of Monte Carlo replication values.
 #' @param epsilon : a set convergence threshold.
 #' @param theta.est : an initial value for the dispersion parameter (this is required for fitting negative binomial models).
+#' @param shape.est : an initial value for the shape parameter (this is required for fitting gamma models).
 #' @return \code{MCEMfit_glm} returns model coef estimates with standard errors.
-#' @author Jakub Stoklosa and David I. Warton
+#' @author Jakub Stoklosa and David I. Warton.
 #' @references Stoklosa, J. and Warton, D.I. (2019). A general algorithm for error-in-variables using Monte Carlo expectation maximization.
 #' @export
 #' @seealso \code{\link{MCEMfit_glm}}
 #' @source See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
-MCEMfit_gam<-function(mod,family,sigma.sq.u,sigma.sq.e,B,epsilon=0.00001,theta.est=1)
+MCEMfit_gam<-function(mod,family,sigma.sq.u,sigma.sq.e,B,epsilon=0.00001,theta.est=1,shape.est=10)
   {
   options(warn=-1);
 
@@ -289,6 +321,7 @@ MCEMfit_gam<-function(mod,family,sigma.sq.u,sigma.sq.e,B,epsilon=0.00001,theta.e
     if(family=="gaussian"){prY<-stats::dnorm(bigY,muPred,1);}
     if(family=="binomial"){prY<-stats::dbinom(bigY,1,muPred);}
     if(family=="poisson"){prY<-stats::dpois(bigY,muPred);}
+    if(family=="Gamma"){prY<-stats::dgamma(bigY,rate=shape.est/muPred,shape=shape.est);}
     if(family=="negbin"){prY<-stats::dnbinom(bigY,size=theta.est,mu=muPred);}
 
     ## M-step (updates).
@@ -297,38 +330,45 @@ MCEMfit_gam<-function(mod,family,sigma.sq.u,sigma.sq.e,B,epsilon=0.00001,theta.e
 
     sumW<-rep(apply(bigW,1,sum),B);
 
-    dat_new$bigW<-as.vector(bigW);
+    #dat_new$bigW<-as.vector(bigW);
+    #dat_new$sumW<-sumW;
 
-    dat_new$sumW<-sumW;
+    weights1<-as.vector(bigW)/sumW;
+    weights1[is.nan(weights1)]<-0;
+
+    dat_new$weights1<-weights1;
 
     if(family=="gaussian")
       {
-      mod<-mgcv::gam(formula=form.name,weights=as.vector(bigW)/sumW,data=dat_new);
+      mod<-mgcv::gam(formula=form.name,weights=weights1,data=dat_new);
       sigma.sq.est<-(summary(mod)$dispersion);
       }
-    if(family=="binomial"){mod<-mgcv::gam(formula=form.name,weights=as.vector(bigW)/sumW,family="binomial",gamma=1.4,data=dat_new);}
-    if(family=="poisson"){mod<-mgcv::gam(formula=form.name,weights=as.vector(bigW)/sumW,family="poisson",data=dat_new);}
-    if(family=="negbin"){mod<-mgcv::gam(form.name,family=nb(),weights=as.vector(bigW)/sumW,data=dat_new);}
+    if(family=="binomial"){mod<-mgcv::gam(formula=form.name,weights=weights1,family="binomial",gamma=1.4,data=dat_new);}
+    if(family=="poisson"){mod<-mgcv::gam(formula=form.name,weights=weights1,family="poisson",data=dat_new);}
+    if(family=="Gamma"){mod<-mgcv::gam(formula=form.name,weights=weights1,family=Gamma(link="log"),data=dat_new);}
+    if(family=="negbin"){mod<-mgcv::gam(form.name,family=nb(),weights=weights1,data=dat_new);}
 
     beta.update<-stats::coef(mod);
     if(family=="negbin"){theta.update<-mod$family$getTheta(TRUE);}
+    if(family=="Gamma"){shape.update<-MASS::gamma.shape(mod)[1]$alpha;}
     muPred<-stats::predict(mod,type="response");
 
-    sigma.sq.e1.update<-SDMTools::wt.var(X1_j,w=as.vector(bigW)/sumW);
+    sigma.sq.e1.update<-SDMTools::wt.var(X1_j,w=weights1);
 
-    mu.e1.update<-stats::weighted.mean(x1,w=((as.vector(bigW)/sumW)));
+    mu.e1.update<-stats::weighted.mean(x1,w=weights1);
 
     ## Convergence monitoring.
 
     #gcv.norm<-sum((gcv.est-gcv.update)^2);
     beta.norm<-sum((beta.est-beta.update)^2);
     if(family=="negbin"){theta.norm<-sum((theta.est-theta.update)^2);}
+    if(family=="Gamma"){shape.norm<-sum((shape.est-shape.update)^2);}
     diff.sig_e<-abs(sigma.sq.e1.update-sigma.sq.e1);
     diff.mu_e<-sum((mu.e1.update-mu.e1)^2);
 
     reps<-reps+1;   # Keeps track of number of iterations.
 
-    if(family!="negbin")
+    if(family=="binomial" | family=="poisson" | family=="gaussian")
       {
       if((diff.mu_e<epsilon && diff.sig_e<epsilon && beta.norm<epsilon) | reps>50)
         {
@@ -350,16 +390,28 @@ MCEMfit_gam<-function(mod,family,sigma.sq.u,sigma.sq.e,B,epsilon=0.00001,theta.e
         }
       }
 
+    if(family=="Gamma")
+      {
+      if((diff.mu_e<epsilon && diff.sig_e<epsilon && beta.norm<epsilon && shape.norm<epsilon) | reps>50)
+        {
+        cond<-FALSE;
+        print("convergence :-)");
+        print(reps);
+        break;
+        }
+      }
+
     ## Update parameters.
 
     #gcv.est<-gcv.update;
     beta.est<-beta.update;
     if(family=="negbin"){theta.est<-theta.update;}
+    if(family=="Gamma"){shape.est<-shape.update;}
     sigma.sq.e1<-sigma.sq.e1.update;
     mu.e1<-mu.e1.update;
     }
 
-  eff.samp.size<-1/sum((as.vector(bigW)/sumW)^2);
+  eff.samp.size<-1/sum(weights1^2);
 
   ## Standard error calculations start here.
 
@@ -396,7 +448,7 @@ MCEMfit_gam<-function(mod,family,sigma.sq.u,sigma.sq.e,B,epsilon=0.00001,theta.e
     u.bar<-solve(stats::vcov(mod)*B);
     beta.est.se2<-sqrt(diag(solve(u.bar-SS_1/B^2+S_1/B^2)));
     }
-  if(family=="binomial" | family=="poisson" | family=="negbin")
+  if(family=="binomial" | family=="poisson" | family=="Gamma" | family=="negbin")
     {
     SS_1<-t(sandwich::estfun(mod))%*%(sandwich::estfun(mod)/mod$prior);
     u.bar<-solve(stats::vcov(mod));
@@ -412,14 +464,14 @@ MCEMfit_gam<-function(mod,family,sigma.sq.u,sigma.sq.e,B,epsilon=0.00001,theta.e
 
 #' refitME
 #'
-#' Function that extracts the fitted (naive) model object and wraps the MCEM algorithm to correct for measurement error/error-in-varaibles (currently available for lm, glm and gam).
+#' Function that extracts the fitted (naive) model object and wraps the MCEM algorithm to correct for measurement error/error-in-varaibles (currently available for lm, glm and gam, excludes quassi models).
 #' @name refitME
 #' @param mod : a gam object (this is the naive fitted model). Make sure the first stored variable is the contaminated one (W).
 #' @param sigma.sq.u : measurement error variance.
 #' @param B : the number of Monte Carlo replication values.
 #' @param epsilon : convergence threshold.
 #' @return \code{refitME} returns model coef estimates with standard errors.
-#' @author Jakub Stoklosa and David I. Warton
+#' @author Jakub Stoklosa and David I. Warton.
 #' @references Stoklosa, J. and Warton, D.I. (2019). A general algorithm for error-in-variables using Monte Carlo expectation maximization.
 #' @export
 #' @seealso \code{\link{MCEMfit_glm}} and \code{\link{MCEMfit_gam}}
