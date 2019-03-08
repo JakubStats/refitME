@@ -2,3 +2,12 @@ exportPattern("^[[:alpha:]]+")
 
 importFrom("stats", "Gamma")
 importFrom("mgcv", "nb")
+
+export(MCEMfit_gam)
+export(MCEMfit_glm)
+export(refitME)
+import(MASS)
+import(SDMTools)
+import(mgcv)
+import(mvtnorm)
+import(sandwich)
