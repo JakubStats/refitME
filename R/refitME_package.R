@@ -339,16 +339,22 @@ MCEMfit_glm<-function(mod,family,sigma.sq.u,W,sigma.sq.e=1,B=50,epsilon=0.00001,
 
   if(family=="gaussian")
     {
-    SS_1<-t(sandwich::estfun(mod)*B)%*%(sandwich::estfun(mod)*B/mod$weights);
+    sand1<-(sandwich::estfun(mod)*B/mod$weights);
+    sand1[is.nan(sand1)]<-1;
+    SS_1<-t(sandwich::estfun(mod)*B)%*%sand1;
     u.bar<-solve(stats::vcov(mod)*B);
     beta.est.se2<-sqrt(diag(solve(u.bar-SS_1/B^2+S_1/B^2)));
     }
   if(family!="gaussian")
     {
-    SS_1<-t(sandwich::estfun(mod))%*%(sandwich::estfun(mod)/mod$prior);
+    sand1<-(sandwich::estfun(mod)/mod$prior);
+    sand1[is.nan(sand1)]<-1;
+    SS_1<-t(sandwich::estfun(mod))%*%sand1;
     u.bar<-solve(stats::vcov(mod));
     beta.est.se2<-sqrt(diag(solve(u.bar-SS_1+S_1)));
     }
+
+  beta.est.se2
 
   if(length(which(is.nan(beta.est.se2)))>0){beta.est.se2<-c(rep(NA,K1));}
 
@@ -661,7 +667,9 @@ MCEMfit_gam<-function(mod,family,sigma.sq.u,W,sigma.sq.e=1,B=50,epsilon=0.00001,
     }
   if(family=="binomial" | family=="poisson" | family=="Gamma" | family=="negbin")
     {
-    SS_1<-t(sandwich::estfun(mod))%*%(sandwich::estfun(mod)/mod$prior);
+    sand1<-(sandwich::estfun(mod)/mod$prior);
+    sand1[is.nan(sand1)]<-1;
+    SS_1<-t(sandwich::estfun(mod))%*%sand1;
     u.bar<-solve(stats::vcov(mod));
     beta.est.se2<-sqrt(diag(solve(u.bar-SS_1+S_1)));
     }

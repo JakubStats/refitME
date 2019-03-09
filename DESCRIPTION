@@ -1,7 +1,7 @@
 Package: refitME
-Title: Monte Carlo Expectation Maximixation - Measurement error modelling wrapper function
+Title: Monte Carlo Expectation Maximization - Measurement error modelling wrapper function
 Version: 0.1.0
-Author: Jakub Stoklosa
+Author: Jakub Stoklosa and David I. Warton
 Maintainer: Jakub Stoklosa <jakub.stoklosa@gmail.com>
 Description: Fits measurement error models using MCEM.
 Depends: R (>= 3.4.0), mvtnorm, MASS, SDMTools, sandwich, mgcv

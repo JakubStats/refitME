@@ -110,7 +110,7 @@ suppressMessages(library(refitME));
 suppressMessages(library(SemiPar));
 
 epsilon<-0.00001;  # A set convergence threshold.
-B<-3;  # The number of Monte Carlo replication values.
+B<-50;  # The number of Monte Carlo replication values.
 
 family<-"poisson";
 
