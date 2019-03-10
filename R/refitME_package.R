@@ -14,14 +14,14 @@ library(Matrix);
 library(sandwich);
 
 #' @title The Framingham heart study data set.
-#' @description These data are binary (presence-absence) data collected from Framingham heart study. The \codeFraminghamdata} data consists of the binary response and four predictor variables collected on `n=1615` patients.
-#' @format A data set contains: 5 columns with 1615 observations. The columns are defined as follows:
+#' @description Data set consisting of records of male patients with coronary heart disease collected from the Framingham heart study. The \code{Framinghamdata} data consists of binary responses and four predictor variables collected on `n=1615` patients.
+#' @format A data set that contains: 5 columns with 1615 observations. The columns are defined as follows:
 #' \describe{
-#'  \item{\code{Y}}{The response binary variable of whether the patient had a heart attack.}
-#'  \item{\code{z1}}{Cholesterol of patient.}
+#'  \item{\code{Y}}{Response indicator (binary variable) of first evidence of CHD status of patient.}
+#'  \item{\code{z1}}{Serum cholesterol level of patient.}
 #'  \item{\code{z2}}{Age of patient.}
-#'  \item{\code{z3}}{Whether the patient smokes.}
-#'  \item{\code{w1}}{The error contaminated variable - these are mean scores.}
+#'  \item{\code{z3}}{Smoking indicator - whether the patient smokes.}
+#'  \item{\code{w1}}{Systolic blood pressure (SBP) of patient - this is the error contaminated variable, calculated from mean scores. The measurement error is 0.00630, see pp. 112 of Carroll \emph{et al.} (2006).}
 #' }
 #' @source See Carroll \emph{et al.} (2006) for full details of the data and study. Also, see \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial of an example that uses the data.
 #' @references Carroll, R. J., Ruppert, D., Stefanski, L. A., and Crainiceanu, C. M. (2006). \emph{Measurement Error in Nonlinear Models: A Modern Perspective.} 2nd Ed. London: Chapman \& Hall/CRC.
