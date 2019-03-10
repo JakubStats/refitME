@@ -7,26 +7,30 @@
 See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
 }
 \usage{
-MCEMfit_glm(mod, family, sigma.sq.u, sigma.sq.e, B, epsilon = 1e-05,
-  theta.est = 1)
+MCEMfit_glm(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50,
+  epsilon = 1e-05, theta.est = 1, shape.est = 1)
 }
 \arguments{
-\item{mod}{: a glm object (this is the naive fitted model). Make sure the first stored variable is the contaminated one (W).}
+\item{mod}{: a glm object (this is the naive fitted model). Make sure the first input predictor variables are the selected error-contaminated varaible (i.e., the W's).}
 
 \item{family}{: a specified family/distribution.}
 
-\item{sigma.sq.u}{: measurement error variance.}
+\item{sigma.sq.u}{: measurement error variance. A scaler if there is only one error-contaminated variable, otherwise this must stored as a covaraince matrix.}
+
+\item{W}{a matrix of error-contaminated covariates.}
 
 \item{sigma.sq.e}{: variance of the true covariate (X).}
 
-\item{B}{: the number of Monte Carlo replication values.}
+\item{B}{: the number of Monte Carlo replication values (default is 50).}
 
-\item{epsilon}{: a set convergence threshold.}
+\item{epsilon}{: a set convergence threshold  (default is 0.00001).}
 
 \item{theta.est}{: an initial value for the dispersion parameter (this is required for fitting negative binomial models).}
+
+\item{shape.est}{: an initial value for the shape parameter (this is required for fitting gamma models).}
 }
 \value{
-\code{MCEMfit_glm} returns model coef estimates with standard errors.
+\code{MCEMfit_glm} returns model coef estimates with standard errors and the effective sample size.
 }
 \description{
 Function for wrapping the MCEM algorithm on GLMs where covariates are subject to measurement error/error-in-varaibles.
@@ -38,5 +42,5 @@ Stoklosa, J. and Warton, D.I. (2019). A general algorithm for error-in-variables
 \code{\link{MCEMfit_gam}}
 }
 \author{
-Jakub Stoklosa and David I. Warton
+Jakub Stoklosa and David I. Warton.
 }

@@ -7,25 +7,31 @@
 See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
 }
 \usage{
-MCEMfit_gam(mod, family, sigma.sq.u, sigma.sq.e, B, epsilon = 1e-05,
-  theta.est = 1)
+MCEMfit_gam(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50,
+  epsilon = 1e-05, theta.est = 1, shape.est = 10)
 }
 \arguments{
-\item{mod}{: a gam object (this is the naive fitted model). Make sure the first stored variable is the contaminated one (W).}
+\item{mod}{: a gam object (this is the naive fitted model). Make sure the first input predictor variables are the selected error-contaminated varaible (i.e., the W's).}
 
 \item{family}{: a specified family/distribution.}
 
-\item{sigma.sq.u}{: measurement error variance.}
+\item{sigma.sq.u}{: measurement error variance. A scaler if there is only one error-contaminated variable, otherwise this must stored as a covaraince matrix.}
 
-\item{sigma.sq.e}{: variance of the true covariate.}
+\item{W}{a matrix of error-contaminated covariates.}
 
-\item{B}{: the number of Monte Carlo replication values.}
+\item{sigma.sq.e}{: variance of the true covariate (X).}
 
-\item{epsilon}{: a set convergence threshold.}
+\item{B}{: the number of Monte Carlo replication values (default is 50).}
+
+\item{epsilon}{: convergence threshold (default is 0.00001).}
 
 \item{theta.est}{: an initial value for the dispersion parameter (this is required for fitting negative binomial models).}
+
+\item{shape.est}{: an initial value for the shape parameter (this is required for fitting gamma models).}
 }
 \value{
+\code{refitME} returns model coef estimates with standard errors and the effective sample size.
+
 \code{MCEMfit_glm} returns model coef estimates with standard errors.
 }
 \description{
@@ -38,5 +44,5 @@ Stoklosa, J. and Warton, D.I. (2019). A general algorithm for error-in-variables
 \code{\link{MCEMfit_glm}}
 }
 \author{
-Jakub Stoklosa and David I. Warton
+Jakub Stoklosa and David I. Warton.
 }

@@ -7,22 +7,24 @@
 See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
 }
 \usage{
-refitME(mod, sigma.sq.u, B, epsilon = 1e-05)
+refitME(mod, sigma.sq.u, W, B = 50, epsilon = 1e-05)
 }
 \arguments{
-\item{mod}{: a gam object (this is the naive fitted model). Make sure the first stored variable is the contaminated one (W).}
+\item{mod}{: a glm/gam object (this is the naive fitted model). Make sure the first input predictor variables are the selected error-contaminated varaible (i.e., the W's).}
 
-\item{sigma.sq.u}{: measurement error variance.}
+\item{sigma.sq.u}{: measurement error variance. A scaler if there is only one error-contaminated variable, otherwise must be a covaraince matrix}
 
-\item{B}{: the number of Monte Carlo replication values.}
+\item{W}{a matrix of error-contaminated covariates.}
 
-\item{epsilon}{: convergence threshold.}
+\item{B}{: the number of Monte Carlo replication values (default is 50).}
+
+\item{epsilon}{: convergence threshold (default is 0.00001).}
 }
 \value{
-\code{refitME} returns model coef estimates with standard errors.
+\code{refitME} returns model coef estimates with standard errors and the effective sample size.
 }
 \description{
-Function that extracts the fitted (naive) model object and wraps the MCEM algorithm to correct for measurement error/error-in-varaibles (currently available for lm, glm and gam).
+Function that extracts the fitted (naive) model object and wraps the MCEM algorithm to correct for measurement error/error-in-varaibles (currently available for lm, glm and gam, excludes quassi models).
 }
 \references{
 Stoklosa, J. and Warton, D.I. (2019). A general algorithm for error-in-variables using Monte Carlo expectation maximization.
@@ -31,5 +33,5 @@ Stoklosa, J. and Warton, D.I. (2019). A general algorithm for error-in-variables
 \code{\link{MCEMfit_glm}} and \code{\link{MCEMfit_gam}}
 }
 \author{
-Jakub Stoklosa and David I. Warton
+Jakub Stoklosa and David I. Warton.
 }
