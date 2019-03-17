@@ -312,7 +312,11 @@ MCEMfit_glm<-function(mod,family,sigma.sq.u,W,sigma.sq.e=1,B=50,epsilon=0.00001,
     mu.e1<-mu.e1.update;
     }
 
-  eff.samp.size<-1/sum(weights1^2);
+  sumW<-apply(bigW,1,sum,na.rm=T);
+  weights1<-bigW/sumW;
+  weights1[is.nan(weights1)]<-0;
+
+  eff.samp.size<-1/apply(weights1^2,1,sum);
 
   ## Standard error calculations start here.
 
@@ -353,8 +357,6 @@ MCEMfit_glm<-function(mod,family,sigma.sq.u,W,sigma.sq.e=1,B=50,epsilon=0.00001,
     u.bar<-solve(stats::vcov(mod));
     beta.est.se2<-sqrt(diag(solve(u.bar-SS_1+S_1)));
     }
-
-  beta.est.se2
 
   if(length(which(is.nan(beta.est.se2)))>0){beta.est.se2<-c(rep(NA,K1));}
 
@@ -427,7 +429,7 @@ MCEMfit_gam<-function(mod,family,sigma.sq.u,W,sigma.sq.e=1,B=50,epsilon=0.00001,
 
     colnames(dat_new)[2]<-"x1";
 
-    form.name<-stats::as.formula(stats::update(stats::formula(mod),bigY~s(x1,k=5)+.-s(w1,k=5)));
+    form.name<-stats::as.formula(stats::update(stats::formula(mod),bigY~s(x1)+.-s(w1)));
 
     if(d>1)
       {
@@ -505,11 +507,10 @@ MCEMfit_gam<-function(mod,family,sigma.sq.u,W,sigma.sq.e=1,B=50,epsilon=0.00001,
         colnames(dat_new)[dim(dat_new)[2]]<-non.err.names[jj];
         }
       }
-
-    if(q1==2){form.name<-stats::as.formula(stats::update(stats::formula(mod),bigY~s(x1,k=5)+s(x2,k=5)+.-s(w1,k=5)-s(w2,k=5)));}
-    if(q1==3){form.name<-stats::as.formula(stats::update(stats::formula(mod),bigY~s(x1,k=5)+s(x2,k=5)+s(x3,k=5)+.-s(w1,k=5)-s(w2,k=5)-s(w3,k=5)));}
-    if(q1==4){form.name<-stats::as.formula(stats::update(stats::formula(mod),bigY~s(x1,k=5)+s(x2,k=5)+s(x3,k=5)+s(x4,k=5)+.-s(w1,k=5)-s(w2,k=5)-s(w3,k=5)-s(w4,k=5)));}
-    if(q1==5){form.name<-stats::as.formula(stats::update(stats::formula(mod),bigY~s(x1,k=5)+s(x2,k=5)+s(x3,k=5)+s(x4,k=5)+s(x5,k=5)+.-s(w1,k=5)-s(w2,k=5)-s(w3,k=5)-s(w4,k=5)-s(w5,k=5)));}
+    if(q1==2){form.name<-stats::as.formula(stats::update(stats::formula(mod),bigY~s(x1)+s(x2)+.-s(w1)-s(w2)));}
+    if(q1==3){form.name<-stats::as.formula(stats::update(stats::formula(mod),bigY~s(x1)+s(x2)+s(x3)+.-s(w1)-s(w2)-s(w3)));}
+    if(q1==4){form.name<-stats::as.formula(stats::update(stats::formula(mod),bigY~s(x1)+s(x2)+s(x3)+s(x4)+.-s(w1)-s(w2)-s(w3)-s(w4)));}
+    if(q1==5){form.name<-stats::as.formula(stats::update(stats::formula(mod),bigY~s(x1)+s(x2)+s(x3)+s(x4)+s(x5)+.-s(w1)-s(w2)-s(w3)-s(w4)-s(w5)));}
     if(q1>5){print("Sorry, refitME cannot handle more than 5 error-contaminated varaibles with GAM!");}
     }
 
@@ -632,7 +633,11 @@ MCEMfit_gam<-function(mod,family,sigma.sq.u,W,sigma.sq.e=1,B=50,epsilon=0.00001,
     mu.e1<-mu.e1.update;
     }
 
-  eff.samp.size<-1/sum(weights1^2);
+  sumW<-apply(bigW,1,sum,na.rm=T);
+  weights1<-bigW/sumW;
+  weights1[is.nan(weights1)]<-0;
+
+  eff.samp.size<-1/apply(weights1^2,1,sum);
 
   ## Standard error calculations start here.
 
