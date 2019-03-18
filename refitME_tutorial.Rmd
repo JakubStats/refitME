@@ -142,8 +142,6 @@ rel.rat<-(1-sigma.sq.u/var(dat$w1))*100;
 ### Fit the naive model.
 
 ```{r, echo=TRUE}
-
-#mod_naiv1<-gam(Y~s(w1,k=5)+s(z1,k=25)+s(z2,k=5)+s(z3,k=5),family="poisson",data=dat);
 mod_naiv1<-gam(Y~s(w1)+s(z1,k=25)+s(z2)+s(z3),family="poisson",data=dat);
 ```
 
