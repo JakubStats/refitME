@@ -135,12 +135,7 @@ colnames(w1)<-"w1";
 W<-as.matrix(w1);
 dat<-data.frame(cbind(Y,z1,z2,z3,w1));
 
-## Reliability ratio.
-
-#sigma.sq.u<-0.1; # Rel. ratio of 0.9.
-#sigma.sq.u<-0.2; # Rel. ratio of 0.8.
-sigma.sq.u<-0.3; # Rel. ratio of 0.7.
-
+sigma.sq.u<-0.3; # Reliability  ratio of 0.7.
 rel.rat<-(1-sigma.sq.u/var(dat$w1))*100;
 ```
 
