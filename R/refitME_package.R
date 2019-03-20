@@ -226,12 +226,10 @@ MCEMfit_glm<-function(mod,family,sigma.sq.u,W,sigma.sq.e=1,B=50,epsilon=0.00001,
     beta.update<-stats::coef(mod);
     if(family=="negbin"){theta.update<-mod$theta;}
     muPred<-stats::predict(mod,type="response");
-    #if(family=="Gamma"){shape.update<-summary(mod)[14]$dispersion;}
     if(family=="Gamma")
       {
       #shape.update<-MASS::gamma.shape(mod,it.lim=10000,eps.max=0.0000001,verbose =T)$alpha;
       shape.update<-summary(mod)[14]$dispersion;
-      muPred<-stats::predict(mod,type="response",dispersion=shape.update);
       }
 
     if(is.matrix(sigma.sq.u)==F)
