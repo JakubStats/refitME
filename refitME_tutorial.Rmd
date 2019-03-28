@@ -31,28 +31,28 @@ Also, see ```?refitME``` for futher details on the fitting function, input argum
 
 ## Example 1: A simple GLM example taken from Carroll _et al._ (2006). 
 
-The Framingham heart study data set. Here, we also fit SIMEX models and compare them with MCEM. Computationanl times for both models are also reported.
+The Framingham heart study data set. We also fit SIMEX models and compare them with MCEM. Computationanl times for both models are also reported.
 
 ### Load data and R-packages.
 
 ```{r, echo=TRUE}
-suppressMessages(library(refitME));
-suppressMessages(library(simex));
+suppressMessages(library(refitME))
+suppressMessages(library(simex))
 
-epsilon<-0.00001;  # A set convergence threshold.
-B<-100;  # The number of Monte Carlo replication values/SIMEX simulations.
+epsilon <- 0.00001  # A set convergence threshold.
+B <- 100  # The number of Monte Carlo replication values/SIMEX simulations.
 
-family<-"binomial";
+family <- "binomial"
 
-data(Framinghamdata);
+data(Framinghamdata)
 ```
 
 ### Setup all variables (the construction below follows the Carroll et al. (2006) monograph).
 
 ```{r, echo=TRUE}
-W<-as.matrix(Framinghamdata$w1); # Matrix of error-contaminated covariate.
+W <- as.matrix(Framinghamdata$w1) # Matrix of error-contaminated covariate.
 
-sigma.sq.u<-0.01259/2; # ME variance, obtained from Carroll et al. (2006) monograph.
+sigma.sq.u <- 0.01259/2 # ME variance, obtained from Carroll et al. (2006) monograph.
 ```
 
 ### Fit the naive model.
@@ -60,39 +60,39 @@ sigma.sq.u<-0.01259/2; # ME variance, obtained from Carroll et al. (2006) monogr
 The first stored variable `w1` is the error contaminated variable used in the analysis.
 
 ```{r, echo=TRUE}
-mod_naiv1<-glm(Y~w1+z1+z2+z3,x=TRUE,family=binomial,data=Framinghamdata); 
+mod_naiv1 <- glm(Y ~ w1 + z1 + z2 + z3, x = TRUE, family = binomial, data = Framinghamdata)
 ```
 
 ### Fit the SIMEX model.
 
 ```{r, echo=TRUE}
-start<-Sys.time();
-mod_simex1<-simex(mod_naiv1,SIMEXvariable=c("w1"),
-                  measurement.error=cbind(sqrt(sigma.sq.u)),B=B); # SIMEX.
-end<-Sys.time();
-t1<-difftime(end,start,units="secs");
-comp.time<-c(t1);
+start <- Sys.time()
+mod_simex1 <- simex(mod_naiv1, SIMEXvariable = c("w1"),
+                  measurement.error = cbind(sqrt(sigma.sq.u)), B = B) # SIMEX.
+end <- Sys.time()
+t1 <- difftime(end,start, units = "secs")
+comp.time <- c(t1)
 ```
 
 ### Fit the MCEM model.
 
 ```{r, echo=TRUE}
-start<-Sys.time();
-est<-refitME(mod_naiv1,sigma.sq.u,W,B);
-end<-Sys.time();
-t2<-difftime(end,start,units="secs");
-comp.time<-c(comp.time,t2);
+start <- Sys.time()
+est <- refitME(mod_naiv1, sigma.sq.u, W, B)
+end <- Sys.time()
+t2 <- difftime(end, start, units = "secs")
+comp.time <- c(comp.time, t2)
 ```
 
 ### Report and compare times and model estimates.
 
 ```{r, echo=TRUE}
-est.beta<-rbind(coef(mod_naiv1),coef(mod_simex1),est$beta);
-est.beta.se<-rbind(sqrt(diag(vcov(mod_naiv1))),
-                   sqrt(diag(mod_simex1$variance.jackknife)),est$beta.se2);
-round(est.beta,digits=3);
-round(est.beta.se,digits=3);  # Standard error estimates.
-comp.time;  # SIMEX and MCEM.
+est.beta <- rbind(coef(mod_naiv1), coef(mod_simex1), est$beta)
+est.beta.se <- rbind(sqrt(diag(vcov(mod_naiv1))),
+                   sqrt(diag(mod_simex1$variance.jackknife)), est$beta.se2)
+round(est.beta, digits = 3)
+round(est.beta.se, digits = 3)  # Standard error estimates.
+comp.time  # SIMEX and MCEM.
 ```
 
 \clearpage
@@ -104,104 +104,92 @@ The Milan mortality air pollution data set. Here, we fit GAM models via the `mgc
 ### Load data and R-packages.
 
 ```{r, echo=TRUE}
-rm(list=ls());
+suppressMessages(library(refitME))
+suppressMessages(library(SemiPar))
 
-suppressMessages(library(refitME));
-suppressMessages(library(SemiPar));
+epsilon <- 0.00001  # A set convergence threshold.
+B <- 5  # The number of Monte Carlo replication values.
 
-epsilon<-0.00001;  # A set convergence threshold.
-B<-50;  # The number of Monte Carlo replication values.
+family <- "poisson"
 
-family<-"poisson";
-
-data(milan.mort);
-
-dat.air<-milan.mort;
-```
+data(milan.mort)
+dat.air <- milan.mort
+``` 
 
 ### Setup all variables.
 
 ```{r, echo=TRUE}
-Y<-dat.air[,6];  # Mortality counts.
+Y <- dat.air[, 6]  # Mortality counts.
 
-n<-length(Y);
+n <- length(Y)
 
-z1<-(dat.air[,1]);
-z2<-(dat.air[,4]);
-z3<-(dat.air[,5]);
-w1<-log(dat.air[,9]);
-w1<-scale(w1);
-colnames(w1)<-"w1";
-W<-as.matrix(w1);
-dat<-data.frame(cbind(Y,z1,z2,z3,w1));
+z1 <- (dat.air[, 1])
+z2 <- (dat.air[, 4])
+z3 <- (dat.air[, 5])
+w1 <- log(dat.air[, 9])
+w1 <- scale(w1)
+colnames(w1) <- "w1"
+W <- as.matrix(w1)
+dat <- data.frame(cbind(Y, z1, z2, z3, w1))
 
-sigma.sq.u<-0.3; # This gives a reliability  ratio of 0.7.
-rel.rat<-(1-sigma.sq.u/var(dat$w1))*100;
+sigma.sq.u <- 0.3 # This gives a reliability ratio of 0.7.
+rel.rat <- (1 - sigma.sq.u / var(dat$w1))*100
 ```
 
 ### Fit the naive model.
 
 ```{r, echo=TRUE}
-mod_naiv1<-gam(Y~s(w1)+s(z1,k=25)+s(z2)+s(z3),family="poisson",data=dat);
+mod_naiv1 <- gam(Y ~ s(w1) + s(z1, k = 25) + s(z2) + s(z3), family = "poisson", data = dat)
 ```
 
 ### Fit the MCEM model.
 
 ```{r, echo=TRUE}
-est<-refitME(mod_naiv1,sigma.sq.u,W,B);
+est <- refitME(mod_naiv1, sigma.sq.u, W, B)
 ```
 
 ```{r fig1, fig.height=7, fig.pos='H', echo=FALSE, fig.cap="\\label{fig:fig1} Plots of smooths against covariate. TSP (top left is the error contaminated variable)."}
-xlab.names<-c("log(TSP)","Day","Temp","Humidity");
+xlab.names <- c("log(TSP)", "Day", "Temp", "Humidity")
 
-op<-par(mfrow=c(2,2),las=1);
+op <- par(mfrow = c(2, 2), las = 1)
 
-for(i in 1:4)
-  {
-  if(i==1)
-    {
-    plot(est$mod,select=i,ylim=c(-0.35,0.45),xlim=c(0,6.5),rug=FALSE,col=3,all.terms=TRUE,
-         xlab=xlab.names[i],ylab="s(Mortaity counts)",lwd=3,cex.lab=1,cex.axis=1,
-         cex.main=2,font.lab=1,cex=1);
-    title(main=bquote("Reliability ratio for log(TSP) = "~.(rel.rat)~"%"),
-          outer=F,line=1,cex=1.4);
-    for(j in 1:2)
-      {
-      axis(j,labels=FALSE);
-      }
-    }
-  if(i==2)
-    {
-    plot(est$mod,select=i,ylim=c(-0.25,0.3),rug=FALSE,col=3,all.terms=TRUE,
-         xlab=xlab.names[i],ylab="s(Mortaity counts)",lwd=3,cex.lab=1,cex.axis=1,
-         cex.main=2,font.lab=1,cex=1);
-    for(j in 1:2)
-      {
-      axis(j,labels=FALSE);
-      }
-    }
-  if(i==3)
-    {
-    plot(est$mod,select=i,ylim=c(-0.2,0.4),rug=FALSE,col=3,all.terms=TRUE,
-         xlab=xlab.names[i],ylab="s(Mortaity counts)",lwd=3,cex.lab=1,cex.axis=1,
-         cex.main=2,font.lab=1,cex=1);
-    for(j in 1:2)
-      {
-      axis(j,labels=FALSE);
-      }
-    }
-  if(i==4)
-    {
-    plot(est$mod,select=i,ylim=c(-0.06,0.08),rug=FALSE,col=3,all.terms=TRUE,
-         xlab=xlab.names[i],ylab="s(Mortaity counts)",lwd=3,cex.lab=1,cex.axis=1,
-         cex.main=2,font.lab=1,cex=1);
-    for(j in 1:2)
-      {
-      axis(j,labels=FALSE);
-      }
+for(i in 1:4){
+  if (i==1){
+    plot(est$mod, select = i, ylim = c(-0.35, 0.45), xlim = c(0, 6.5), rug = FALSE, col = 3, all.terms = TRUE,
+         xlab = xlab.names[i], ylab = "s(Mortaity counts)", lwd = 3, cex.lab = 1, cex.axis = 1,
+         cex.main = 2, font.lab = 1, cex = 1)
+    title(main = bquote("Reliability ratio for log(TSP) = "~.(rel.rat) ~ "%"),
+          outer = F, line = 1, cex = 1.4)
+    for(j in 1:2){
+      axis(j, labels = FALSE)
     }
   }
+  if (i==2){
+    plot(est$mod, select = i, ylim = c(-0.25, 0.3), rug = FALSE, col = 3, all.terms = TRUE,
+         xlab = xlab.names[i], ylab = "s(Mortaity counts)", lwd = 3, cex.lab = 1, cex.axis = 1,
+         cex.main = 2, font.lab = 1, cex = 1)
+    for(j in 1:2){
+      axis(j, labels = FALSE)
+    }
+  }
+  if (i==3){
+    plot(est$mod, select = i, ylim = c(-0.2, 0.4), rug = FALSE, col = 3, all.terms = TRUE,
+         xlab = xlab.names[i], ylab = "s(Mortaity counts)", lwd = 3, cex.lab = 1, cex.axis = 1,
+         cex.main = 2, font.lab = 1, cex = 1)
+    for(j in 1:2){
+      axis(j, labels = FALSE)
+    }
+  }
+  if (i==4){
+    plot(est$mod, select = i, ylim = c(-0.06, 0.08), rug = FALSE, col = 3, all.terms = TRUE,
+         xlab = xlab.names[i], ylab = "s(Mortaity counts)", lwd = 3, cex.lab = 1, cex.axis = 1,
+         cex.main = 2, font.lab = 1, cex = 1)
+    for(j in 1:2){
+      axis(j, labels = FALSE)
+    }
+  }
+}
 
-title(main="MCEM (Poisson GAM) fitted to the air pollution data.",outer=T,line=-2);
-par(op);
+title(main = "MCEM (Poisson GAM) fitted to the air pollution data.", outer = T, line = -2)
+par(op)
 ```
