@@ -193,7 +193,8 @@ MCEMfit_glm<-function(mod,family,sigma.sq.u,W,sigma.sq.e=1,B=50,epsilon=0.00001,
     {
     ## MC and E-step.
 
-    if(is.matrix(sigma.sq.u)==F){prX<-stats::dnorm(X1_j,mu.e1,sd=sqrt(sigma.sq.e1));}
+    if(is.matrix(sigma.sq.u)==F){prX<-mvtnorm::dmvnorm(X1_j,mu.e1,sigma=sqrt(sigma.sq.e1));}
+    #if(is.matrix(sigma.sq.u)==F){prX<-stats::dnorm(X1_j,mu.e1,sd=sqrt(sigma.sq.e1));}
     if(is.matrix(sigma.sq.u)==T){prX<-mvtnorm::dmvnorm(XA,mu.e1,sigma=sqrt(sigma.sq.e1));}
 
     if(family=="gaussian"){prY<-stats::dnorm(bigY,muPred,1);}
@@ -270,7 +271,8 @@ MCEMfit_glm<-function(mod,family,sigma.sq.u,W,sigma.sq.e=1,B=50,epsilon=0.00001,
 
     if(family=="binomial" | family=="poisson" | family=="gaussian")
       {
-      if(diff.mu_e<epsilon && diff.sig_e<epsilon && beta.norm<epsilon)
+      #if(diff.mu_e<epsilon && diff.sig_e<epsilon && beta.norm<epsilon)
+      if(beta.norm<epsilon)
         {
         cond<-FALSE;
         print("convergence :-)");
@@ -741,6 +743,8 @@ refitME<-function(mod,sigma.sq.u,W,B=50,epsilon=0.00001)
   if(ob.type=="gam")
     {
     family<-mod$family$family;
+
+    if(strsplit(family,NULL)[[1]][1]=="N") family<-"negbin"
 
     return(MCEMfit_gam(mod,family,sigma.sq.u,W,sigma.sq.e,B,epsilon))
     }
