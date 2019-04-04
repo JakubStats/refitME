@@ -742,6 +742,8 @@ refitME<-function(mod,sigma.sq.u,W,B=50,epsilon=0.00001)
     {
     family<-mod$family$family;
 
+    if(strsplit(family,NULL)[[1]][1]=="N") family<-"negbin"
+
     return(MCEMfit_gam(mod,family,sigma.sq.u,W,sigma.sq.e,B,epsilon))
     }
   }
