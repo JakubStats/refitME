@@ -23,7 +23,7 @@ MCEMfit_glm(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50,
 
 \item{B}{: the number of Monte Carlo replication values (default is 50).}
 
-\item{epsilon}{: a set convergence threshold  (default is 0.00001).}
+\item{epsilon}{: a set convergence threshold (default is 0.00001).}
 
 \item{theta.est}{: an initial value for the dispersion parameter (this is required for fitting negative binomial models).}
 
