@@ -138,7 +138,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
         p <- c(p, p1)
         col.nameX <- c(col.nameX, col.nameX1)
       }
-      }
+    }
     p2 <- sum(p)
     sigma.sq.u1 <- sigma.sq.u
     sigma.sq.e1 <- diag(sigma.sq.e)
@@ -625,7 +625,6 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
 
   return(values)
 }
-
 
 #' refitME
 #'
