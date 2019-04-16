@@ -138,7 +138,8 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
         p <- c(p, p1)
         col.nameX <- c(col.nameX, col.nameX1)
       }
-      }
+    }
+
     p2 <- sum(p)
     sigma.sq.u1 <- sigma.sq.u
     sigma.sq.e1 <- diag(sigma.sq.e)
@@ -314,92 +315,6 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
     S_1 <- S_1+(apply(estfun_mat[index_vec, ], 2, sum))%*%t(apply(estfun_mat[index_vec, ], 2, sum))
   }
 
-<<<<<<< HEAD
-    ## Update parameters.
-
-    beta.est<-beta.update;
-    if(family=="negbin"){theta.est<-theta.update;}
-    if(family=="Gamma"){shape.est<-shape.update;}
-    sigma.sq.e1<-sigma.sq.e1.update;
-    mu.e1<-mu.e1.update;
-    }
-
-  sumW<-apply(bigW,1,sum,na.rm=T);
-  weights1<-bigW/sumW;
-  weights1[is.nan(weights1)]<-0;
-
-  eff.samp.size<-1/apply(weights1^2,1,sum);
-  eff.samp.size[is.infinite(eff.samp.size)]<-"NA";
-  eff.samp.size<-as.numeric(eff.samp.size);
-
-  ## Standard error calculations start here.
-
-  beta.est.se1<-sqrt(diag(stats::vcov(mod))); # Naive SE estimator.
-
-  if(family=="gaussian"){beta.est.se1<-sqrt(diag(stats::vcov(mod)*B));}
-
-  estfun_mat<-sandwich::estfun(mod);
-  if(family=="gaussian"){estfun_mat<-sandwich::estfun(mod)*B;}
-
-  K1<-length(beta.update);
-
-  S_1<-matrix(0,nrow=K1,ncol=K1);
-  SS_1<-matrix(0,nrow=K1,ncol=K1);
-
-  ind_mat<-matrix(1:(n*B),ncol=n,byrow=T);
-
-  for(ii in 1:n)
-    {
-    index_vec<-ind_mat[,ii];
-
-    S_1<-S_1+(apply(estfun_mat[index_vec,],2,sum))%*%t(apply(estfun_mat[index_vec,],2,sum));
-    }
-
-  if(family=="gaussian")
-    {
-    sand1<-(sandwich::estfun(mod)*B/mod$weights);
-    sand1[is.nan(sand1)]<-1;
-    SS_1<-t(sandwich::estfun(mod)*B)%*%sand1;
-    u.bar<-solve(stats::vcov(mod)*B);
-    beta.est.se2<-sqrt(diag(solve(u.bar-SS_1/B^2+S_1/B^2)));
-    }
-  if(family!="gaussian")
-    {
-    sand1<-(sandwich::estfun(mod)/mod$prior);
-    sand1[is.nan(sand1)]<-1;
-    SS_1<-t(sandwich::estfun(mod))%*%sand1;
-    u.bar<-solve(stats::vcov(mod));
-    beta.est.se2<-sqrt(diag(solve(u.bar-SS_1+S_1)));
-    }
-
-  if(length(which(is.nan(beta.est.se2)))>0){beta.est.se2<-c(rep(NA,K1));}
-
-  values<-list(beta=beta.est,beta.se1=beta.est.se1,beta.se2=beta.est.se2,mod=mod,eff.samp.size=eff.samp.size);
-
-  return(values)
-=======
- if(family == "negbin")
-  {
-  if(diff.mu_e<epsilon && diff.sig_e<epsilon && beta.norm<epsilon && theta.norm<epsilon)
-  {
-  cond <- FALSE
-  print("convergence :-)")
-  print(reps)
-  break
-  }
-  }
-
- if(family == "Gamma")
-  {
-  if(diff.mu_e<epsilon && diff.sig_e<epsilon && beta.norm<epsilon && shape.norm<epsilon)
-  {
-  cond <- FALSE
-  print("convergence :-)")
-  print(reps)
-  break
->>>>>>> 916e64397463d6f056bc4dfd38276aac9845e17f
-  }
-=======
   if(family == "gaussian"){
     sand1 <- (sandwich::estfun(mod)*B/mod$weights)
     sand1[is.nan(sand1)] <- 1
@@ -414,7 +329,6 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
     SS_1 <- t(sandwich::estfun(mod))%*%sand1
     u.bar <- solve(stats::vcov(mod))
     beta.est.se2 <- sqrt(diag(solve(u.bar-SS_1+S_1)))
->>>>>>> a733ba2c2036516dfae2695bc55ca97dc52a55e2
   }
 
   if(length(which(is.nan(beta.est.se2)))>0) beta.est.se2 <- c(rep(NA, K1))
