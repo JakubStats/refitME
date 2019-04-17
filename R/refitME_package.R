@@ -86,7 +86,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
     sigma.sq.e1 <- sigma.sq.e
 
     U1_j <- stats::rnorm(n*B, 0, sd = sqrt(rep(sigma.sq.u1, B)))
-    X1_j <- rep(w1, B)-U1_j
+    X1_j <- rep(w1, B) - U1_j
 
     X <- cbind(rep(1, B*n), X1_j)
     if(p1 == 2) X <- cbind(rep(1, B*n), X1_j, (X1_j)^2)
