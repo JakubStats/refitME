@@ -86,7 +86,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
     sigma.sq.e1 <- sigma.sq.e
 
     U1_j <- stats::rnorm(n*B, 0, sd = sqrt(rep(sigma.sq.u1, B)))
-    X1_j <- rep(w1, B)-U1_j
+    X1_j <- rep(w1, B) - U1_j
 
     X <- cbind(rep(1, B*n), X1_j)
     if(p1 == 2) X <- cbind(rep(1, B*n), X1_j, (X1_j)^2)
@@ -139,7 +139,10 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
         col.nameX <- c(col.nameX, col.nameX1)
       }
     }
+<<<<<<< HEAD
 
+=======
+>>>>>>> 6c09cc29dd43c623db6164fd9a607b33fa7c9644
     p2 <- sum(p)
     sigma.sq.u1 <- sigma.sq.u
     sigma.sq.e1 <- diag(sigma.sq.e)
@@ -626,7 +629,6 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
 
   return(values)
 }
-
 
 #' refitME
 #'
