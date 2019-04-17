@@ -139,10 +139,6 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
         col.nameX <- c(col.nameX, col.nameX1)
       }
     }
-<<<<<<< HEAD
-
-=======
->>>>>>> 6c09cc29dd43c623db6164fd9a607b33fa7c9644
     p2 <- sum(p)
     sigma.sq.u1 <- sigma.sq.u
     sigma.sq.e1 <- diag(sigma.sq.e)
