@@ -45,7 +45,7 @@ library(sandwich)
 #' @param shape.est : an initial value for the shape parameter (this is required for fitting gamma models).
 #' @return \code{MCEMfit_glm} returns model coef estimates with standard errors and the effective sample size.
 #' @author Jakub Stoklosa and David I. Warton.
-#' @references Stoklosa, J. and Warton, D.I. (2019). A general algorithm for error-in-variables modelling using Monte Carlo expectation maximization.
+#' @references Stoklosa, J., Hwang, W-H., and Warton, D.I. (2019). A general algorithm for error-in-variables modelling using Monte Carlo expectation maximization.
 #' @import mvtnorm MASS SDMTools mgcv sandwich
 #' @export
 #' @seealso \code{\link{MCEMfit_gam}}
@@ -78,7 +78,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
     if (d == 1) p1 <- 1
 
     if (d>1){
-      if (sum((w1)^2!=(W1[, 2])) == n) p1 <- 1
+      if (sum((w1)^2 != (W1[, 2])) == n) p1 <- 1
       if (sum((w1)^2 == (W1[, 2])) == n) p1 <- 2
     }
 
@@ -169,7 +169,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
     }
 
     if (d == p2) X <- X
-    if (d>p2) X <- cbind(X, do.call(rbind, replicate(B, as.matrix(W1[, -c(1:p2)]), simplify = FALSE)))
+    if (d > p2) X <- cbind(X, do.call(rbind, replicate(B, as.matrix(W1[, -c(1:p2)]), simplify = FALSE)))
 
     X <- as.matrix(X)
 
@@ -351,7 +351,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
 #' @param shape.est : an initial value for the shape parameter (this is required for fitting gamma models).
 #' @return \code{MCEMfit_glm} returns model coef estimates with standard errors.
 #' @author Jakub Stoklosa and David I. Warton.
-#' @references Stoklosa, J. and Warton, D.I. (2019). A general algorithm for error-in-variables modelling using Monte Carlo expectation maximization.
+#' @references Stoklosa, J., Hwang, W-H., and Warton, D.I. (2019). A general algorithm for error-in-variables modelling using Monte Carlo expectation maximization.
 #' @export
 #' @seealso \code{\link{MCEMfit_glm}}
 #' @source See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
@@ -403,7 +403,7 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
       non.err.names <- mod.terms[-smooth.err]
       W2 <- as.matrix(W1[, -smooth.err])
 
-      for(jj in 1:(d-1)){
+      for(jj in 1:(d - 1)){
         dat_new <- cbind(dat_new, rep(W2[, jj], B))
         colnames(dat_new)[dim(dat_new)[2]] <- non.err.names[jj]
       }
@@ -417,7 +417,7 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
       X <- W
     }
 
-    if (d>q1){
+    if (d > q1){
       col.nameX <- c()
       for(kk in 1:q1){
         col.nameX1 <- paste0('x', kk)
@@ -453,7 +453,7 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
 
       W2 <- as.matrix(W1[, -smooth.err])
 
-      for(jj in 1:(d-q1)){
+      for(jj in 1:(d - q1)){
         dat_new <- cbind(dat_new, rep(W2[, jj], B))
         colnames(dat_new)[dim(dat_new)[2]] <- non.err.names[jj]
       }
@@ -556,7 +556,7 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
     }
 
     if (family == "Gamma"){
-      if ((diff.mu_e < epsilon & diff.sig_e < epsilon & beta.norm < epsilon & shape.norm < epsilon) | reps>50){
+      if ((diff.mu_e < epsilon & diff.sig_e < epsilon & beta.norm < epsilon & shape.norm < epsilon) | reps > 50){
         cond <- FALSE
         print("convergence :-)")
         print(reps)
@@ -636,7 +636,7 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
 #' @param epsilon : convergence threshold (default is 0.00001).
 #' @return \code{refitME} returns model coef estimates with standard errors and the effective sample size.
 #' @author Jakub Stoklosa and David I. Warton.
-#' @references Stoklosa, J. and Warton, D.I. (2019). A general algorithm for error-in-variables modelling using Monte Carlo expectation maximization.
+#' @references Stoklosa, J., Hwang, W-H., and Warton, D.I. (2019). A general algorithm for error-in-variables modelling using Monte Carlo expectation maximization.
 #' @export
 #' @seealso \code{\link{MCEMfit_glm}} and \code{\link{MCEMfit_gam}}
 #' @source See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.

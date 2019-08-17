@@ -36,7 +36,7 @@ MCEMfit_glm(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50,
 Function for wrapping the MCEM algorithm on GLMs where covariates are subject to measurement error/error-in-varaibles.
 }
 \references{
-Stoklosa, J. and Warton, D.I. (2019). A general algorithm for error-in-variables modelling using Monte Carlo expectation maximization.
+Stoklosa, J., Hwang, W-H., and Warton, D.I. (2019). A general algorithm for error-in-variables modelling using Monte Carlo expectation maximization.
 }
 \seealso{
 \code{\link{MCEMfit_gam}}
