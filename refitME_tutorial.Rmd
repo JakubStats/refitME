@@ -1,6 +1,6 @@
 ---
 title: '`refitME`: Tutorial for fitting MCEM models when covariates are subject to measurement error/error-in-variables'
-author: "Jakub Stoklosa & David Warton"
+#author: "Jakub Stoklosa & David Warton"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 header-includes: # Allows you to add in your own Latex packages.
 - \usepackage{float} # Use the 'float' package.
@@ -23,9 +23,7 @@ knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(fig.pos = 'H')
 ```
 
-This tutorial documents fitting an MCEM algorithm via the `refitME` R-package. For more specific details see:
-
-Stoklosa, J. and Warton, D.I. (2019). A general algorithm for error-in-variables modelling using Monte Carlo expectation maximization.
+This tutorial documents fitting an MCEM algorithm via the `refitME` R-package. For more specific details see: "A general algorithm for error-in-variables modelling using Monte Carlo expectation maximization."
 
 Also, see ```?refitME``` for futher details on the fitting function, input arguments and output.
 
