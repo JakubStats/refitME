@@ -129,7 +129,7 @@ W <- as.matrix(w1)
 dat <- data.frame(cbind(Y, z1, z2, z3, w1))
 
 sigma.sq.u <- 0.0915 # This gives a reliability ratio of 0.7.
-rel.rat <- round((1 - sigma.sq.u / var(dat$w1))*100, digits = 0)
+rel.rat <- round((1 - sigma.sq.u/var(dat$w1))*100, digits = 0)
 ```
 
 ### Fit the naive model.
