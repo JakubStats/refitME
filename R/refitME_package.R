@@ -399,7 +399,7 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
 
     form.name <- stats::as.formula(stats::update(stats::formula(mod), bigY ~ s(x1) +. - s(w1)))
 
-    if (d>1){
+    if (d > 1){
       smooth.err <- which(W1[1, ]%in%w1[1])
       non.err.names <- mod.terms[-smooth.err]
       W2 <- as.matrix(W1[, -smooth.err])
@@ -502,6 +502,7 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
     if (family == "negbin") mod <- mgcv::gam(form.name, family = nb(), weights = weights1, data = dat_new)
 
     beta.update <- stats::coef(mod)
+
     if (family == "negbin") theta.update <- mod$family$getTheta(TRUE)
     if (family == "Gamma") shape.update <- MASS::gamma.shape(mod)[1]$alpha
     muPred <- stats::predict(mod, type = "response")
@@ -528,6 +529,7 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
     # Convergence monitoring.
 
     beta.norm <- sum((beta.est - beta.update)^2)
+
     if (family == "negbin") theta.norm <- sum((theta.est - theta.update)^2)
     if (family == "Gamma") shape.norm <- sum((shape.est - shape.update)^2)
 
@@ -548,7 +550,7 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
     }
 
     if (family == "negbin"){
-      if ((diff.mu_e<epsilon & diff.sig_e < epsilon & beta.norm < epsilon & theta.norm < epsilon) | reps > 50){
+      if ((diff.mu_e < epsilon & diff.sig_e < epsilon & beta.norm < epsilon & theta.norm < epsilon) | reps > 50){
         cond <- FALSE
         print("convergence :-)")
         print(reps)
@@ -619,7 +621,7 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
     beta.est.se2 <- sqrt(diag(solve(u.bar - SS_1 + S_1)))
   }
 
-  if (length(which(is.nan(beta.est.se2)))>0) beta.est.se2 <- c(rep(NA, K1))
+  if (length(which(is.nan(beta.est.se2))) > 0) beta.est.se2 <- c(rep(NA, K1))
 
   values <- list(beta = beta.est, beta.se1 = beta.est.se1, beta.se2 = beta.est.se2, mod = mod, eff.samp.size = eff.samp.size)
 
