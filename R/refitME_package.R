@@ -39,7 +39,7 @@ library(sandwich)
 #' @param sigma.sq.u : measurement error variance. A scaler if there is only one error-contaminated variable, otherwise this must stored as a covaraince matrix.
 #' @param W a matrix of error-contaminated covariates.
 #' @param sigma.sq.e : variance of the true covariate (X).
-#' @param B : the number of Monte Carlo replication values (default is 50).
+#' @param B : the number of Monte Carlo replication values (default is set to 50).
 #' @param epsilon : a set convergence threshold (default is 0.00001).
 #' @param theta.est : an initial value for the dispersion parameter (this is required for fitting negative binomial models).
 #' @param shape.est : an initial value for the shape parameter (this is required for fitting gamma models).
