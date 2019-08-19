@@ -16,9 +16,9 @@ refitME(mod, sigma.sq.u, W, B = 50, epsilon = 1e-05)
 
 \item{W}{a matrix of error-contaminated covariates.}
 
-\item{B}{: the number of Monte Carlo replication values (default is 50).}
+\item{B}{: the number of Monte Carlo replication values (default is set 50).}
 
-\item{epsilon}{: convergence threshold (default is 0.00001).}
+\item{epsilon}{: convergence threshold (default is set to 0.00001).}
 }
 \value{
 \code{refitME} returns model coef estimates with standard errors and the effective sample size.
@@ -27,7 +27,7 @@ refitME(mod, sigma.sq.u, W, B = 50, epsilon = 1e-05)
 Function that extracts the fitted (naive) model object and wraps the MCEM algorithm to correct for measurement error/error-in-varaibles (currently available for lm, glm and gam, excludes quassi models).
 }
 \references{
-Stoklosa, J., Hwang, W-H., and Warton, D.I. (2019). A general algorithm for error-in-variables modelling using Monte Carlo expectation maximization.
+Stoklosa, J. and Warton, D.I. (2019). A general algorithm for error-in-variables modelling using Monte Carlo expectation maximization.
 }
 \seealso{
 \code{\link{MCEMfit_glm}} and \code{\link{MCEMfit_gam}}

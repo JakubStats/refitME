@@ -21,9 +21,9 @@ MCEMfit_gam(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50,
 
 \item{sigma.sq.e}{: variance of the true covariate (X).}
 
-\item{B}{: the number of Monte Carlo replication values (default is 50).}
+\item{B}{: the number of Monte Carlo replication values (default is set to 50).}
 
-\item{epsilon}{: convergence threshold (default is 0.00001).}
+\item{epsilon}{: convergence threshold (default is set to 0.00001).}
 
 \item{theta.est}{: an initial value for the dispersion parameter (this is required for fitting negative binomial models).}
 
@@ -38,7 +38,7 @@ MCEMfit_gam(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50,
 Function for wrapping the MCEM algorithm on GAMs where covariates are subject to measurement error/error-in-varaibles.
 }
 \references{
-Stoklosa, J., Hwang, W-H., and Warton, D.I. (2019). A general algorithm for error-in-variables modelling using Monte Carlo expectation maximization.
+Stoklosa, J. and Warton, D.I. (2019). A general algorithm for error-in-variables modelling using Monte Carlo expectation maximization.
 }
 \seealso{
 \code{\link{MCEMfit_glm}}

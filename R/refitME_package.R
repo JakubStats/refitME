@@ -249,7 +249,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
     reps <- reps + 1 # Keeps track of number of iterations.
 
     if (family == "binomial" | family == "poisson" | family == "gaussian"){
-      if (diff.mu_e<epsilon & diff.sig_e < epsilon & beta.norm < epsilon){
+      if (diff.mu_e < epsilon & diff.sig_e < epsilon & beta.norm < epsilon){
         cond <- FALSE
         print("convergence :-)")
         print(reps)
@@ -447,14 +447,14 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
 
     colnames(dat_new)[-1] <- col.nameX
 
-    if (d>q1){
+    if (d > q1){
       smooth.err <- which(W1[1, ]%in%W[1, ])
 
       non.err.names <- mod.terms[-smooth.err]
 
       W2 <- as.matrix(W1[, -smooth.err])
 
-      for(jj in 1:(d-q1)){
+      for(jj in 1:(d - q1)){
         dat_new <- cbind(dat_new, rep(W2[, jj], B))
         colnames(dat_new)[dim(dat_new)[2]] <- non.err.names[jj]
       }
@@ -464,7 +464,7 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
     if (q1 == 3) form.name <- stats::as.formula(stats::update(stats::formula(mod), bigY ~ s(x1) + s(x2) + s(x3) +. - s(w1) - s(w2) - s(w3)))
     if (q1 == 4) form.name <- stats::as.formula(stats::update(stats::formula(mod), bigY ~ s(x1) + s(x2) + s(x3) + s(x4) +. - s(w1) - s(w2) - s(w3) - s(w4)))
     if (q1 == 5) form.name <- stats::as.formula(stats::update(stats::formula(mod), bigY ~ s(x1) + s(x2) + s(x3) + s(x4) + s(x5) +. - s(w1) - s(w2) - s(w3) - s(w4) - s(w5)))
-    if (q1>5) print("Sorry, refitME cannot handle more than 5 error-contaminated varaibles with GAM!")
+    if (q1 > 5) print("Sorry, refitME cannot handle more than 5 error-contaminated varaibles with GAM! But we're working on this...")
   }
 
   dat_new <- as.data.frame(dat_new)
