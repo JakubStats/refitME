@@ -3,4 +3,4 @@ Monte Carlo Expectation Maximization - A measurement error modelling wrapper fun
 
 An R-package for methods developed in:
 
-Stoklosa, J. and Warton, D.I. (2019). A general algorithm for error-in-variables modelling using Monte Carlo expectation maximization.
+Stoklosa, J., Hwang, W-H., and Warton, D.I. (2019). A general algorithm for error-in-variables modelling using Monte Carlo expectation maximization.
