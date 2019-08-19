@@ -45,7 +45,7 @@ library(sandwich)
 #' @param shape.est : an initial value for the shape parameter (this is required for fitting gamma models).
 #' @return \code{MCEMfit_glm} returns model coef estimates with standard errors and the effective sample size.
 #' @author Jakub Stoklosa and David I. Warton.
-#' @references Stoklosa, J., Hwang, W-H., and Warton, D.I. (2019). A general algorithm for error-in-variables modelling using Monte Carlo expectation maximization.
+#' @references Stoklosa, J. and Warton, D.I. (2019). A general algorithm for error-in-variables modelling using Monte Carlo expectation maximization.
 #' @import mvtnorm MASS SDMTools mgcv sandwich
 #' @export
 #' @seealso \code{\link{MCEMfit_gam}}
@@ -77,8 +77,13 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
 
     if (d == 1) p1 <- 1
 
+<<<<<<< HEAD
+    if (d>1){
+      if (sum((w1)^2!=(W1[, 2])) == n) p1 <- 1
+=======
     if (d > 1){
       if (sum((w1)^2 != (W1[, 2])) == n) p1 <- 1
+>>>>>>> cff503b24251aaa9cddc4023cae93170a59e6451
       if (sum((w1)^2 == (W1[, 2])) == n) p1 <- 2
     }
 
@@ -92,8 +97,8 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
     if (p1 == 2) X <- cbind(rep(1, B*n), X1_j, (X1_j)^2)
 
     if (!is.null(ncol(W1))){
-      if (d > 2 & p1 == 2) X <- cbind(X, do.call(rbind, replicate(B, W1[, -c(1:p1)], simplify = FALSE)))
-      if (d > 2 & p1 == 1) X <- cbind(X, do.call(rbind, replicate(B, W1[, -c(1:p1)], simplify = FALSE)))
+      if (d>2 & p1 == 2) X <- cbind(X, do.call(rbind, replicate(B, W1[, -c(1:p1)], simplify = FALSE)))
+      if (d>2 & p1 == 1) X <- cbind(X, do.call(rbind, replicate(B, W1[, -c(1:p1)], simplify = FALSE)))
       if (d == 2 & p1 == 2) X <- X
     }
 
@@ -169,7 +174,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
     }
 
     if (d == p2) X <- X
-    if (d > p2) X <- cbind(X, do.call(rbind, replicate(B, as.matrix(W1[, -c(1:p2)]), simplify = FALSE)))
+    if (d>p2) X <- cbind(X, do.call(rbind, replicate(B, as.matrix(W1[, -c(1:p2)]), simplify = FALSE)))
 
     X <- as.matrix(X)
 
@@ -248,7 +253,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
     reps <- reps + 1 # Keeps track of number of iterations.
 
     if (family == "binomial" | family == "poisson" | family == "gaussian"){
-      if (diff.mu_e < epsilon & diff.sig_e < epsilon & beta.norm < epsilon){
+      if (diff.mu_e<epsilon & diff.sig_e<epsilon & beta.norm<epsilon){
         cond <- FALSE
         print("convergence :-)")
         print(reps)
@@ -257,7 +262,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
     }
 
     if (family == "negbin"){
-      if (diff.mu_e < epsilon & diff.sig_e < epsilon & beta.norm < epsilon & theta.norm < epsilon){
+      if (diff.mu_e<epsilon & diff.sig_e<epsilon & beta.norm<epsilon & theta.norm<epsilon){
         cond <- FALSE
         print("convergence :-)")
         print(reps)
@@ -266,7 +271,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
     }
 
     if (family == "Gamma"){
-      if (diff.mu_e < epsilon & diff.sig_e < epsilon & beta.norm < epsilon & shape.norm < epsilon){
+      if (diff.mu_e<epsilon & diff.sig_e<epsilon & beta.norm<epsilon & shape.norm<epsilon){
         cond <- FALSE
         print("convergence :-)")
         print(reps)
@@ -309,7 +314,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
 
   for(ii in 1:n){
     index_vec <- ind_mat[, ii]
-    S_1 <- S_1 + (apply(estfun_mat[index_vec, ], 2, sum))%*%t(apply(estfun_mat[index_vec, ], 2, sum))
+    S_1 <- S_1+(apply(estfun_mat[index_vec, ], 2, sum))%*%t(apply(estfun_mat[index_vec, ], 2, sum))
   }
 
   if (family == "gaussian"){
@@ -351,7 +356,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
 #' @param shape.est : an initial value for the shape parameter (this is required for fitting gamma models).
 #' @return \code{MCEMfit_glm} returns model coef estimates with standard errors.
 #' @author Jakub Stoklosa and David I. Warton.
-#' @references Stoklosa, J., Hwang, W-H., and Warton, D.I. (2019). A general algorithm for error-in-variables modelling using Monte Carlo expectation maximization.
+#' @references Stoklosa, J. and Warton, D.I. (2019). A general algorithm for error-in-variables modelling using Monte Carlo expectation maximization.
 #' @export
 #' @seealso \code{\link{MCEMfit_glm}}
 #' @source See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
@@ -403,7 +408,7 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
       non.err.names <- mod.terms[-smooth.err]
       W2 <- as.matrix(W1[, -smooth.err])
 
-      for(jj in 1:(d - 1)){
+      for(jj in 1:(d-1)){
         dat_new <- cbind(dat_new, rep(W2[, jj], B))
         colnames(dat_new)[dim(dat_new)[2]] <- non.err.names[jj]
       }
@@ -417,7 +422,7 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
       X <- W
     }
 
-    if (d > q1){
+    if (d>q1){
       col.nameX <- c()
       for(kk in 1:q1){
         col.nameX1 <- paste0('x', kk)
@@ -453,7 +458,7 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
 
       W2 <- as.matrix(W1[, -smooth.err])
 
-      for(jj in 1:(d - q1)){
+      for(jj in 1:(d-q1)){
         dat_new <- cbind(dat_new, rep(W2[, jj], B))
         colnames(dat_new)[dim(dat_new)[2]] <- non.err.names[jj]
       }
@@ -538,7 +543,7 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
     reps <- reps+1 # Keeps track of number of iterations.
 
     if (family == "binomial" | family == "poisson" | family == "gaussian"){
-      if ((diff.mu_e < epsilon & diff.sig_e < epsilon & beta.norm < epsilon) | reps > 50){
+      if ((diff.mu_e<epsilon & diff.sig_e<epsilon & beta.norm<epsilon) | reps>50){
         cond <- FALSE
         print("convergence :-)")
         print(reps)
@@ -547,7 +552,7 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
     }
 
     if (family == "negbin"){
-      if ((diff.mu_e < epsilon & diff.sig_e < epsilon & beta.norm < epsilon & theta.norm < epsilon) | reps > 50){
+      if ((diff.mu_e<epsilon & diff.sig_e<epsilon & beta.norm<epsilon & theta.norm<epsilon) | reps>50){
         cond <- FALSE
         print("convergence :-)")
         print(reps)
@@ -556,7 +561,7 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
     }
 
     if (family == "Gamma"){
-      if ((diff.mu_e < epsilon & diff.sig_e < epsilon & beta.norm < epsilon & shape.norm < epsilon) | reps > 50){
+      if ((diff.mu_e<epsilon & diff.sig_e<epsilon & beta.norm<epsilon & shape.norm<epsilon) | reps>50){
         cond <- FALSE
         print("convergence :-)")
         print(reps)
@@ -618,7 +623,7 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
     beta.est.se2 <- sqrt(diag(solve(u.bar - SS_1 + S_1)))
   }
 
-  if (length(which(is.nan(beta.est.se2))) > 0) beta.est.se2 <- c(rep(NA, K1))
+  if (length(which(is.nan(beta.est.se2)))>0) beta.est.se2 <- c(rep(NA, K1))
 
   values <- list(beta = beta.est, beta.se1 = beta.est.se1, beta.se2 = beta.est.se2, mod = mod, eff.samp.size = eff.samp.size)
 
@@ -636,7 +641,7 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
 #' @param epsilon : convergence threshold (default is 0.00001).
 #' @return \code{refitME} returns model coef estimates with standard errors and the effective sample size.
 #' @author Jakub Stoklosa and David I. Warton.
-#' @references Stoklosa, J., Hwang, W-H., and Warton, D.I. (2019). A general algorithm for error-in-variables modelling using Monte Carlo expectation maximization.
+#' @references Stoklosa, J. and Warton, D.I. (2019). A general algorithm for error-in-variables modelling using Monte Carlo expectation maximization.
 #' @export
 #' @seealso \code{\link{MCEMfit_glm}} and \code{\link{MCEMfit_gam}}
 #' @source See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
