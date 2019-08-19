@@ -92,8 +92,8 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
     if (p1 == 2) X <- cbind(rep(1, B*n), X1_j, (X1_j)^2)
 
     if (!is.null(ncol(W1))){
-      if (d>2 & p1 == 2) X <- cbind(X, do.call(rbind, replicate(B, W1[, -c(1:p1)], simplify = FALSE)))
-      if (d>2 & p1 == 1) X <- cbind(X, do.call(rbind, replicate(B, W1[, -c(1:p1)], simplify = FALSE)))
+      if (d > 2 & p1 == 2) X <- cbind(X, do.call(rbind, replicate(B, W1[, -c(1:p1)], simplify = FALSE)))
+      if (d > 2 & p1 == 1) X <- cbind(X, do.call(rbind, replicate(B, W1[, -c(1:p1)], simplify = FALSE)))
       if (d == 2 & p1 == 2) X <- X
     }
 
@@ -116,7 +116,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
       col.nameX <- paste0('x', 1:q1)
       XA <- W
     }
-    if (d>q1){
+    if (d > q1){
       p <- c()
       col.nameX <- c()
       XA <- c()
@@ -169,7 +169,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
     }
 
     if (d == p2) X <- X
-    if (d>p2) X <- cbind(X, do.call(rbind, replicate(B, as.matrix(W1[, -c(1:p2)]), simplify = FALSE)))
+    if (d > p2) X <- cbind(X, do.call(rbind, replicate(B, as.matrix(W1[, -c(1:p2)]), simplify = FALSE)))
 
     X <- as.matrix(X)
 
@@ -236,7 +236,8 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
 
     # Convergence monitoring.
 
-    beta.norm <- sum((beta.est-beta.update)^2)
+    beta.norm <- sum((beta.est - beta.update)^2)
+
     if (family == "negbin") theta.norm <- sum((theta.est - theta.update)^2)
     if (family == "Gamma") shape.norm <- sum((shape.est - shape.update)^2)
 
@@ -248,7 +249,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
     reps <- reps + 1 # Keeps track of number of iterations.
 
     if (family == "binomial" | family == "poisson" | family == "gaussian"){
-      if (diff.mu_e<epsilon & diff.sig_e<epsilon & beta.norm<epsilon){
+      if (diff.mu_e<epsilon & diff.sig_e < epsilon & beta.norm < epsilon){
         cond <- FALSE
         print("convergence :-)")
         print(reps)
@@ -257,7 +258,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
     }
 
     if (family == "negbin"){
-      if (diff.mu_e<epsilon & diff.sig_e<epsilon & beta.norm<epsilon & theta.norm<epsilon){
+      if (diff.mu_e < epsilon & diff.sig_e < epsilon & beta.norm < epsilon & theta.norm < epsilon){
         cond <- FALSE
         print("convergence :-)")
         print(reps)
@@ -266,7 +267,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
     }
 
     if (family == "Gamma"){
-      if (diff.mu_e<epsilon & diff.sig_e<epsilon & beta.norm<epsilon & shape.norm<epsilon){
+      if (diff.mu_e < epsilon & diff.sig_e < epsilon & beta.norm < epsilon & shape.norm < epsilon){
         cond <- FALSE
         print("convergence :-)")
         print(reps)
@@ -309,7 +310,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
 
   for(ii in 1:n){
     index_vec <- ind_mat[, ii]
-    S_1 <- S_1+(apply(estfun_mat[index_vec, ], 2, sum))%*%t(apply(estfun_mat[index_vec, ], 2, sum))
+    S_1 <- S_1 + (apply(estfun_mat[index_vec, ], 2, sum))%*%t(apply(estfun_mat[index_vec, ], 2, sum))
   }
 
   if (family == "gaussian"){
@@ -328,7 +329,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
     beta.est.se2 <- sqrt(diag(solve(u.bar - SS_1 + S_1)))
   }
 
-  if (length(which(is.nan(beta.est.se2)))>0) beta.est.se2 <- c(rep(NA, K1))
+  if (length(which(is.nan(beta.est.se2))) > 0) beta.est.se2 <- c(rep(NA, K1))
 
   values <- list(beta = beta.est, beta.se1 = beta.est.se1, beta.se2 = beta.est.se2, mod = mod, eff.samp.size = eff.samp.size)
 
@@ -344,8 +345,8 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
 #' @param sigma.sq.u : measurement error variance. A scaler if there is only one error-contaminated variable, otherwise this must stored as a covaraince matrix.
 #' @param W a matrix of error-contaminated covariates.
 #' @param sigma.sq.e : variance of the true covariate (X).
-#' @param B : the number of Monte Carlo replication values (default is 50).
-#' @param epsilon : convergence threshold (default is 0.00001).
+#' @param B : the number of Monte Carlo replication values (default is set to 50).
+#' @param epsilon : convergence threshold (default is set to 0.00001).
 #' @return \code{refitME} returns model coef estimates with standard errors and the effective sample size.
 #' @param theta.est : an initial value for the dispersion parameter (this is required for fitting negative binomial models).
 #' @param shape.est : an initial value for the shape parameter (this is required for fitting gamma models).
@@ -403,7 +404,7 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
       non.err.names <- mod.terms[-smooth.err]
       W2 <- as.matrix(W1[, -smooth.err])
 
-      for(jj in 1:(d-1)){
+      for(jj in 1:(d - 1)){
         dat_new <- cbind(dat_new, rep(W2[, jj], B))
         colnames(dat_new)[dim(dat_new)[2]] <- non.err.names[jj]
       }
@@ -417,7 +418,7 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
       X <- W
     }
 
-    if (d>q1){
+    if (d > q1){
       col.nameX <- c()
       for(kk in 1:q1){
         col.nameX1 <- paste0('x', kk)
@@ -527,18 +528,18 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
     # Convergence monitoring.
 
     beta.norm <- sum((beta.est - beta.update)^2)
-    if (family == "negbin") theta.norm <- sum((theta.est-theta.update)^2)
-    if (family == "Gamma") shape.norm <- sum((shape.est-shape.update)^2)
+    if (family == "negbin") theta.norm <- sum((theta.est - theta.update)^2)
+    if (family == "Gamma") shape.norm <- sum((shape.est - shape.update)^2)
 
     if (is.matrix(sigma.sq.u) == F) diff.sig_e <- abs(sigma.sq.e1.update - sigma.sq.e1)
     if (is.matrix(sigma.sq.u) == T) diff.sig_e <- sum(abs(diag(sigma.sq.e1.update) - diag(sigma.sq.e1)))
 
     diff.mu_e <- sum((mu.e1.update - mu.e1)^2)
 
-    reps <- reps+1 # Keeps track of number of iterations.
+    reps <- reps + 1 # Keeps track of number of iterations.
 
     if (family == "binomial" | family == "poisson" | family == "gaussian"){
-      if ((diff.mu_e<epsilon & diff.sig_e<epsilon & beta.norm<epsilon) | reps>50){
+      if ((diff.mu_e < epsilon & diff.sig_e < epsilon & beta.norm < epsilon) | reps > 50){
         cond <- FALSE
         print("convergence :-)")
         print(reps)
@@ -547,7 +548,7 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
     }
 
     if (family == "negbin"){
-      if ((diff.mu_e<epsilon & diff.sig_e<epsilon & beta.norm<epsilon & theta.norm<epsilon) | reps>50){
+      if ((diff.mu_e<epsilon & diff.sig_e < epsilon & beta.norm < epsilon & theta.norm < epsilon) | reps > 50){
         cond <- FALSE
         print("convergence :-)")
         print(reps)
@@ -556,7 +557,7 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
     }
 
     if (family == "Gamma"){
-      if ((diff.mu_e<epsilon & diff.sig_e<epsilon & beta.norm<epsilon & shape.norm<epsilon) | reps>50){
+      if ((diff.mu_e < epsilon & diff.sig_e < epsilon & beta.norm < epsilon & shape.norm < epsilon) | reps > 50){
         cond <- FALSE
         print("convergence :-)")
         print(reps)
@@ -632,8 +633,8 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
 #' @param mod : a glm/gam object (this is the naive fitted model). Make sure the first input predictor variables are the selected error-contaminated varaible (i.e., the W's).
 #' @param sigma.sq.u : measurement error variance. A scaler if there is only one error-contaminated variable, otherwise must be a covaraince matrix
 #' @param W a matrix of error-contaminated covariates.
-#' @param B : the number of Monte Carlo replication values (default is 50).
-#' @param epsilon : convergence threshold (default is 0.00001).
+#' @param B : the number of Monte Carlo replication values (default is set 50).
+#' @param epsilon : convergence threshold (default is set to 0.00001).
 #' @return \code{refitME} returns model coef estimates with standard errors and the effective sample size.
 #' @author Jakub Stoklosa and David I. Warton.
 #' @references Stoklosa, J. and Warton, D.I. (2019). A general algorithm for error-in-variables modelling using Monte Carlo expectation maximization.
