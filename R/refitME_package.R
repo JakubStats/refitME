@@ -77,7 +77,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
 
     if (d == 1) p1 <- 1
 
-    if (d>1){
+    if (d > 1){
       if (sum((w1)^2 != (W1[, 2])) == n) p1 <- 1
       if (sum((w1)^2 == (W1[, 2])) == n) p1 <- 2
     }
