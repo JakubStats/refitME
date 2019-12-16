@@ -50,7 +50,7 @@ library(sandwich)
 #' @export
 #' @seealso \code{\link{MCEMfit_gam}}
 #' @source See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
-MCEMfit_glm <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsilon = 0.00001, theta.est = 1, shape.est = 1){
+MCEMfit_glm <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsilon = 0.00001, theta.est = 1, shape.est = 1) {
 
   options(warn = -1)
 
@@ -72,12 +72,12 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
 
   beta.est <- stats::coef(mod)
 
-  if (is.matrix(sigma.sq.u) == F){
+  if (is.matrix(sigma.sq.u) == F) {
     w1 <- mod$model[, 2]
 
     if (d == 1) p1 <- 1
 
-    if (d > 1){
+    if (d > 1) {
       if (sum((w1)^2 != (W1[, 2])) == n) p1 <- 1
       if (sum((w1)^2 == (W1[, 2])) == n) p1 <- 2
     }
@@ -91,7 +91,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
     X <- cbind(rep(1, B*n), X1_j)
     if (p1 == 2) X <- cbind(rep(1, B*n), X1_j, (X1_j)^2)
 
-    if (!is.null(ncol(W1))){
+    if (!is.null(ncol(W1))) {
       if (d > 2 & p1 == 2) X <- cbind(X, do.call(rbind, replicate(B, W1[, -c(1:p1)], simplify = FALSE)))
       if (d > 2 & p1 == 1) X <- cbind(X, do.call(rbind, replicate(B, W1[, -c(1:p1)], simplify = FALSE)))
       if (d == 2 & p1 == 2) X <- X
@@ -108,29 +108,29 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
     mu.e1 <- mean(X1_j)
   }
 
-  if (is.matrix(sigma.sq.u) == T){
+  if (is.matrix(sigma.sq.u) == T) {
     q1 <- dim(W)[2]
 
-    if (q1 == d){
+    if (q1 == d) {
       p <- rep(1, q1)
       col.nameX <- paste0('x', 1:q1)
       XA <- W
     }
-    if (d > q1){
+    if (d > q1) {
       p <- c()
       col.nameX <- c()
       XA <- c()
 
       kk1 <- 1
 
-      for(kk in 1:q1){
-        if (sum((W[, kk])^2 != (W1[, kk1 + 1])) == n){
+      for(kk in 1:q1) {
+        if (sum((W[, kk])^2 != (W1[, kk1 + 1])) == n) {
           p1 <- 1
           kk1 <- kk
           col.nameX1 <- paste0('x', kk)
         }
 
-        if (sum((W[, kk])^2 == (W1[, kk1 + 1])) == n){
+        if (sum((W[, kk])^2 == (W1[, kk1 + 1])) == n) {
           p1 <- 2
           kk1 <- kk + 1
           col.nameX1 <- c(paste0('x', kk), paste0(paste0('I(x', 1), '^2)'))
@@ -155,7 +155,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
 
     mu.e1 <- mean(X1_j)
 
-    for(kk in 2:q1){
+    for(kk in 2:q1) {
       w1 <- W[, kk]
       U1_j <- stats::rnorm(n*B, 0, sd = sqrt(rep(sigma.sq.u1[kk, kk], B)))
       X1_j <- rep(w1, B) - U1_j
@@ -178,7 +178,8 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
     colnames(X)[2:(p2 + 1)] <- col.nameX
   }
 
-  while(cond){
+  while(cond) {
+
     # MC and E-step.
 
     if (is.matrix(sigma.sq.u) == F) prX <- stats::dnorm(X1_j, mu.e1, sd = sqrt(sigma.sq.e1))
@@ -198,7 +199,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
     weights1 <- as.vector(bigW)/sumW
     weights1[is.nan(weights1)] <- 0
 
-    if (family == "gaussian"){
+    if (family == "gaussian") {
       mod <- stats::lm(bigY ~ X - 1, weights = weights1)
       sigma.sq.est <- (summary(mod)$sigma)^2
     }
@@ -210,20 +211,20 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
     beta.update <- stats::coef(mod)
     if (family == "negbin") theta.update <- mod$theta
     muPred <- stats::predict(mod, type = "response")
-    if (family == "Gamma"){
+    if (family == "Gamma") {
       shape.update <- summary(mod)[14]$dispersion
     }
 
-    if (is.matrix(sigma.sq.u) == F){
+    if (is.matrix(sigma.sq.u) == F) {
       sigma.sq.e1.update <- SDMTools::wt.var(X[, 2], w = weights1)
       mu.e1.update <- stats::weighted.mean(X[, 2], w = weights1)
     }
 
-    if (is.matrix(sigma.sq.u) == T){
+    if (is.matrix(sigma.sq.u) == T) {
       sigma.sq.e1.update <- c()
       mu.e1.update <- c()
 
-      for(kk in 1:q1){
+      for(kk in 1:q1) {
         sigma.sq.e1.update1 <- SDMTools::wt.var(XA[, kk], w = weights1)
         sigma.sq.e1.update <- c(sigma.sq.e1.update, sigma.sq.e1.update1)
 
@@ -248,8 +249,8 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
 
     reps <- reps + 1 # Keeps track of number of iterations.
 
-    if (family == "binomial" | family == "poisson" | family == "gaussian"){
-      if (diff.mu_e < epsilon & diff.sig_e < epsilon & beta.norm < epsilon){
+    if (family == "binomial" | family == "poisson" | family == "gaussian") {
+      if (diff.mu_e < epsilon & diff.sig_e < epsilon & beta.norm < epsilon) {
         cond <- FALSE
         print("convergence :-)")
         print(reps)
@@ -257,8 +258,8 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
       }
     }
 
-    if (family == "negbin"){
-      if (diff.mu_e < epsilon & diff.sig_e < epsilon & beta.norm < epsilon & theta.norm < epsilon){
+    if (family == "negbin") {
+      if (diff.mu_e < epsilon & diff.sig_e < epsilon & beta.norm < epsilon & theta.norm < epsilon) {
         cond <- FALSE
         print("convergence :-)")
         print(reps)
@@ -266,8 +267,8 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
       }
     }
 
-    if (family == "Gamma"){
-      if (diff.mu_e < epsilon & diff.sig_e < epsilon & beta.norm < epsilon & shape.norm < epsilon){
+    if (family == "Gamma") {
+      if (diff.mu_e < epsilon & diff.sig_e < epsilon & beta.norm < epsilon & shape.norm < epsilon) {
         cond <- FALSE
         print("convergence :-)")
         print(reps)
@@ -308,12 +309,12 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
 
   ind_mat <- matrix(1:(n*B), ncol = n, byrow = T)
 
-  for(ii in 1:n){
+  for(ii in 1:n) {
     index_vec <- ind_mat[, ii]
     S_1 <- S_1 + (apply(estfun_mat[index_vec, ], 2, sum))%*%t(apply(estfun_mat[index_vec, ], 2, sum))
   }
 
-  if (family == "gaussian"){
+  if (family == "gaussian") {
     sand1 <- (sandwich::estfun(mod)*B/mod$weights)
     sand1[is.nan(sand1)] <- 1
     SS_1 <- t(sandwich::estfun(mod)*B)%*%sand1
@@ -321,7 +322,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
     beta.est.se2 <- sqrt(diag(solve(u.bar - SS_1/B^2 + S_1/B^2)))
   }
 
-  if (family!="gaussian"){
+  if (family!="gaussian") {
     sand1 <- (sandwich::estfun(mod)/mod$prior)
     sand1[is.nan(sand1)] <- 1
     SS_1 <- t(sandwich::estfun(mod))%*%sand1
@@ -356,7 +357,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
 #' @export
 #' @seealso \code{\link{MCEMfit_glm}}
 #' @source See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
-MCEMfit_gam <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsilon = 0.00001, theta.est = 1, shape.est = 10){
+MCEMfit_gam <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsilon = 0.00001, theta.est = 1, shape.est = 10) {
 
   options(warn = -1)
 
@@ -380,7 +381,7 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
 
   form.name <- stats::formula(mod)
 
-  if (is.matrix(sigma.sq.u) == F){
+  if (is.matrix(sigma.sq.u) == F) {
     w1 <- W[, 1]
     sigma.sq.u1 <- sigma.sq.u
     sigma.sq.e1 <- sigma.sq.e
@@ -399,28 +400,28 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
 
     form.name <- stats::as.formula(stats::update(stats::formula(mod), bigY ~ s(x1) +. - s(w1)))
 
-    if (d > 1){
+    if (d > 1) {
       smooth.err <- which(W1[1, ]%in%w1[1])
       non.err.names <- mod.terms[-smooth.err]
       W2 <- as.matrix(W1[, -smooth.err])
 
-      for(jj in 1:(d - 1)){
+      for(jj in 1:(d - 1)) {
         dat_new <- cbind(dat_new, rep(W2[, jj], B))
         colnames(dat_new)[dim(dat_new)[2]] <- non.err.names[jj]
       }
     }
   }
 
-  if (is.matrix(sigma.sq.u) == T){
+  if (is.matrix(sigma.sq.u) == T) {
     q1 <- dim(W)[2]
-    if (q1 == d){
+    if (q1 == d) {
       col.nameX <- paste0('x', 1:q1)
       X <- W
     }
 
-    if (d > q1){
+    if (d > q1) {
       col.nameX <- c()
-      for(kk in 1:q1){
+      for(kk in 1:q1) {
         col.nameX1 <- paste0('x', kk)
         col.nameX <- c(col.nameX, col.nameX1)
       }
@@ -434,7 +435,7 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
     X <- cbind(X1_j)
     mu.e1 <- mean(X1_j)
 
-    for(kk in 2:q1){
+    for(kk in 2:q1) {
       w1 <- W[, kk]
       U1_j <- stats::rnorm(n*B, 0, sd = sqrt(rep(sigma.sq.u1[kk, kk], B)))
       X1_j <- rep(w1, B) - U1_j
@@ -447,14 +448,14 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
 
     colnames(dat_new)[-1] <- col.nameX
 
-    if (d > q1){
+    if (d > q1) {
       smooth.err <- which(W1[1, ]%in%W[1, ])
 
       non.err.names <- mod.terms[-smooth.err]
 
       W2 <- as.matrix(W1[, -smooth.err])
 
-      for(jj in 1:(d - q1)){
+      for(jj in 1:(d - q1)) {
         dat_new <- cbind(dat_new, rep(W2[, jj], B))
         colnames(dat_new)[dim(dat_new)[2]] <- non.err.names[jj]
       }
@@ -469,7 +470,7 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
 
   dat_new <- as.data.frame(dat_new)
 
-  while(cond){
+  while(cond) {
 
     # MC and E-step.
 
@@ -492,7 +493,7 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
 
     dat_new$weights1 <- weights1
 
-    if (family == "gaussian"){
+    if (family == "gaussian") {
       mod <- mgcv::gam(formula = form.name, weights = weights1, data = dat_new)
       sigma.sq.est <- (summary(mod)$dispersion)
     }
@@ -507,16 +508,16 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
     if (family == "Gamma") shape.update <- MASS::gamma.shape(mod)[1]$alpha
     muPred <- stats::predict(mod, type = "response")
 
-    if (is.matrix(sigma.sq.u) == F){
+    if (is.matrix(sigma.sq.u) == F) {
       sigma.sq.e1.update <- SDMTools::wt.var(X[, 1], w = weights1)
       mu.e1.update <- stats::weighted.mean(X[, 1], w = weights1)
     }
 
-    if (is.matrix(sigma.sq.u) == T){
+    if (is.matrix(sigma.sq.u) == T) {
       sigma.sq.e1.update <- c()
       mu.e1.update <- c()
 
-      for(kk in 1:q1){
+      for(kk in 1:q1) {
         sigma.sq.e1.update1 <- SDMTools::wt.var(X[, kk], w = weights1)
         sigma.sq.e1.update <- c(sigma.sq.e1.update, sigma.sq.e1.update1)
 
@@ -540,8 +541,8 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
 
     reps <- reps + 1 # Keeps track of number of iterations.
 
-    if (family == "binomial" | family == "poisson" | family == "gaussian"){
-      if ((diff.mu_e < epsilon & diff.sig_e < epsilon & beta.norm < epsilon) | reps > 50){
+    if (family == "binomial" | family == "poisson" | family == "gaussian") {
+      if ((diff.mu_e < epsilon & diff.sig_e < epsilon & beta.norm < epsilon) | reps > 50) {
         cond <- FALSE
         print("convergence :-)")
         print(reps)
@@ -549,8 +550,8 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
       }
     }
 
-    if (family == "negbin"){
-      if ((diff.mu_e < epsilon & diff.sig_e < epsilon & beta.norm < epsilon & theta.norm < epsilon) | reps > 50){
+    if (family == "negbin") {
+      if ((diff.mu_e < epsilon & diff.sig_e < epsilon & beta.norm < epsilon & theta.norm < epsilon) | reps > 50) {
         cond <- FALSE
         print("convergence :-)")
         print(reps)
@@ -558,8 +559,8 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
       }
     }
 
-    if (family == "Gamma"){
-      if ((diff.mu_e < epsilon & diff.sig_e < epsilon & beta.norm < epsilon & shape.norm < epsilon) | reps > 50){
+    if (family == "Gamma") {
+      if ((diff.mu_e < epsilon & diff.sig_e < epsilon & beta.norm < epsilon & shape.norm < epsilon) | reps > 50) {
         cond <- FALSE
         print("convergence :-)")
         print(reps)
@@ -603,17 +604,17 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
   S_1 <- matrix(0, nrow = K1, ncol = K1)
   SS_1 <- matrix(0, nrow = K1, ncol = K1)
 
-  for(ii in 1:n){
+  for(ii in 1:n) {
     index_vec <- ind_mat[, ii]
     S_1 <- S_1 + (apply(estfun_mat[index_vec, ], 2, sum))%*%t(apply(estfun_mat[index_vec, ], 2, sum))
   }
 
-  if (family == "gaussian"){
+  if (family == "gaussian") {
     u.bar <- solve(stats::vcov(mod)*B)
     beta.est.se2 <- sqrt(diag(solve(u.bar - SS_1/B^2 + S_1/B^2)))
   }
 
-  if (family == "binomial" | family == "poisson" | family == "Gamma" | family == "negbin"){
+  if (family == "binomial" | family == "poisson" | family == "Gamma" | family == "negbin") {
     sand1 <- (sandwich::estfun(mod)/mod$prior)
     sand1[is.nan(sand1)] <- 1
     SS_1 <- t(sandwich::estfun(mod))%*%sand1
@@ -643,19 +644,19 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
 #' @export
 #' @seealso \code{\link{MCEMfit_glm}} and \code{\link{MCEMfit_gam}}
 #' @source See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
-refitME <- function(mod, sigma.sq.u, W, B = 50, epsilon = 0.00001){
+refitME <- function(mod, sigma.sq.u, W, B = 50, epsilon = 0.00001) {
 
-  if (is.matrix(sigma.sq.u) == F){
+  if (is.matrix(sigma.sq.u) == F) {
     print("One specified error-contaminated covariate.")
     sigma.sq.e <- stats::var(mod$model[, 2]) - sigma.sq.u
   }
 
-  if (is.matrix(sigma.sq.u) == T){
+  if (is.matrix(sigma.sq.u) == T) {
     print("Multiple specified error-contaminated covariates.")
     q1 <- dim(W)[2]
     sigma.sq.e <- c()
 
-    for(kk in 1:q1){
+    for(kk in 1:q1) {
       sigma.sq.e1 <- stats::var(W[, kk]) - sigma.sq.u[kk, kk]
       sigma.sq.e <- c(sigma.sq.e, sigma.sq.e1)
     }
@@ -663,7 +664,7 @@ refitME <- function(mod, sigma.sq.u, W, B = 50, epsilon = 0.00001){
 
   ob.type <- attr(mod, "class")[1]
 
-  if (ob.type == "lm" | ob.type == "glm" | ob.type == "negbin"){
+  if (ob.type == "lm" | ob.type == "glm" | ob.type == "negbin") {
     if (ob.type == "lm") family <- "gaussian"
     if (ob.type == "glm") family <- mod$family$family
     if (ob.type == "negbin") family <- "negbin"
@@ -671,7 +672,7 @@ refitME <- function(mod, sigma.sq.u, W, B = 50, epsilon = 0.00001){
     return(MCEMfit_glm(mod, family, sigma.sq.u, W, sigma.sq.e, B, epsilon))
   }
 
-  if (ob.type == "gam"){
+  if (ob.type == "gam") {
     family <- mod$family$family
     if (strsplit(family, NULL)[[1]][1] == "N") family <- "negbin"
 
