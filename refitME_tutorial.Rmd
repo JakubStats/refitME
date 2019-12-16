@@ -1,6 +1,6 @@
 ---
 title: '`refitME`: Tutorial for fitting MCEM models when covariates are subject to measurement error/error-in-variables'
-#author: "Jakub Stoklosa & David Warton"
+author: "Jakub Stoklosa, Hwang W-H., & David Warton"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 header-includes: # Allows you to add in your own Latex packages.
 - \usepackage{float} # Use the 'float' package.

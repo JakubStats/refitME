@@ -27,7 +27,7 @@ refitME(mod, sigma.sq.u, W, B = 50, epsilon = 1e-05)
 Function that extracts the fitted (naive) model object and wraps the MCEM algorithm to correct for measurement error/error-in-varaibles (currently available for lm, glm and gam, excludes quassi models).
 }
 \references{
-Stoklosa, J. and Warton, D.I. (2019). A general algorithm for error-in-variables modelling using Monte Carlo expectation maximization.
+Stoklosa, J., Hwang, W-H., and Warton, D.I. (2019). A general algorithm for error-in-variables modelling using Monte Carlo expectation maximization.
 }
 \seealso{
 \code{\link{MCEMfit_glm}} and \code{\link{MCEMfit_gam}}
