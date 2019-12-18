@@ -11,7 +11,7 @@ library(MASS)
 library(SDMTools)
 library(mgcv)
 library(Matrix)
-library(sandwich)
+suppressMessages(library(sandwich))
 
 #' @title The Framingham heart study data set.
 #' @description Data set consisting of records of male patients with coronary heart disease collected from the Framingham heart study. The \code{Framinghamdata} data consists of binary responses and four predictor variables collected on `n=1615` patients.
@@ -47,6 +47,7 @@ library(sandwich)
 #' @author Jakub Stoklosa and David I. Warton.
 #' @references Stoklosa, J., Hwang, W-H., and Warton, D.I. (2019). A general algorithm for error-in-variables modelling using Monte Carlo expectation maximization.
 #' @import mvtnorm MASS SDMTools mgcv sandwich
+#' @importFrom stats Gamma
 #' @export
 #' @seealso \code{\link{MCEMfit_gam}}
 #' @source See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
@@ -354,6 +355,8 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
 #' @return \code{MCEMfit_glm} returns model coef estimates with standard errors.
 #' @author Jakub Stoklosa and David I. Warton.
 #' @references Stoklosa, J., Hwang, W-H., and Warton, D.I. (2019). A general algorithm for error-in-variables modelling using Monte Carlo expectation maximization.
+#' @import mvtnorm MASS SDMTools mgcv sandwich
+#' @importFrom stats Gamma
 #' @export
 #' @seealso \code{\link{MCEMfit_glm}}
 #' @source See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
@@ -641,6 +644,8 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
 #' @return \code{refitME} returns model coef estimates with standard errors and the effective sample size.
 #' @author Jakub Stoklosa and David I. Warton.
 #' @references Stoklosa, J., Hwang, W-H., and Warton, D.I. (2019). A general algorithm for error-in-variables modelling using Monte Carlo expectation maximization.
+#' @import mvtnorm MASS SDMTools mgcv sandwich
+#' @importFrom stats Gamma
 #' @export
 #' @seealso \code{\link{MCEMfit_glm}} and \code{\link{MCEMfit_gam}}
 #' @source See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
