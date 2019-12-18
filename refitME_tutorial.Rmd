@@ -23,13 +23,11 @@ knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(fig.pos = 'H')
 ```
 
-This tutorial documents fitting an MCEM algorithm via the `refitME` R-package. For more specific details see: "A general algorithm for error-in-variables modelling using Monte Carlo expectation maximization."
-
-Also, see ```?refitME``` for futher details on the fitting function, input arguments and output.
+This tutorial documents fitting an MCEM algorithm via the `refitME` R-package. For more specific details see: "A general algorithm for error-in-variables modelling using Monte Carlo expectation maximization." Also, see ```?refitME``` for further details on the fitting function, input arguments and output.
 
 ## Example 1: A simple GLM example taken from Carroll _et al._ (2006). 
 
-The Framingham heart study data set. We also fit SIMEX models and compare them with MCEM. Computationanl times for both models are also reported.
+The Framingham heart study data set. We also fit SIMEX models and compare them with MCEM. Computational times for both models are also reported.
 
 ### Load data and R-packages.
 
@@ -39,9 +37,7 @@ suppressMessages(library(simex))
 
 epsilon <- 0.00001  # A set convergence threshold.
 B <- 100  # The number of Monte Carlo replication values/SIMEX simulations.
-
 family <- "binomial"
-
 data(Framinghamdata)
 ```
 
@@ -49,7 +45,6 @@ data(Framinghamdata)
 
 ```{r, echo=TRUE}
 W <- as.matrix(Framinghamdata$w1) # Matrix of error-contaminated covariate.
-
 sigma.sq.u <- 0.01259/2 # ME variance, obtained from Carroll et al. (2006) monograph.
 ```
 
@@ -92,7 +87,6 @@ round(est.beta, digits = 3)
 round(est.beta.se, digits = 3)  # Standard error estimates.
 comp.time  # SIMEX and MCEM.
 ```
-
 \clearpage
 
 ## Example 2: A GAM example taken from Ganguli _et al._ (2005).
@@ -118,7 +112,6 @@ dat.air <- milan.mort
 
 ```{r, echo=TRUE}
 Y <- dat.air[, 6]  # Mortality counts.
-
 n <- length(Y)
 
 z1 <- (dat.air[, 1])
@@ -138,7 +131,7 @@ rel.rat <- round((1 - sigma.sq.u/var(dat$w1))*100, digits = 0)
 mod_naiv1 <- gam(Y ~ s(w1) + s(z1, k = 25) + s(z2) + s(z3), family = "poisson", data = dat)
 ```
 
-```{r, echo=FALSE, fig.show = 'hide'}
+```{r, echo=FALSE, fig.show='hide'}
 plot_mod_naiv_P <- plot(mod_naiv1, select = 1)
 ```
 
@@ -159,7 +152,7 @@ for(i in 1:4) {
          rug = FALSE, col = "blue", all.terms = TRUE,
          xlab = xlab.names[i], ylab = "s(Mortaity counts)", lwd = 2, cex.lab = 1.3, cex.axis = 1.3,
          cex.main = 2, font.lab = 1.1, cex = 1.4, shade = T)
-    lines(plot_mod_naiv_P[[1]]$x, plot_mod_naiv_P[[1]]$fit, type= "l", col = "red", lwd = 2, lty = 2)
+    lines(plot_mod_naiv_P[[1]]$x, plot_mod_naiv_P[[1]]$fit, type = "l", col = "red", lwd = 2, lty = 2)
     title(main = bquote("Reliability ratio of predictor is"~.(rel.rat) ~ "%"),
           outer = F, line = 1, cex = 1.4)
     legend("bottomright", c("Naive GAM", "MCEM GAM"), col = c("red", "blue"), 
@@ -172,7 +165,7 @@ for(i in 1:4) {
     plot(est$mod, select = i, ylim = c(-0.25, 0.3), rug = FALSE, col = "blue", all.terms = TRUE,
          xlab = xlab.names[i], ylab = "s(Mortaity counts)", lwd = 2, cex.lab = 1.3, cex.axis = 1.3,
          cex.main = 2, font.lab = 1.1, cex = 1.4, shade = T)
-    lines(plot_mod_naiv_P[[2]]$x, plot_mod_naiv_P[[2]]$fit, type= "l", col = "red", lwd = 2, lty = 2)
+    lines(plot_mod_naiv_P[[2]]$x, plot_mod_naiv_P[[2]]$fit, type = "l", col = "red", lwd = 2, lty = 2)
     for(j in 1:2) {
       axis(j, labels = FALSE)
     }
@@ -181,7 +174,7 @@ for(i in 1:4) {
     plot(est$mod, select = i, ylim = c(-0.2, 0.4), rug = FALSE, col = "blue", all.terms = TRUE,
          xlab = xlab.names[i], ylab = "s(Mortaity counts)", lwd = 2, cex.lab = 1.3, cex.axis = 1.3,
          cex.main = 2, font.lab = 1.1, cex = 1.4, shade = T)
-    lines(plot_mod_naiv_P[[3]]$x, plot_mod_naiv_P[[3]]$fit, type= "l", col = "red", lwd = 2, lty = 2)
+    lines(plot_mod_naiv_P[[3]]$x, plot_mod_naiv_P[[3]]$fit, type = "l", col = "red", lwd = 2, lty = 2)
     for(j in 1:2) {
       axis(j, labels = FALSE)
     }
@@ -190,7 +183,7 @@ for(i in 1:4) {
     plot(est$mod, select = i, ylim = c(-0.06, 0.08), rug = FALSE, col = "blue", all.terms = TRUE,
          xlab = xlab.names[i], ylab = "s(Mortaity counts)", lwd = 2, cex.lab = 1.1, cex.axis = 1.1,
          cex.main = 2, font.lab = 1.1, cex = 1.4, shade = T)
-    lines(plot_mod_naiv_P[[4]]$x, plot_mod_naiv_P[[4]]$fit, type= "l", col = "red", lwd = 2, lty = 2)
+    lines(plot_mod_naiv_P[[4]]$x, plot_mod_naiv_P[[4]]$fit, type = "l", col = "red", lwd = 2, lty = 2)
     for(j in 1:2) {
       axis(j, labels = FALSE)
     }

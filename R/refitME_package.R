@@ -8,10 +8,9 @@
 
 library(mvtnorm)
 library(MASS)
-library(SDMTools)
 library(mgcv)
 library(Matrix)
-library(sandwich)
+suppressMessages(library(sandwich))
 
 #' @title The Framingham heart study data set.
 #' @description Data set consisting of records of male patients with coronary heart disease collected from the Framingham heart study. The \code{Framinghamdata} data consists of binary responses and four predictor variables collected on `n=1615` patients.
@@ -32,12 +31,12 @@ library(sandwich)
 
 #' MCEMfit_glm
 #'
-#' Function for wrapping the MCEM algorithm on GLMs where covariates are subject to measurement error/error-in-varaibles.
+#' Function for wrapping the MCEM algorithm on GLMs where covariates are subject to measurement error/error-in-variables.
 #' @name MCEMfit_glm
-#' @param mod : a glm object (this is the naive fitted model). Make sure the first input predictor variables are the selected error-contaminated varaible (i.e., the W's).
+#' @param mod : a glm object (this is the naive fitted model). Make sure the first input predictor variables are the selected error-contaminated variable (i.e., the W's).
 #' @param family : a specified family/distribution.
-#' @param sigma.sq.u : measurement error variance. A scaler if there is only one error-contaminated variable, otherwise this must stored as a covaraince matrix.
-#' @param W a matrix of error-contaminated covariates.
+#' @param sigma.sq.u : measurement error variance. A scalar if there is only one error-contaminated variable, otherwise this must stored as a covariance matrix.
+#' @param W : a matrix of error-contaminated covariates.
 #' @param sigma.sq.e : variance of the true covariate (X).
 #' @param B : the number of Monte Carlo replication values (default is set to 50).
 #' @param epsilon : a set convergence threshold (default is set to 0.00001).
@@ -45,8 +44,9 @@ library(sandwich)
 #' @param shape.est : an initial value for the shape parameter (this is required for fitting gamma models).
 #' @return \code{MCEMfit_glm} returns model coef estimates with standard errors and the effective sample size.
 #' @author Jakub Stoklosa and David I. Warton.
-#' @references Stoklosa, J., Hwang, W-H., and Warton, D.I. (2019). A general algorithm for error-in-variables modelling using Monte Carlo expectation maximization.
-#' @import mvtnorm MASS SDMTools mgcv sandwich
+#' @references Stoklosa, J., Hwang, W-H., and Warton, D.I. A general algorithm for error-in-variables modelling using Monte Carlo expectation maximization.
+#' @import mvtnorm MASS mgcv sandwich
+#' @importFrom stats Gamma
 #' @export
 #' @seealso \code{\link{MCEMfit_gam}}
 #' @source See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
@@ -216,7 +216,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
     }
 
     if (is.matrix(sigma.sq.u) == F) {
-      sigma.sq.e1.update <- SDMTools::wt.var(X[, 2], w = weights1)
+      sigma.sq.e1.update <- wt.var(X[, 2], w = weights1)
       mu.e1.update <- stats::weighted.mean(X[, 2], w = weights1)
     }
 
@@ -225,7 +225,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
       mu.e1.update <- c()
 
       for(kk in 1:q1) {
-        sigma.sq.e1.update1 <- SDMTools::wt.var(XA[, kk], w = weights1)
+        sigma.sq.e1.update1 <- wt.var(XA[, kk], w = weights1)
         sigma.sq.e1.update <- c(sigma.sq.e1.update, sigma.sq.e1.update1)
 
         mu.e1.update1 <- stats::weighted.mean(XA[, kk], w = weights1)
@@ -339,12 +339,12 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
 
 #' MCEMfit_gam
 #'
-#' Function for wrapping the MCEM algorithm on GAMs where covariates are subject to measurement error/error-in-varaibles.
+#' Function for wrapping the MCEM algorithm on GAMs where covariates are subject to measurement error/error-in-variables.
 #' @name MCEMfit_gam
-#' @param mod : a gam object (this is the naive fitted model). Make sure the first input predictor variables are the selected error-contaminated varaible (i.e., the W's).
+#' @param mod : a gam object (this is the naive fitted model). Make sure the first input predictor variables are the selected error-contaminated variable (i.e., the W's).
 #' @param family : a specified family/distribution.
-#' @param sigma.sq.u : measurement error variance. A scaler if there is only one error-contaminated variable, otherwise this must stored as a covaraince matrix.
-#' @param W a matrix of error-contaminated covariates.
+#' @param sigma.sq.u : measurement error variance. A scalar if there is only one error-contaminated variable, otherwise this must stored as a covariance matrix.
+#' @param W : a matrix of error-contaminated covariates.
 #' @param sigma.sq.e : variance of the true covariate (X).
 #' @param B : the number of Monte Carlo replication values (default is set to 50).
 #' @param epsilon : convergence threshold (default is set to 0.00001).
@@ -353,7 +353,9 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
 #' @param shape.est : an initial value for the shape parameter (this is required for fitting gamma models).
 #' @return \code{MCEMfit_glm} returns model coef estimates with standard errors.
 #' @author Jakub Stoklosa and David I. Warton.
-#' @references Stoklosa, J., Hwang, W-H., and Warton, D.I. (2019). A general algorithm for error-in-variables modelling using Monte Carlo expectation maximization.
+#' @references Stoklosa, J., Hwang, W-H., and Warton, D.I. A general algorithm for error-in-variables modelling using Monte Carlo expectation maximization.
+#' @import mvtnorm MASS mgcv sandwich
+#' @importFrom stats Gamma
 #' @export
 #' @seealso \code{\link{MCEMfit_glm}}
 #' @source See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
@@ -509,7 +511,7 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
     muPred <- stats::predict(mod, type = "response")
 
     if (is.matrix(sigma.sq.u) == F) {
-      sigma.sq.e1.update <- SDMTools::wt.var(X[, 1], w = weights1)
+      sigma.sq.e1.update <- wt.var(X[, 1], w = weights1)
       mu.e1.update <- stats::weighted.mean(X[, 1], w = weights1)
     }
 
@@ -518,7 +520,7 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
       mu.e1.update <- c()
 
       for(kk in 1:q1) {
-        sigma.sq.e1.update1 <- SDMTools::wt.var(X[, kk], w = weights1)
+        sigma.sq.e1.update1 <- wt.var(X[, kk], w = weights1)
         sigma.sq.e1.update <- c(sigma.sq.e1.update, sigma.sq.e1.update1)
 
         mu.e1.update1 <- stats::weighted.mean(X[, kk], w = weights1)
@@ -631,16 +633,18 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50, epsi
 
 #' refitME
 #'
-#' Function that extracts the fitted (naive) model object and wraps the MCEM algorithm to correct for measurement error/error-in-varaibles (currently available for lm, glm and gam, excludes quassi models).
+#' Function that extracts the fitted (naive) model object and wraps the MCEM algorithm to correct for measurement error/error-in-variables (currently available for lm, glm and gam, excludes quassi models).
 #' @name refitME
-#' @param mod : a glm/gam object (this is the naive fitted model). Make sure the first input predictor variables are the selected error-contaminated varaible (i.e., the W's).
-#' @param sigma.sq.u : measurement error variance. A scaler if there is only one error-contaminated variable, otherwise must be a covaraince matrix
-#' @param W a matrix of error-contaminated covariates.
+#' @param mod : a glm/gam object (this is the naive fitted model). Make sure the first input predictor variables are the selected error-contaminated variable (i.e., the W's).
+#' @param sigma.sq.u : measurement error variance. A scalar if there is only one error-contaminated variable, otherwise must be a covariance matrix
+#' @param W : a matrix of error-contaminated covariates.
 #' @param B : the number of Monte Carlo replication values (default is set 50).
 #' @param epsilon : convergence threshold (default is set to 0.00001).
 #' @return \code{refitME} returns model coef estimates with standard errors and the effective sample size.
 #' @author Jakub Stoklosa and David I. Warton.
-#' @references Stoklosa, J., Hwang, W-H., and Warton, D.I. (2019). A general algorithm for error-in-variables modelling using Monte Carlo expectation maximization.
+#' @references Stoklosa, J., Hwang, W-H., and Warton, D.I. A general algorithm for error-in-variables modelling using Monte Carlo expectation maximization.
+#' @import mvtnorm MASS mgcv sandwich
+#' @importFrom stats Gamma
 #' @export
 #' @seealso \code{\link{MCEMfit_glm}} and \code{\link{MCEMfit_gam}}
 #' @source See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
@@ -678,4 +682,31 @@ refitME <- function(mod, sigma.sq.u, W, B = 50, epsilon = 0.00001) {
 
     return(MCEMfit_gam(mod, family, sigma.sq.u, W, sigma.sq.e, B, epsilon))
   }
+}
+
+#' wt.var
+#'
+#' Function that calculates a weighted variance.
+#' @name wt.var
+#' @param x : a vector of numerical data.
+#' @param w : a vector of equal length to \code{x} representing the weights.
+#' @return \code{wt.var} returns a single value from analysis requested.
+#' @author Jeremy VanDerWal \email{jjvanderwal@@gmail.com}
+#' @examples
+#' # Define simple data
+#' x = 1:25 # Set of numbers.
+#' wt = runif(25) # Some arbitrary weights.
+#'
+#' # Display variances (unweighted and then weighted).
+#' var(x)
+#' wt.var(x, wt)
+#' @export
+#' @source See \url{https://rdrr.io/cran/SDMTools/src/R/wt.mean.R}
+wt.var <- function(x, w) {
+  s <- which(is.finite(x + w))
+  wt <- w[s]
+  x <- x[s] # Remove NA info.
+  xbar <- stats::weighted.mean(x, w = wt) # Get the weighted mean.
+
+  return(sum(wt*(x - xbar)^2)*(sum(wt)/(sum(wt)^2 - sum(wt^2)))) # Return the variance.
 }

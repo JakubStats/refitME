@@ -7,17 +7,26 @@
 See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
 }
 \usage{
-MCEMfit_glm(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50,
-  epsilon = 1e-05, theta.est = 1, shape.est = 1)
+MCEMfit_glm(
+  mod,
+  family,
+  sigma.sq.u,
+  W,
+  sigma.sq.e = 1,
+  B = 50,
+  epsilon = 1e-05,
+  theta.est = 1,
+  shape.est = 1
+)
 }
 \arguments{
-\item{mod}{: a glm object (this is the naive fitted model). Make sure the first input predictor variables are the selected error-contaminated varaible (i.e., the W's).}
+\item{mod}{: a glm object (this is the naive fitted model). Make sure the first input predictor variables are the selected error-contaminated variable (i.e., the W's).}
 
 \item{family}{: a specified family/distribution.}
 
-\item{sigma.sq.u}{: measurement error variance. A scaler if there is only one error-contaminated variable, otherwise this must stored as a covaraince matrix.}
+\item{sigma.sq.u}{: measurement error variance. A scalar if there is only one error-contaminated variable, otherwise this must stored as a covariance matrix.}
 
-\item{W}{a matrix of error-contaminated covariates.}
+\item{W}{: a matrix of error-contaminated covariates.}
 
 \item{sigma.sq.e}{: variance of the true covariate (X).}
 
@@ -33,10 +42,10 @@ MCEMfit_glm(mod, family, sigma.sq.u, W, sigma.sq.e = 1, B = 50,
 \code{MCEMfit_glm} returns model coef estimates with standard errors and the effective sample size.
 }
 \description{
-Function for wrapping the MCEM algorithm on GLMs where covariates are subject to measurement error/error-in-varaibles.
+Function for wrapping the MCEM algorithm on GLMs where covariates are subject to measurement error/error-in-variables.
 }
 \references{
-Stoklosa, J., Hwang, W-H., and Warton, D.I. (2019). A general algorithm for error-in-variables modelling using Monte Carlo expectation maximization.
+Stoklosa, J., Hwang, W-H., and Warton, D.I. A general algorithm for error-in-variables modelling using Monte Carlo expectation maximization.
 }
 \seealso{
 \code{\link{MCEMfit_gam}}
