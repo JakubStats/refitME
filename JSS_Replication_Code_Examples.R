@@ -170,8 +170,7 @@ par(op)
 
 rm(list = ls())
 
-setwd("/Users/z3409479/Desktop/Data Sets")
-source("/Users/z3409479/Desktop/Post Doc/Algorithms and R-programs/MCEM Wrapper/MCEM_prog.r")
+source(".../MCEM_prog.r")
 
 set.seed(2020)
 
@@ -302,8 +301,7 @@ comp.time
 
 rm(list = ls())
 
-setwd("/Users/z3409479/Desktop/Data Sets")
-source("/Users/z3409479/Desktop/Post Doc/Algorithms and R-programs/MCEM Wrapper/MCEM_prog.r")
+source(".../MCEM_prog.r")
 
 library(VGAM)
 

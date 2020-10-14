@@ -9,8 +9,7 @@
 
 rm(list = ls())
 
-setwd("C:/Users/z3409479/Desktop/Data Sets")
-source("C:/Users/z3409479/Desktop/Post Doc/Algorithms and R-programs/MCEM Wrapper/MCEM_prog.r")
+source(".../MCEM_prog.r")
 
 set.seed(2016)
 
@@ -386,8 +385,7 @@ if (par.int == "spline") {
 
 rm(list = ls())
 
-setwd("/Users/z3409479/Desktop/Data Sets")
-source("/Users/z3409479/Desktop/Post Doc/Algorithms and R-programs/MCEM Wrapper/MCEM_prog.r")
+source(".../MCEM_prog.r")
 
 set.seed(2016)
 
@@ -673,8 +671,7 @@ if (par.int != "spline") {
 
 rm(list = ls())
 
-setwd("/Users/z3409479/Desktop/Data Sets")
-source("/Users/z3409479/Desktop/Post Doc/Algorithms and R-programs/MCEM Wrapper/MCEM_prog.r")
+source(".../MCEM_prog.r")
 
 set.seed(2019)
 

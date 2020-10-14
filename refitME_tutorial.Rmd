@@ -37,7 +37,7 @@ suppressMessages(library(simex))
 
 set.seed(2020)
 
-B <- 100  # The number of Monte Carlo replication values/SIMEX simulations.
+B <- 100 # The number of Monte Carlo replication values/SIMEX simulations.
 data(Framinghamdata)
 ```
 
