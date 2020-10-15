@@ -7,7 +7,7 @@
 See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
 }
 \usage{
-refitME(mod, sigma.sq.u, W, B = 50, epsilon = 1e-05)
+refitME(mod, sigma.sq.u, W, B = 50, epsilon = 1e-05, se.comp = TRUE)
 }
 \arguments{
 \item{mod}{: a glm/gam object (this is the naive fitted model). Make sure the first input predictor variables are the selected error-contaminated variable (i.e., the W's).}
@@ -19,6 +19,8 @@ refitME(mod, sigma.sq.u, W, B = 50, epsilon = 1e-05)
 \item{B}{: the number of Monte Carlo replication values (default is set 50).}
 
 \item{epsilon}{: convergence threshold (default is set to 0.00001).}
+
+\item{se.comp}{: a logical to indicate if standard errors for model parameters should be calculated and returned (default is set to TRUE).}
 }
 \value{
 \code{refitME} returns model coef estimates with standard errors and the effective sample size.

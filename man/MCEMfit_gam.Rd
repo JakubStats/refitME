@@ -15,6 +15,7 @@ MCEMfit_gam(
   sigma.sq.e = 1,
   B = 50,
   epsilon = 1e-05,
+  se.comp = TRUE,
   theta.est = 1,
   shape.est = 10
 )
@@ -33,6 +34,8 @@ MCEMfit_gam(
 \item{B}{: the number of Monte Carlo replication values (default is set to 50).}
 
 \item{epsilon}{: convergence threshold (default is set to 0.00001).}
+
+\item{se.comp}{: a logical to indicate if standard errors for model parameters should be calculated and returned (default is set to TRUE).}
 
 \item{theta.est}{: an initial value for the dispersion parameter (this is required for fitting negative binomial models).}
 

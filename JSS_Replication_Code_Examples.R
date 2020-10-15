@@ -69,6 +69,7 @@ rm(list = ls())
 
 library(refitME)
 library(SemiPar)
+library(simex)
 
 set.seed(2020)
 
@@ -99,9 +100,27 @@ B <- 50
 
 # Poisson model.
 
-mod_naiv_P <- gam(Y ~ s(w1) + s(z1, k = 25) + s(z2) + s(z3), family = "poisson", data = dat)
-est_P <- refitME(mod_naiv_P, sigma.sq.u, W, B)
+# Naive GAM.
+
+start <- Sys.time()
+mod_naiv_P <- gam(Y ~ s(w1) + s(z1, k = 25) + s(z2) + s(z3), family = "poisson", data = dat, w1 = TRUE)
+end <- Sys.time()
+difftime(end, start, units = "secs")
+
+# MCEM GAM.
+
+start <- Sys.time()
+est_P <- refitME(mod_naiv_P, sigma.sq.u, W, B, se.comp = FALSE)
 mean(est_P$eff.samp.size)/B
+end <- Sys.time()
+difftime(end, start, units = "secs")
+
+# Simex GAM.
+
+start <- Sys.time()
+mod_simex_P <- simex(mod_naiv_P, SIMEXvariable = c("w1"), measurement.error = cbind(sqrt(sigma.sq.u)), B = B, asymptotic = TRUE) # SIMEX.
+end <- Sys.time()
+difftime(end, start, units = "secs")
 
 # Plots.
 
@@ -170,7 +189,8 @@ par(op)
 
 rm(list = ls())
 
-source(".../MCEM_prog.r")
+setwd("/Users/z3409479/Desktop/Data Sets")
+source("/Users/z3409479/Desktop/Post Doc/Algorithms and R-programs/MCEM Wrapper/MCEM_prog.r")
 
 set.seed(2020)
 
@@ -301,7 +321,8 @@ comp.time
 
 rm(list = ls())
 
-source(".../MCEM_prog.r")
+setwd("/Users/z3409479/Desktop/Data Sets")
+source("/Users/z3409479/Desktop/Post Doc/Algorithms and R-programs/MCEM Wrapper/MCEM_prog.r")
 
 library(VGAM)
 
