@@ -11,28 +11,31 @@ MCEMfit_gam(
   mod,
   family,
   sigma.sq.u,
-  W,
+  W = NULL,
   sigma.sq.e = 1,
   B = 50,
   epsilon = 1e-05,
+  se.comp = TRUE,
   theta.est = 1,
   shape.est = 10
 )
 }
 \arguments{
-\item{mod}{: a gam object (this is the naive fitted model). Make sure the first input predictor variables are the selected error-contaminated variable (i.e., the W's).}
+\item{mod}{: a gam object (this is the naive fitted model). Make sure the first input predictor variables are the selected error-contaminated variable (i.e., the \code{W}'s).}
 
 \item{family}{: a specified family/distribution.}
 
 \item{sigma.sq.u}{: measurement error variance. A scalar if there is only one error-contaminated variable, otherwise this must stored as a covariance matrix.}
 
-\item{W}{a matrix of error-contaminated covariates.}
+\item{W}{: a matrix of error-contaminated covariates (if not specified, the default assumes all covariates in the naive fitted model are error-contaminated).}
 
 \item{sigma.sq.e}{: variance of the true covariate (X).}
 
 \item{B}{: the number of Monte Carlo replication values (default is set to 50).}
 
 \item{epsilon}{: convergence threshold (default is set to 0.00001).}
+
+\item{se.comp}{: a logical to indicate if standard errors for model parameters should be calculated and returned (default is set to \code{TRUE}).}
 
 \item{theta.est}{: an initial value for the dispersion parameter (this is required for fitting negative binomial models).}
 
@@ -47,7 +50,7 @@ MCEMfit_gam(
 Function for wrapping the MCEM algorithm on GAMs where covariates are subject to measurement error/error-in-variables.
 }
 \references{
-Stoklosa, J., Hwang, W-H., and Warton, D.I. A general algorithm for error-in-variables modelling using Monte Carlo expectation maximization.
+Stoklosa, J., Hwang, W-H., and Warton, D.I. \pkg{refitME}: Measurement Error Modelling using Monte Carlo Expectation Maximization in \proglang{R}.
 }
 \seealso{
 \code{\link{MCEMfit_glm}}

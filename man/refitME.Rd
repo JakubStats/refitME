@@ -7,27 +7,42 @@
 See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
 }
 \usage{
-refitME(mod, sigma.sq.u, W, B = 50, epsilon = 1e-05)
+refitME(
+  mod,
+  sigma.sq.u,
+  W = NULL,
+  B = 50,
+  epsilon = 1e-05,
+  se.comp = TRUE,
+  fit.CR = FALSE,
+  fit.PPM = FALSE
+)
 }
 \arguments{
-\item{mod}{: a glm/gam object (this is the naive fitted model). Make sure the first input predictor variables are the selected error-contaminated variable (i.e., the W's).}
+\item{mod}{: a glm/gam object (this is the naive fitted model). Make sure the first input predictor variables are the selected error-contaminated variable (i.e., the \code{W}'s).}
 
 \item{sigma.sq.u}{: measurement error variance. A scalar if there is only one error-contaminated variable, otherwise must be a covariance matrix}
 
-\item{W}{a matrix of error-contaminated covariates.}
+\item{W}{: a matrix of error-contaminated covariates (if not specified, the default assumes all covariates in the naive fitted model are error-contaminated).}
 
 \item{B}{: the number of Monte Carlo replication values (default is set 50).}
 
 \item{epsilon}{: convergence threshold (default is set to 0.00001).}
+
+\item{se.comp}{: a logical to indicate if standard errors for model parameters should be calculated and returned (default is set to \code{TRUE}).}
+
+\item{fit.CR}{: a logical to indicate if a capture-recapture model should be fitted (default is set to \code{FALSE}).}
+
+\item{fit.PPM}{: a logical to indicate if a Poisson process model should be fitted (default is set to \code{FALSE}).}
 }
 \value{
-\code{refitME} returns model coef estimates with standard errors and the effective sample size.
+\code{refitME} returns model coef estimates with standard errors and the effective sample size to diagnose how closely the proposal distribution matches the posterior, see equation (2) of Stoklosa, Hwang and Warton.
 }
 \description{
-Function that extracts the fitted (naive) model object and wraps the MCEM algorithm to correct for measurement error/error-in-variables (currently available for lm, glm and gam, excludes quassi models).
+Function that extracts the fitted (naive) model object and wraps the MCEM algorithm to correct for measurement error/error-in-variables (currently available for \code{lm()}, \code{glm()} and \code{gam()}, excludes \code{lme()}, \code{nlme()} and \code{polr()} models).
 }
 \references{
-Stoklosa, J., Hwang, W-H., and Warton, D.I. A general algorithm for error-in-variables modelling using Monte Carlo expectation maximization.
+Stoklosa, J., Hwang, W-H., and Warton, D.I. \pkg{refitME}: Measurement Error Modelling using Monte Carlo Expectation Maximization in \proglang{R}.
 }
 \seealso{
 \code{\link{MCEMfit_glm}} and \code{\link{MCEMfit_gam}}

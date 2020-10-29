@@ -11,22 +11,23 @@ MCEMfit_glm(
   mod,
   family,
   sigma.sq.u,
-  W,
+  W = NULL,
   sigma.sq.e = 1,
   B = 50,
   epsilon = 1e-05,
+  se.comp = TRUE,
   theta.est = 1,
   shape.est = 1
 )
 }
 \arguments{
-\item{mod}{: a glm object (this is the naive fitted model). Make sure the first input predictor variables are the selected error-contaminated variable (i.e., the W's).}
+\item{mod}{: a glm object (this is the naive fitted model). Make sure the first input predictor variables are the selected error-contaminated variable (i.e., the \code{W}'s).}
 
 \item{family}{: a specified family/distribution.}
 
 \item{sigma.sq.u}{: measurement error variance. A scalar if there is only one error-contaminated variable, otherwise this must stored as a covariance matrix.}
 
-\item{W}{a matrix of error-contaminated covariates.}
+\item{W}{: a matrix of error-contaminated covariates (if not specified, the default assumes all covariates in the naive fitted model are error-contaminated).}
 
 \item{sigma.sq.e}{: variance of the true covariate (X).}
 
@@ -34,18 +35,20 @@ MCEMfit_glm(
 
 \item{epsilon}{: a set convergence threshold (default is set to 0.00001).}
 
+\item{se.comp}{: a logical to indicate if standard errors for model parameters should be calculated and returned (default is set to \code{TRUE}).}
+
 \item{theta.est}{: an initial value for the dispersion parameter (this is required for fitting negative binomial models).}
 
 \item{shape.est}{: an initial value for the shape parameter (this is required for fitting gamma models).}
 }
 \value{
-\code{MCEMfit_glm} returns model coef estimates with standard errors and the effective sample size.
+\code{MCEMfit_glm} returns model coefficient estimates with standard errors and the effective sample size.
 }
 \description{
 Function for wrapping the MCEM algorithm on GLMs where covariates are subject to measurement error/error-in-variables.
 }
 \references{
-Stoklosa, J., Hwang, W-H., and Warton, D.I. A general algorithm for error-in-variables modelling using Monte Carlo expectation maximization.
+Stoklosa, J., Hwang, W-H., and Warton, D.I. \pkg{refitME}: Measurement Error Modelling using Monte Carlo Expectation Maximization in \proglang{R}.
 }
 \seealso{
 \code{\link{MCEMfit_gam}}

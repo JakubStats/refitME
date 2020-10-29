@@ -21,7 +21,7 @@ See Carroll \emph{et al.} (2006) for full details of the data and study. Also, s
 Framinghamdata
 }
 \description{
-Data set consisting of records of male patients with coronary heart disease collected from the Framingham heart study. The \code{Framinghamdata} data consists of binary responses and four predictor variables collected on `n=1615` patients.
+Data set consisting of records of male patients with coronary heart disease collected from the Framingham heart study. The \code{Framinghamdata} data consists of binary responses and four predictor variables collected on `n = 1615` patients.
 }
 \examples{
 # Load the data.
