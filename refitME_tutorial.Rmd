@@ -1,5 +1,5 @@
 ---
-title: '`refitME`: Measurement Error Modelling using Monte Carlo Expectation Maximization in `R`'
+title: '`refitME`: Tutorial for fitting measurement error models using Monte Carlo Expectation Maximization in `R`'
 author: "Jakub Stoklosa, Hwang W-H., & David Warton"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 header-includes: # Allows you to add in your own Latex packages.
@@ -38,6 +38,7 @@ suppressWarnings(suppressMessages(library(simex)))
 set.seed(2020)
 
 B <- 100  # The number of Monte Carlo replication values/SIMEX simulations.
+
 data(Framinghamdata)
 ```
 
@@ -149,7 +150,7 @@ plot_mod_naiv_P <- plot(mod_naiv1, select = 1)
 ### Fit the MCEM model.
 
 ```{r, echo=TRUE}
-est <- refitME(mod_naiv1, sigma.sq.u, W, B, se.comp = FALSE)
+est <- refitME(mod_naiv1, sigma.sq.u, W, B, epsilon, se.comp = FALSE)
 ```
 
 ```{r fig1, fig.height=6, fig.pos='H', echo=FALSE, fig.cap="\\label{fig:fig1} *Plots of smooths against covariate. TSP (top left is the error contaminated variable).*"}
