@@ -28,7 +28,9 @@ alpha <- c(0, 0)
 
 beta <- c(0.5, 1, -0.3); par.int <- 3
 
-par.int <- "spline"
+# Un-hash below if you want to fit spline models.
+
+#par.int <- "spline"
 
 scen_par <- 0.5  # Additional shift in "future" covariate values.
 
@@ -910,6 +912,9 @@ tau <- 7
 # Set true parameters here.
 
 beta <- c(-1, 1);  par.int <- 2
+
+# Un-hash below if you want to fit quadratic models.
+
 #beta <- c(0.5, 0, -0.3); par.int <- 3
 
 sigma.sq.e <- 1
@@ -995,8 +1000,7 @@ for(i in 1:length(sigma.sq.u_vec)) {
 
     # MCEM.
 
-    #est <- try(MCEMfit_CR(CR_dat1, tau, par.int, mod_naiv1, sigma.sq.u, sigma.sq.e, B, epsilon), silent = TRUE)
-    est <- try(refitME(mod_naiv1, sigma.sq.u, B, fit.CR = TRUE), silent = TRUE)
+    est <- try(refitME(mod_naiv1, sigma.sq.u, B), silent = TRUE)
     if (class(est) == "try-error") next
     nocrash <- c(nocrash, 1)
 

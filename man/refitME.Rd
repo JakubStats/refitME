@@ -7,16 +7,7 @@
 See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
 }
 \usage{
-refitME(
-  mod,
-  sigma.sq.u,
-  W = NULL,
-  B = 50,
-  epsilon = 1e-05,
-  se.comp = TRUE,
-  fit.CR = FALSE,
-  fit.PPM = FALSE
-)
+refitME(mod, sigma.sq.u, W = NULL, B = 50, epsilon = 1e-05, se.comp = TRUE)
 }
 \arguments{
 \item{mod}{: a glm/gam object (this is the naive fitted model). Make sure the first input predictor variables are the selected error-contaminated variable (i.e., the \code{W}'s).}
@@ -30,10 +21,6 @@ refitME(
 \item{epsilon}{: convergence threshold (default is set to 0.00001).}
 
 \item{se.comp}{: a logical to indicate if standard errors for model parameters should be calculated and returned (default is set to \code{TRUE}).}
-
-\item{fit.CR}{: a logical to indicate if a capture-recapture model should be fitted (default is set to \code{FALSE}).}
-
-\item{fit.PPM}{: a logical to indicate if a Poisson process model should be fitted (default is set to \code{FALSE}).}
 }
 \value{
 \code{refitME} returns model coef estimates with standard errors and the effective sample size to diagnose how closely the proposal distribution matches the posterior, see equation (2) of Stoklosa, Hwang and Warton.

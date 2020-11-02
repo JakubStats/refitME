@@ -68,7 +68,11 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
 
   n <- length(Y)
 
-  W1 <- mod$model[, -1]
+  p.wt <- weights(mod)
+  bigp.wt <- rep(p.wt, B)
+
+  if(length(names(mod$model)) > (d + 1))  W1 <- as.matrix(mod$model[, -c(1, (d + 2))])
+  if(length(names(mod$model)) == (d + 1))  W1 <- as.matrix(mod$model[, -1])
 
   if(is.null(W)) W <- W1
 
@@ -203,7 +207,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
     bigW <- matrix(prY*prX, n, B)
     sumW <- rep(apply(bigW, 1, sum, na.rm = T), B)
 
-    weights1 <- as.vector(bigW)/sumW
+    weights1 <- bigp.wt*as.vector(bigW)/sumW
     weights1[is.nan(weights1)] <- 0
 
     if (family == "gaussian") {
@@ -387,6 +391,12 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
 
   n <- length(Y)
 
+  p.wt <- weights(mod)
+  bigp.wt <- rep(p.wt, B)
+
+  if(length(names(mod$model)) > (d + 1))  W1 <- as.matrix(mod$model[, -c(1, (d + 2))])
+  if(length(names(mod$model)) == (d + 1))  W1 <- as.matrix(mod$model[, -1])
+
   W1 <- as.matrix(mod$model[, -1])
 
   if(is.null(W)) W <- W1
@@ -506,7 +516,7 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
     bigW <- matrix(prY*prX, n, B)
     sumW <- rep(apply(bigW, 1, sum), B)
 
-    weights1 <- as.vector(bigW)/sumW
+    weights1 <- bigp.wt*as.vector(bigW)/sumW
     weights1[is.nan(weights1)] <- 0
 
     dat_new$weights1 <- weights1
@@ -631,6 +641,7 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
     if (family == "gaussian") {
       u.bar <- solve(stats::vcov(mod)*B)
       beta.est.se2 <- sqrt(diag(solve(u.bar - SS_1/B^2 + S_1/B^2)))
+      mod$Vp <- solve(u.bar - SS_1/B^2 + S_1/B^2)
     }
 
     if (family == "binomial" | family == "poisson" | family == "Gamma" | family == "negbin") {
@@ -639,6 +650,7 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
       SS_1 <- t(sandwich::estfun(mod))%*%sand1
       u.bar <- solve(stats::vcov(mod))
       beta.est.se2 <- sqrt(diag(solve(u.bar - SS_1 + S_1)))
+      mod$Vp <- solve(u.bar - SS_1 + S_1)
     }
 
     if (length(which(is.nan(beta.est.se2))) > 0) beta.est.se2 <- c(rep(NA, K1))
@@ -855,241 +867,6 @@ MCEMfit_CR <- function(mod, sigma.sq.u, sigma.sq.e = 1, B = 100, epsilon = 0.000
   return(values)
 }
 
-#' MCEMfit_PPM
-#'
-#' Function for fitting a Point process model (PPM) using the MCEM algorithm where covariates have measurement error.
-#' @name MCEMfit_PPM
-#' @param mod : a glm object (this is the naive fitted model). Make sure the first input predictor variables are the selected error-contaminated variable (i.e., the \code{W}'s).
-#' @param sigma.sq.u : measurement error variance. A scalar if there is only one error-contaminated variable, otherwise this must stored as a covariance matrix.
-#' @param W : a matrix of error-contaminated covariates (if not specified, the default assumes all covariates in the naive fitted model are error-contaminated).
-#' @param sigma.sq.e : variance of the true covariate (X).
-#' @param B : the number of Monte Carlo replication values (default is set to 50).
-#' @param epsilon : a set convergence threshold (default is set to 0.00001).
-#' @return \code{MCEMfit_PPM} returns model coefficient estimates (no standard errors) and the effective sample size.
-#' @author Jakub Stoklosa and David I. Warton.
-#' @references Stoklosa, J., Hwang, W-H., and Warton, D.I. \pkg{refitME}: Measurement Error Modelling using Monte Carlo Expectation Maximization in \proglang{R}.
-#' @import mvtnorm MASS
-#' @export
-#' @seealso \code{\link{MCEMfit_glm}}
-#' @source See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
-MCEMfit_PPM <- function(mod, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 50, epsilon = 0.00001) {
-
-  options(warn = -1)
-
-  reps <- 0
-  cond <- TRUE
-
-  mod.terms <- attr(mod$terms, "term.labels")
-  d <- length(mod.terms)
-
-  data.ppm <- mod$data
-
-  Y <- data.ppm$Y
-
-  n <- length(Y)
-
-  p.wt <- data.ppm$p.wt
-
-  W1 <- mod$model[, -c(1, ncol(mod$model))]
-
-  if(is.null(W)) W <- W1
-
-  beta.est <- stats::coef(mod)
-
-  bigY <- rep(Y, B)
-
-  bigp.wt <- rep(p.wt, B)
-
-  muPred <- rep(stats::predict(mod, type = "response"), B)
-
-  if (is.matrix(sigma.sq.u) == F) {
-    w1 <- mod$model[, 2]
-
-    if (d == 1) p1 <- 1
-
-    if (d > 1) {
-      if (sum((w1)^2 != (W1[, 2])) == n) p1 <- 1
-      if (sum((w1)^2 == (W1[, 2])) == n) p1 <- 2
-    }
-
-    sigma.sq.u1 <- sigma.sq.u
-    sigma.sq.e1 <- sigma.sq.e
-
-    U1_j <- stats::rnorm(n*B, 0, sd = sqrt(rep(sigma.sq.u1, B)))
-    X1_j <- rep(w1, B) - U1_j
-
-    X <- cbind(rep(1, B*n), X1_j)
-    if (p1 == 2) X <- cbind(rep(1, B*n), X1_j, (X1_j)^2)
-
-    if (!is.null(ncol(W1))) {
-      if (d > 2 & p1 == 2) X <- cbind(X, do.call(rbind, replicate(B, W1[, -c(1:p1)], simplify = FALSE)))
-      if (d > 2 & p1 == 1) X <- cbind(X, do.call(rbind, replicate(B, W1[, -c(1:p1)], simplify = FALSE)))
-      if (d == 2 & p1 == 2) X <- X
-    }
-
-    X <- as.matrix(X)
-
-    colnames(X) <- names(stats::coef(mod))
-
-    colnames(X)[2] <- "x1"
-
-    if (p1 == 2) colnames(X)[2:3] <- c("x1", "I(x1^2)")
-
-    mu.e1 <- mean(X1_j)
-  }
-
-  if (is.matrix(sigma.sq.u) == T) {
-    q1 <- dim(W)[2]
-
-    if (d == q1) {
-      p <- rep(1, q1)
-      col.nameX <- paste0('x', 1:q1)
-
-      XA <- W
-    }
-    if (d > q1) {
-      p <- c()
-      col.nameX <- c()
-      XA <- c()
-
-      kk1 <- 1
-
-      for(kk in 1:q1) {
-        if (sum((W[, kk])^2 != (W1[, kk1 + 1])) == n) {
-          p1 <- 1
-          kk1 <- kk
-          col.nameX1 <- paste0('x', kk)
-        }
-
-        if (sum((W[, kk])^2 == (W1[, kk1 + 1])) == n) {
-          p1 <- 2
-          kk1 <- kk + 1
-          col.nameX1 <- c(paste0('x', kk), paste0(paste0('I(x', 1), '^2)'))
-        }
-
-        p <- c(p, p1)
-        col.nameX <- c(col.nameX, col.nameX1)
-      }
-    }
-
-    if (d < q1) print("Error: Number of error-contaminated covariates exceeds total number of covariates!")
-
-    p2 <- sum(p)
-    sigma.sq.u1 <- sigma.sq.u
-    sigma.sq.e1 <- diag(sigma.sq.e)
-
-    w1 <- W[, 1]
-    U1_j <- stats::rnorm(n*B, 0, sd = sqrt(rep(sigma.sq.u1[1, 1], B)))
-    X1_j <- rep(w1, B) - U1_j
-
-    X <- cbind(rep(1, B*n), X1_j)
-    XA <- X[, 2]
-    if (p[1] == 2) X <- cbind(rep(1, B*n), X1_j, (X1_j)^2)
-
-    mu.e1 <- mean(X1_j)
-
-    for(kk in 2:q1) {
-      w1 <- W[, kk]
-      U1_j <- stats::rnorm(n*B, 0, sd = sqrt(rep(sigma.sq.u1[kk, kk], B)))
-      X1_j <- rep(w1, B) - U1_j
-
-      XA <- cbind(XA, X1_j)
-
-      Xa <- X1_j
-      if (p[kk] == 2) Xa <- cbind(Xa, (X1_j)^2)
-      X <- cbind(X, Xa)
-      mu.e1 <- c(mu.e1, mean(X1_j))
-    }
-
-    if (d == p2) X <- X
-    if (d > p2) X <- cbind(X, do.call(rbind, replicate(B, as.matrix(W1[, -c(1:p2)]), simplify = FALSE)))
-
-    X <- as.matrix(X)
-
-    colnames(X) <- names(stats::coef(mod))
-
-    colnames(X)[2:(p2 + 1)] <- col.nameX
-  }
-
-  while(cond) {
-
-    # MC and E-step.
-
-    if (is.matrix(sigma.sq.u) == F) prX <- stats::dnorm(X1_j, mu.e1, sd = sqrt(sigma.sq.e1))
-    if (is.matrix(sigma.sq.u) == T) prX <- mvtnorm::dmvnorm(XA, mu.e1, sigma = sqrt(sigma.sq.e1))
-
-    prY <- stats::dpois(bigY, muPred)
-
-    # M-step (updates).
-
-    bigW <- matrix(prY*prX, n, B)
-    sumW <- rep(apply(bigW, 1, sum, na.rm = T), B)
-
-    weights1 <- bigp.wt*(as.vector(bigW)/sumW)
-    weights1[is.nan(weights1)] <- 0
-
-    mod <- stats::glm(bigY ~ X - 1, family = "poisson", weights = weights1)
-
-    beta.update <- stats::coef(mod)
-
-    if (is.matrix(sigma.sq.u) == F) {
-      sigma.sq.e1.update <- wt.var(X[, 2], w = weights1)
-      mu.e1.update <- stats::weighted.mean(X[, 2], w = weights1)
-    }
-
-    if (is.matrix(sigma.sq.u) == T) {
-      sigma.sq.e1.update <- c()
-      mu.e1.update <- c()
-
-      for(kk in 1:q1) {
-        sigma.sq.e1.update1 <- wt.var(XA[, kk], w = weights1)
-        sigma.sq.e1.update <- c(sigma.sq.e1.update, sigma.sq.e1.update1)
-
-        mu.e1.update1 <- stats::weighted.mean(XA[, kk], w = weights1)
-        mu.e1.update <- c(mu.e1.update1, mu.e1.update)
-      }
-
-      sigma.sq.e1.update <- diag(sigma.sq.e1.update)
-    }
-
-    # Convergence monitoring.
-
-    beta.norm <- sum((beta.est - beta.update)^2)
-
-    if (is.matrix(sigma.sq.u) == F) diff.sig_e <- abs(sigma.sq.e1.update - sigma.sq.e1)
-    if (is.matrix(sigma.sq.u) == T) diff.sig_e <- sum(abs(diag(sigma.sq.e1.update) - diag(sigma.sq.e1)))
-
-    diff.mu_e <- sum((mu.e1.update - mu.e1)^2)
-
-    reps <- reps + 1 # Keeps track of number of iterations.
-
-    if (diff.mu_e < epsilon & diff.sig_e < epsilon & beta.norm < epsilon) {
-      cond <- FALSE
-      print("convergence :-)")
-      print(reps)
-      break
-    }
-
-    # Update parameters.
-
-    beta.est <- beta.update
-    sigma.sq.e1 <- sigma.sq.e1.update
-    mu.e1 <- mu.e1.update
-  }
-
-  sumW <- apply(bigW, 1, sum, na.rm = T)
-  weights1 <- bigW/sumW
-  weights1[is.nan(weights1)] <- 0
-
-  eff.samp.size <- 1/apply(weights1^2, 1, sum)
-  eff.samp.size[is.infinite(eff.samp.size)] <- "NA"
-  eff.samp.size <- as.numeric(eff.samp.size)
-
-  values <- list(beta = beta.est, mod = mod, eff.samp.size = eff.samp.size)
-
-  return(values)
-}
-
 #' refitME
 #'
 #' Function that extracts the fitted (naive) model object and wraps the MCEM algorithm to correct for measurement error/error-in-variables (currently available for \code{lm()}, \code{glm()} and \code{gam()}, excludes \code{lme()}, \code{nlme()} and \code{polr()} models).
@@ -1100,8 +877,6 @@ MCEMfit_PPM <- function(mod, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 50, epsil
 #' @param B : the number of Monte Carlo replication values (default is set 50).
 #' @param epsilon : convergence threshold (default is set to 0.00001).
 #' @param se.comp : a logical to indicate if standard errors for model parameters should be calculated and returned (default is set to \code{TRUE}).
-#' @param fit.CR : a logical to indicate if a capture-recapture model should be fitted (default is set to \code{FALSE}).
-#' @param fit.PPM : a logical to indicate if a Poisson process model should be fitted (default is set to \code{FALSE}).
 #' @return \code{refitME} returns model coef estimates with standard errors and the effective sample size to diagnose how closely the proposal distribution matches the posterior, see equation (2) of Stoklosa, Hwang and Warton.
 #' @author Jakub Stoklosa and David I. Warton.
 #' @references Stoklosa, J., Hwang, W-H., and Warton, D.I. \pkg{refitME}: Measurement Error Modelling using Monte Carlo Expectation Maximization in \proglang{R}.
@@ -1110,7 +885,7 @@ MCEMfit_PPM <- function(mod, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 50, epsil
 #' @export
 #' @seealso \code{\link{MCEMfit_glm}} and \code{\link{MCEMfit_gam}}
 #' @source See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
-refitME <- function(mod, sigma.sq.u, W = NULL, B = 50, epsilon = 0.00001, se.comp = TRUE, fit.CR = FALSE, fit.PPM = FALSE) {
+refitME <- function(mod, sigma.sq.u, W = NULL, B = 50, epsilon = 0.00001, se.comp = TRUE) {
   if (is.matrix(sigma.sq.u) == F) {
     print("One specified error-contaminated covariate.")
 
@@ -1131,7 +906,7 @@ refitME <- function(mod, sigma.sq.u, W = NULL, B = 50, epsilon = 0.00001, se.com
 
   ob.type <- attr(mod, "class")[1]
 
-  if ((ob.type == "lm" | ob.type == "glm" | ob.type == "negbin") & fit.PPM == F) {
+  if ((ob.type == "lm" | ob.type == "glm" | ob.type == "negbin")) {
     if (ob.type == "lm") family <- "gaussian"
     if (ob.type == "glm") family <- mod$family$family
     if (ob.type == "negbin") family <- "negbin"
@@ -1139,18 +914,15 @@ refitME <- function(mod, sigma.sq.u, W = NULL, B = 50, epsilon = 0.00001, se.com
     return(MCEMfit_glm(mod, family, sigma.sq.u, W, sigma.sq.e, B, epsilon, se.comp))
   }
 
-  if (ob.type == "gam" & fit.PPM == F) {
+  if (ob.type == "gam") {
     family <- mod$family$family
     if (strsplit(family, NULL)[[1]][1] == "N") family <- "negbin"
 
     return(MCEMfit_gam(mod, family, sigma.sq.u, W, sigma.sq.e, B, epsilon, se.comp))
   }
 
-  if (fit.CR == T & (ob.type == "vglm" | ob.type == "vgam")) return(MCEMfit_CR(mod, sigma.sq.u, sigma.sq.e, B, epsilon, se.comp))
+  if ((ob.type == "vglm" | ob.type == "vgam")) return(MCEMfit_CR(mod, sigma.sq.u, sigma.sq.e, B, epsilon, se.comp))
 
-  if (fit.CR == F & (ob.type == "vglm" | ob.type == "vgam")) print("Model object needs to be a vglm/vgam")
-
-  if (fit.PPM == T) return(MCEMfit_PPM(mod, sigma.sq.u, W, sigma.sq.e, B, epsilon))
 }
 
 #' wt.var

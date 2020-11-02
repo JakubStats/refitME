@@ -19,19 +19,17 @@ W <- as.matrix(Framinghamdata$w1) # Matrix of error-contaminated covariate.
 
 sigma.sq.u <- 0.01259/2 # Measurement error variance, obtained from Carroll et al. (2006) monograph.
 
-var(W)
-
 rel.rat <- (1 - sigma.sq.u/var(W))*100
 
 rel.rat
 
-mod_naiv1 <- glm(Y ~ w1 + z1 + z2 + z3, x = TRUE, family = binomial, data = Framinghamdata)
+glm_naiv1 <- glm(Y ~ w1 + z1 + z2 + z3, x = TRUE, family = binomial, data = Framinghamdata)
 
 B <- 100 # No. Monte Carlo replication values/SIMEX simulations.
 
 start <- Sys.time()
 
-mod_simex1 <- simex(mod_naiv1, SIMEXvariable = c("w1"), measurement.error = cbind(sqrt(sigma.sq.u)), B = B) # SIMEX.
+glm_simex1 <- simex(glm_naiv1, SIMEXvariable = c("w1"), measurement.error = cbind(sqrt(sigma.sq.u)), B = B) # SIMEX.
 
 end <- Sys.time()
 t1 <- difftime(end, start, units = "secs")
@@ -39,16 +37,16 @@ comp.time <- c(t1)
 
 start <- Sys.time()
 
-est <- refitME(mod_naiv1, sigma.sq.u, W, B)
+glm_MCEM1 <- refitME(glm_naiv1, sigma.sq.u, W, B)
 
 end <- Sys.time()
 t2 <- difftime(end, start, units = "secs")
 comp.time <- c(comp.time, t2)
 
-est.beta <- rbind(coef(mod_naiv1), coef(mod_simex1), est$beta)
-est.beta.se <- rbind(sqrt(diag(vcov(mod_naiv1))),
-                     sqrt(diag(mod_simex1$variance.jackknife)),
-                     est$beta.se2)
+est.beta <- rbind(coef(glm_naiv1), coef(glm_simex1), glm_MCEM1$beta)
+est.beta.se <- rbind(sqrt(diag(vcov(glm_naiv1))),
+                     sqrt(diag(glm_simex1$variance.jackknife)),
+                     glm_MCEM1$beta.se2)
 
 # Parameter estimates.
 
@@ -103,14 +101,14 @@ rel.rat
 
 B <- 50
 
-epsilon <- 0.0001
+epsilon <- 0.00001
 
 # Poisson models (we fitted negative binomial models but found no over-dispersion).
 
 # Naive GAM.
 
 start <- Sys.time()
-mod_naiv_P <- gam(Y ~ s(w1) + s(z1, k = 25) + s(z2) + s(z3),
+gam_naiv <- gam(Y ~ s(w1) + s(z1, k = 25) + s(z2) + s(z3),
                   family = "poisson", data = dat, w1 = TRUE)
 end <- Sys.time()
 difftime(end, start, units = "secs")
@@ -118,57 +116,54 @@ difftime(end, start, units = "secs")
 # MCEM GAM.
 
 start <- Sys.time()
-est_P <- refitME(mod_naiv_P, sigma.sq.u, W, B, epsilon, se.comp = FALSE)
-mean(est_P$eff.samp.size)/B
+gam_MCEM <- refitME(gam_naiv, sigma.sq.u, W, B, epsilon, se.comp = FALSE)
+mean(gam_MCEM$eff.samp.size)/B
 end <- Sys.time()
 difftime(end, start, units = "secs")
 
 # Plots (examine all smooth terms against covariates).
 
-est <- est_P
-
 xlab.names <- c("log(TSP)", "Day", "Temp", "Humidity")
 
-plot_mod_naiv_P <- plot(mod_naiv_P, select = 1)
+plot_gam_naiv <- plot(gam_naiv, select = 1)
 
 op <- par(mfrow = c(2, 2), las = 1)
 
 for(i in 1:4) {
   if (i == 1) {
-    plot(est$mod, select = i, ylim = c(-0.35, 0.1), xlim = range(plot_mod_naiv_P[[1]]$x), rug = FALSE, col = "blue", all.terms = TRUE,
-         xlab = xlab.names[i], ylab = "s(Mortaity counts)", lwd = 2, cex.lab = 1.3, cex.axis = 1.3,
+    plot(gam_MCEM$mod, select = i, ylim = c(-0.35, 0.1), xlim = range(plot_gam_naiv[[1]]$x), rug = FALSE, col = "blue", all.terms = TRUE,
+         xlab = xlab.names[i], ylab = "s(Mortality counts)", lwd = 2, cex.lab = 1.3, cex.axis = 1.3,
          cex.main = 2, font.lab = 1.1, cex = 1.4, shade = T)
-    lines(plot_mod_naiv_P[[1]]$x, plot_mod_naiv_P[[1]]$fit, type= "l", col = "red", lwd = 2, lty = 2)
-    title(main = bquote("Reliability ratio of predictor is" ~ .(rel.rat) ~ "%"),
-          outer = F, line = 1, cex = 1.4)
+    lines(plot_gam_naiv[[1]]$x, plot_gam_naiv[[1]]$fit, type= "l", col = "red", lwd = 2, lty = 2)
+    title(main = bquote("Reliability ratio of predictor is" ~ .(rel.rat) ~ "%"), outer = F, line = 1, cex = 1.4)
     legend("bottomright", c("Naive GAM", "MCEM GAM"), col = c("red", "blue"), lty = c(2, 1), lwd = 2, bty = "n")
     for(j in 1:2) {
       axis(j, labels = FALSE)
     }
   }
   if (i == 2) {
-    plot(est$mod, select = i, ylim = c(-0.25, 0.3), rug = FALSE, col = "blue", all.terms = TRUE,
-         xlab = xlab.names[i], ylab = "s(Mortaity counts)", lwd = 2, cex.lab = 1.3, cex.axis = 1.3,
+    plot(gam_MCEM$mod, select = i, ylim = c(-0.25, 0.3), rug = FALSE, col = "blue", all.terms = TRUE,
+         xlab = xlab.names[i], ylab = "s(Mortality counts)", lwd = 2, cex.lab = 1.3, cex.axis = 1.3,
          cex.main = 2, font.lab = 1.1, cex = 1.4, shade = T)
-    lines(plot_mod_naiv_P[[2]]$x, plot_mod_naiv_P[[2]]$fit, type= "l", col = "red", lwd = 2, lty = 2)
+    lines(plot_gam_naiv[[2]]$x, plot_gam_naiv[[2]]$fit, type= "l", col = "red", lwd = 2, lty = 2)
     for(j in 1:2) {
       axis(j, labels = FALSE)
     }
   }
   if (i == 3) {
-    plot(est$mod, select = i, ylim = c(-0.2, 0.4), rug = FALSE, col = "blue", all.terms = TRUE,
-         xlab = xlab.names[i], ylab = "s(Mortaity counts)", lwd = 2, cex.lab = 1.3, cex.axis = 1.3,
+    plot(gam_MCEM$mod, select = i, ylim = c(-0.2, 0.4), rug = FALSE, col = "blue", all.terms = TRUE,
+         xlab = xlab.names[i], ylab = "s(Mortality counts)", lwd = 2, cex.lab = 1.3, cex.axis = 1.3,
          cex.main = 2, font.lab = 1.1, cex = 1.4, shade = T)
-    lines(plot_mod_naiv_P[[3]]$x, plot_mod_naiv_P[[3]]$fit, type= "l", col = "red", lwd = 2, lty = 2)
+    lines(plot_gam_naiv[[3]]$x, plot_gam_naiv[[3]]$fit, type= "l", col = "red", lwd = 2, lty = 2)
     for(j in 1:2) {
       axis(j, labels = FALSE)
     }
   }
   if (i == 4) {
-    plot(est$mod, select = i, ylim = c(-0.06, 0.08), rug = FALSE, col = "blue", all.terms = TRUE,
-         xlab = xlab.names[i], ylab = "s(Mortaity counts)", lwd = 2, cex.lab = 1.1, cex.axis = 1.1,
+    plot(gam_MCEM$mod, select = i, ylim = c(-0.06, 0.08), rug = FALSE, col = "blue", all.terms = TRUE,
+         xlab = xlab.names[i], ylab = "s(Mortality counts)", lwd = 2, cex.lab = 1.1, cex.axis = 1.1,
          cex.main = 2, font.lab = 1.1, cex = 1.4, shade = T)
-    lines(plot_mod_naiv_P[[4]]$x, plot_mod_naiv_P[[4]]$fit, type= "l", col = "red", lwd = 2, lty = 2)
+    lines(plot_gam_naiv[[4]]$x, plot_gam_naiv[[4]]$fit, type= "l", col = "red", lwd = 2, lty = 2)
     for(j in 1:2) {
       axis(j, labels = FALSE)
     }
@@ -239,13 +234,13 @@ test <- (1:n)
 data.tr <- data.frame(cbind(Y[train], p.wt[train], X[train, ]))
 colnames(data.tr)[1:2] <- c("Y", "p.wt")
 
-mod1 <- glm(Y/p.wt ~ X1 + X2 + Z1 + Z2 + Z3 + Z4, family = "poisson", weights = p.wt, data = data.tr)
+PPM_naiv1 <- glm(Y/p.wt ~ X1 + X2 + Z1 + Z2 + Z3 + Z4, family = "poisson", weights = p.wt, data = data.tr)
 
 # PPM - using MCEM model.
 
 B <- 50
 
-# Set the measurement error variance here (we considered three in the study).
+# Set the measurement error variance here (we considered three values in this example).
 
 #sigma.sq.u <- 0.25
 #sigma.sq.u <- 0.5
@@ -263,9 +258,9 @@ start <- Sys.time()
 
 W <- X[train, ]
 
-mod2 <- refitME(mod1, sigma.sq.u, W, B, fit.PPM = TRUE)
+PPM_MCEM1 <- refitME(PPM_naiv1, sigma.sq.u, W, B)
 
-# Prediction on test and traning data.
+# Prediction on test and training data.
 
 X.f <- cbind(rep(1, length(MNT)), poly((MNT), degree = 2, raw = TRUE), poly(Rain, degree = 2, raw = TRUE), poly(sqrt(D.Main), degree = 2, raw = TRUE))
 W.s <- MNT + scen_par
@@ -274,11 +269,11 @@ X.s <- cbind(rep(1, length(MNT)), poly(W.s, degree = 2, raw = TRUE), poly(Rain, 
 X.f.test <- X.f[test, ]
 X.s.test <- X.s[test, ]
 
-preds1 <- exp(X.f.test%*%coef(mod1))
-preds2 <- exp(X.s.test%*%coef(mod1))
+preds1 <- exp(X.f.test%*%coef(PPM_naiv1))
+preds2 <- exp(X.s.test%*%coef(PPM_naiv1))
 
-preds3 <- exp(X.f.test%*%mod2$beta)
-preds4 <- exp(X.s.test%*%mod2$beta)
+preds3 <- exp(X.f.test%*%PPM_MCEM1$beta)
+preds4 <- exp(X.s.test%*%PPM_MCEM1$beta)
 
 coord.dat1 <- coord.dat[test, ]
 
@@ -353,21 +348,17 @@ CR_dat1 <- data.frame(cbind(w1, y, tau - y))
 
 colnames(CR_dat1) <- c("w1", "cap", "noncap")
 
-# Start fitting all  models here (model M_h).
+# Start fitting all models here (model M_h).
 
 # Naive model.
 
-mod_naiv1 <- vglm(cbind(cap, noncap) ~ w1, posbinomial(omit.constant = TRUE, parallel = TRUE ~ w1), data = CR_dat1, trace = F)
+CR_naiv1 <- vglm(cbind(cap, noncap) ~ w1, posbinomial(omit.constant = TRUE, parallel = TRUE ~ w1), data = CR_dat1, trace = F)
 
 sigma.sq.u <- 0.37/var(w.obs)
 
-epsilon <- 0.00001
-B <- 100
-fit.CR <- TRUE
-
 # Conditional score (CS) model.
 
-CS_beta.est <- nleqslv(coef(mod_naiv1), est.cs, y = y, w1 = w1, tau = tau, sigma.sq.u = sigma.sq.u, method = c("Newton"))$x
+CS_beta.est <- nleqslv(coef(CR_naiv1), est.cs, y = y, w1 = w1, tau = tau, sigma.sq.u = sigma.sq.u, method = c("Newton"))$x
 CS_N.est <- N.CS.est(CS_beta.est, y, w1, tau, sigma.sq.u)
 
 var.ests1 <- var.CS(CS_beta.est, y, w1, tau, sigma.sq.u)
@@ -375,25 +366,27 @@ CS_beta.est.se <- sqrt(var.ests1)[1:2]
 
 # MCEM model.
 
+B <- 100
+
 sigma.sq.e <- var(w1) - sigma.sq.u
 
-mod_naiv2 <- vgam(cbind(cap, noncap) ~ s(w1, df = 2), VGAM::posbinomial(omit.constant = TRUE, parallel = TRUE ~ s(w1, df = 2)), data = CR_dat1, trace = F)
+CR_naiv2 <- vgam(cbind(cap, noncap) ~ s(w1, df = 2), VGAM::posbinomial(omit.constant = TRUE, parallel = TRUE ~ s(w1, df = 2)), data = CR_dat1, trace = F)
 
-mod_MCEM <- refitME(mod_naiv2, sigma.sq.u, W, B, fit.CR = TRUE)
+CR_MCEM <- refitME(CR_naiv2, sigma.sq.u, W, B)
 
-N.hat_MCEM <- mod_MCEM$N.est
+N.hat_MCEM <- CR_MCEM$N.est
 
-N.hat.se_MCEM <- mod_MCEM$N.est.se
+N.hat.se_MCEM <- CR_MCEM$N.est.se
 
 # Model selection.
 
-AIC.mod <- c(round(AIC(mod_naiv1), digits = 2), NA, round(AIC(mod_naiv2), digits = 2), round(AIC(mod_MCEM$mod), digits = 2))
+AIC.mod <- c(round(AIC(CR_naiv1), digits = 2), NA, round(AIC(CR_naiv2), digits = 2), round(AIC(CR_MCEM$mod), digits = 2))
 
 # Combine all results.
 
-Nhat.mod <- c(round(mod_naiv1@extra$N.hat, digits = 2), round(CS_N.est, digits = 2), round(mod_naiv2@extra$N.hat, digits = 2), round(N.hat_MCEM, digits = 2))
+Nhat.mod <- c(round(CR_naiv1@extra$N.hat, digits = 2), round(CS_N.est, digits = 2), round(CR_naiv2@extra$N.hat, digits = 2), round(N.hat_MCEM, digits = 2))
 
-Nhat.se.mod <- c(round(mod_naiv1@extra$SE.N.hat, digits = 2), round(sqrt(var.ests1)[3], digits = 2), round(mod_naiv2@extra$SE.N.hat, digits = 2), round(N.hat.se_MCEM, digits = 2))
+Nhat.se.mod <- c(round(CR_naiv1@extra$SE.N.hat, digits = 2), round(sqrt(var.ests1)[3], digits = 2), round(CR_naiv2@extra$SE.N.hat, digits = 2), round(N.hat.se_MCEM, digits = 2))
 
 est <- cbind(AIC.mod, Nhat.mod, Nhat.se.mod)
 
