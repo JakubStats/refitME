@@ -150,7 +150,7 @@ plot_mod_naiv_P <- plot(mod_naiv1, select = 1)
 ### Fit the MCEM model.
 
 ```{r, echo=TRUE}
-est <- refitME(mod_naiv1, sigma.sq.u, W, B, epsilon, se.comp = FALSE)
+est <- refitME(mod_naiv1, sigma.sq.u, W, B, se.comp = FALSE)
 ```
 
 ```{r fig1, fig.height=6, fig.pos='H', echo=FALSE, fig.cap="\\label{fig:fig1} *Plots of smooths against covariate. TSP (top left is the error contaminated variable).*"}

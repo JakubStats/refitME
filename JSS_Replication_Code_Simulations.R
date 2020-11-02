@@ -1,10 +1,10 @@
 #----------------------------------------------------------------------------
 # JSS_Replication_Code_Examples.R
 #
-# Simulations (results for Section 4, Web Figures 1-2, and Web Appendix A.3).
+# Simulations (results for Section 5, Web Figures 1-2, and Web Appendix A.3).
 #----------------------------------------------------------------------------
 
-# Sections 4.1 and 4.2: Simulation study examining bias, efficiency and
+# Sections 5.1 and 5.2: Simulation study examining bias, efficiency and
 # confidence interval coverage for model parameters, and prediction.
 
 rm(list = ls())
@@ -15,7 +15,7 @@ set.seed(2016)
 
 N.sim <- 200
 
-B <- 100
+B <- 50
 
 n <- 1000
 n_train <- 800
@@ -98,7 +98,7 @@ for(i in 1:length(sigma.sq.u_vec)) {
     if (par.int != "spline") eta <- X%*%beta
     if (par.int == "spline" & family == "binomial") eta <- sin(x1/2 + 0.25)
 
-    mu_Y <- logit(eta)
+    mu_Y <- logit_fun(eta)
     Y <- rbinom(n, 1, prob = mu_Y)
 
     dat <- data.frame(cbind(Y, w1, x1))
@@ -127,7 +127,7 @@ for(i in 1:length(sigma.sq.u_vec)) {
     if (par.int != "spline") eta_test_scen <- as.matrix(X_test_scen)%*%beta
     if (par.int == "spline" & family == "binomial") eta_test_scen <- sin(x1_test_scen/2 + 0.25)
 
-    mu_test_scen <- logit(eta_test_scen)
+    mu_test_scen <- logit_fun(eta_test_scen)
     Y_test_scen <- rbinom(n_test, 1, prob = mu_test_scen)
 
     w1_test_scen <- x1_test_scen + rnorm(n_test, 0, sd = sqrt(sigma.sq.u_test))
@@ -381,7 +381,7 @@ if (par.int == "spline") {
 
 #------------------------------------------------------------------------------------
 
-# Section 4.3: Simulation study examining model robustness.
+# Section 5.3: Simulation study examining model robustness.
 
 rm(list = ls())
 
@@ -391,7 +391,7 @@ set.seed(2016)
 
 N.sim <- 200
 
-B <- 100
+B <- 50
 
 n <- 1000
 n_train <- 800
@@ -425,7 +425,7 @@ start <- Sys.time()
 for(i in 1:length(sigma.sq.u_vec)) {
   nocrash <- c()
 
-  sigma.sq.u1 <- sigma.sq.u_vec[i]  # Measurement error varaince.
+  sigma.sq.u1 <- sigma.sq.u_vec[i]  # Measurement error variance.
 
   beta_mat0 <- c()
   beta_mat1 <- c()
@@ -476,7 +476,7 @@ for(i in 1:length(sigma.sq.u_vec)) {
     if (par.int != "spline") eta <- X%*%beta
     if (par.int == "spline") eta <- sin(0.85*x1)
 
-    mu_Y <- logit(eta)
+    mu_Y <- logit_fun(eta)
     Y <- rbinom(n, 1, prob = mu_Y)
 
     dat <- data.frame(cbind(Y, w1, x1))
@@ -487,7 +487,7 @@ for(i in 1:length(sigma.sq.u_vec)) {
     dat_train <- dat[1:n_train, ]
     dat_test <- data.frame(dat[(n_train + 1):n, ])
     eta_test <- eta[(n_train + 1):n]
-    mu_test <- logit(eta_test)
+    mu_test <- logit_fun(eta_test)
 
     x1_test <- dat_test$x1
 
@@ -504,7 +504,7 @@ for(i in 1:length(sigma.sq.u_vec)) {
       X_test_scen <- cbind(rep(1, nrow(dat_test)), x1_test_scen, x1_test_scen^2)
 
       eta_test_scen <- as.matrix(X_test_scen)%*%beta
-      mu_test_scen <- logit(eta_test_scen)
+      mu_test_scen <- logit_fun(eta_test_scen)
       Y_test_scen <- rbinom(n_test, 1, prob = mu_test_scen)
 
       w1_test_scen <- x1_test_scen + rnorm(n_test, 0, sd = sqrt(sigma.sq.u_test))
@@ -665,9 +665,9 @@ if (par.int != "spline") {
   multiplot(p1, p2, p3, layout = matrix(c(1, 2, 3, 3), ncol = 2, nrow = 2, byrow = T))
 }
 
-#----------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------------------
 
-# Web Figure 1: Checking the effective sample across model dimensions and measurement error variance.
+# Web Figure 1: Checking the effective sample size (ESS) across model dimensions and measurement error variance.
 
 rm(list = ls())
 
@@ -812,7 +812,7 @@ multiplot(p1, p2, layout = matrix(c(1, 2), ncol = 2, nrow = 1, byrow = T))
 
 #--------------------------------------------------------------
 
-# Web Figure 2: EFF against measurement error variance.
+# Web Figure 2: Effective sample size (EFF) against measurement error variance.
 
 set.seed(2019)
 
@@ -893,8 +893,7 @@ multiplot(p1, p2, layout = matrix(c(1, 2), ncol = 2, nrow = 1, byrow = T))
 
 rm(list = ls())
 
-setwd("/Users/z3409479/Desktop/Data Sets")
-source("/Users/z3409479/Desktop/Post Doc/Algorithms and R-programs/MCEM Wrapper/MCEM_prog.r")
+source(".../MCEM_prog.r")
 
 library(VGAM)
 
@@ -996,7 +995,8 @@ for(i in 1:length(sigma.sq.u_vec)) {
 
     # MCEM.
 
-    est <- try(MCEMfit_CR(CR_dat1, tau, par.int, mod_naiv1, sigma.sq.u, sigma.sq.e, B, epsilon), silent = TRUE)
+    #est <- try(MCEMfit_CR(CR_dat1, tau, par.int, mod_naiv1, sigma.sq.u, sigma.sq.e, B, epsilon), silent = TRUE)
+    est <- try(refitME(mod_naiv1, sigma.sq.u, B, fit.CR = TRUE), silent = TRUE)
     if (class(est) == "try-error") next
     nocrash <- c(nocrash, 1)
 

@@ -665,6 +665,7 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
 #' @author Jakub Stoklosa and David I. Warton.
 #' @references Stoklosa, J., Hwang, W-H., and Warton, D.I. \pkg{refitME}: Measurement Error Modelling using Monte Carlo Expectation Maximization in \proglang{R}.
 #' @import MASS VGAM
+#' @importFrom VGAM s
 #' @export
 #' @seealso \code{\link{MCEMfit_glm}}
 #' @source See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
@@ -683,8 +684,6 @@ MCEMfit_CR <- function(mod, sigma.sq.u, sigma.sq.e = 1, B = 100, epsilon = 0.000
   mod.terms <- attr(mod@terms$terms, "term.labels")
 
   d <- length(mod.terms)
-
-  muPred <- rep(1/(1 + exp(-VGAM::predictvglm(mod, type = "link"))), B)
 
   n <- mod@misc$n
 
@@ -711,8 +710,20 @@ MCEMfit_CR <- function(mod, sigma.sq.u, sigma.sq.e = 1, B = 100, epsilon = 0.000
 
   mu.e1 <- mean(X1_j)
 
-  if (p1 == 2 | p1 == "spline") X <- cbind(rep(1, B*n), X1_j)
-  if (p1 == 3) X <- cbind(rep(1, B*n), X1_j, (X1_j)^2)
+  if (p1 == 2) {
+    X <- cbind(rep(1, B*n), X1_j)
+    muPred <- rep(1/(1 + exp(-VGAM::predictvglm(mod, type = "link"))), B)
+  }
+
+  if (p1 == 3) {
+    X <- cbind(rep(1, B*n), X1_j, (X1_j)^2)
+    muPred <- rep(1/(1 + exp(-VGAM::predictvglm(mod, type = "link"))), B)
+  }
+
+  if (p1 == "spline") {
+    X <- cbind(rep(1, B*n), X1_j)
+    muPred <- rep(1/(1 + exp(-VGAM::predict.vgam(mod, type = "link"))), B)
+  }
 
   if (p1 == 2) colnames(X) <- c(names(coef(mod))[1], "x1")
   if (p1 == 3) colnames(X) <- c(names(coef(mod))[1], "x1", "x2")
@@ -737,12 +748,13 @@ MCEMfit_CR <- function(mod, sigma.sq.u, sigma.sq.e = 1, B = 100, epsilon = 0.000
 
     weights1 <- as.vector(bigW)/sumW
 
-    if (p1 == "spline") mod <- VGAM::vgam(cbind(cap, noncap) ~ VGAM::s(x1, df = 2), VGAM::posbinomial(omit.constant = TRUE, parallel = TRUE ~ VGAM::s(x1, df = 2)), data = CR_dat, trace = F, weights = as.vector(bigW)/sumW)
+    if (p1 == "spline") mod <- VGAM::vgam(cbind(cap, noncap) ~ s(x1, df = 2), VGAM::posbinomial(omit.constant = TRUE, parallel = TRUE ~ s(x1, df = 2)), data = CR_dat, trace = F, weights = as.vector(bigW)/sumW)
     if (p1 == 2) mod <- VGAM::vglm(cbind(cap, noncap) ~ x1, VGAM::posbinomial(omit.constant = TRUE, parallel = TRUE ~ x1), data = CR_dat, trace = F, weights = weights1)
     if (p1 == 3) mod <- VGAM::vglm(cbind(cap, noncap) ~ x1 + I(x1^2), VGAM::posbinomial(omit.constant = TRUE, parallel = TRUE ~ x1 + I(x1^2)), data = CR_dat, trace = F, weights = as.vector(bigW)/sumW)
 
     beta.update <- VGAM::coef(mod)
-    muPred <- 1/(1 + exp(-VGAM::predictvglm(mod, type = "link")))
+    if (p1 == 2 | p1 == 3) muPred <- 1/(1 + exp(-VGAM::predictvglm(mod, type = "link")))
+    if (p1 == "spline") muPred <- 1/(1 + exp(-VGAM::predict.vgam(mod, type = "link")))
 
     sigma.sq.e1.update <- wt.var(X[, 2], w = as.vector(bigW)/sumW)
     mu.e1.update <- stats::weighted.mean(X[, 2], w = ((as.vector(bigW)/sumW)))
@@ -779,6 +791,19 @@ MCEMfit_CR <- function(mod, sigma.sq.u, sigma.sq.e = 1, B = 100, epsilon = 0.000
   eff.samp.size[is.infinite(eff.samp.size)] <- "NA"
   eff.samp.size <- as.numeric(eff.samp.size)
 
+  if (p1 == 2 | p1 == 3) {
+    pr.est <- 1/(1 + exp(-VGAM::predictvglm(mod, type = "link")))
+    pi.est <- 1 - (1 - pr.est)^tau
+  }
+
+  if (p1 == "spline") {
+    pr.est <- 1/(1 + exp(-VGAM::predict.vgam(mod, type = "link")))
+    pi.est <- 1 - (1 - pr.est)^tau
+  }
+
+  w.est <- as.numeric(weights1)
+  N.est <- sum(w.est/pi.est)
+
   # Standard error calculations start here.
 
   if(se.comp == T) {
@@ -795,19 +820,19 @@ MCEMfit_CR <- function(mod, sigma.sq.u, sigma.sq.e = 1, B = 100, epsilon = 0.000
 
     ind_mat <- matrix(1:(n*B), ncol = n, byrow = T)
 
-    pr.est <- 1/(1 + exp(-VGAM::predictvglm(mod, type = "link")))
-    pi.est <- 1 - (1 - (1/(1 + exp(-VGAM::predictvglm(mod, type = "link")))))^tau
-
-    w.est <- ((as.vector(bigW)/sumW))
-    N.est <- sum(w.est/pi.est)
-
     for(iii in 1:n) {
       index_vec <- ind_mat[, iii]
       x <- X[index_vec, ]
 
-      SS_1 <- SS_1 + t(x*(((bigY[index_vec] - tau*(1/(1 + exp(-VGAM::predictvglm(mod, type = "link"))))[index_vec]/pi.est[index_vec]))*VGAM::weights(mod, type = "working")[index_vec]))%*%(x*((bigY[index_vec] - tau*(1/(1 + exp(-VGAM::predictvglm(mod, type = "link"))))[index_vec]/pi.est[index_vec])))
+      if (p1 == 2 | p1 == 3) {
+        SS_1 <- SS_1 + t(x*(((bigY[index_vec] - tau*(1/(1 + exp(-VGAM::predictvglm(mod, type = "link"))))[index_vec]/pi.est[index_vec]))*VGAM::weights(mod, type = "working")[index_vec]))%*%(x*((bigY[index_vec] - tau*(1/(1 + exp(-VGAM::predictvglm(mod, type = "link"))))[index_vec]/pi.est[index_vec])))
+        S_1 <- S_1 + (apply(x*(bigY[index_vec] - tau*(1/(1 + exp(-VGAM::predictvglm(mod, type = "link"))))[index_vec]/pi.est[index_vec])*VGAM::weights(mod, type = "working")[index_vec], 2, sum))%*%t(apply(x*(bigY[index_vec] - tau*(1/(1 + exp(-VGAM::predictvglm(mod, type = "link"))))[index_vec]/pi.est[index_vec])*VGAM::weights(mod, type = "working")[index_vec], 2, sum))
+      }
 
-      S_1 <- S_1 + (apply(x*(bigY[index_vec] - tau*(1/(1 + exp(-VGAM::predictvglm(mod, type = "link"))))[index_vec]/pi.est[index_vec])*VGAM::weights(mod, type = "working")[index_vec], 2, sum))%*%t(apply(x*(bigY[index_vec] - tau*(1/(1 + exp(-VGAM::predictvglm(mod, type = "link"))))[index_vec]/pi.est[index_vec])*VGAM::weights(mod, type = "working")[index_vec], 2, sum))
+      if (p1 == "spline") {
+        SS_1 <- SS_1 + t(x*(((bigY[index_vec] - tau*(1/(1 + exp(-VGAM::predict.vgam(mod, type = "link"))))[index_vec]/pi.est[index_vec]))*VGAM::weights(mod, type = "working")[index_vec]))%*%(x*((bigY[index_vec] - tau*(1/(1 + exp(-VGAM::predict.vgam(mod, type = "link"))))[index_vec]/pi.est[index_vec])))
+        S_1 <- S_1 + (apply(x*(bigY[index_vec] - tau*(1/(1 + exp(-VGAM::predict.vgam(mod, type = "link"))))[index_vec]/pi.est[index_vec])*VGAM::weights(mod, type = "working")[index_vec], 2, sum))%*%t(apply(x*(bigY[index_vec] - tau*(1/(1 + exp(-VGAM::predict.vgam(mod, type = "link"))))[index_vec]/pi.est[index_vec])*VGAM::weights(mod, type = "working")[index_vec], 2, sum))
+      }
     }
 
     u.bar <- solve(VGAM::vcov(mod))
@@ -825,7 +850,7 @@ MCEMfit_CR <- function(mod, sigma.sq.u, sigma.sq.e = 1, B = 100, epsilon = 0.000
     values <- list(beta = beta.est, beta.se = beta.est.se, N.est = N.est, N.est.se = N.est.se, mod = mod, eff.samp.size = eff.samp.size)
   }
 
-  if(se.comp == F) values <- list(beta = beta.est, mod = mod, eff.samp.size = eff.samp.size)
+  if(se.comp == F) values <- list(beta = beta.est, N.est = N.est, mod = mod, eff.samp.size = eff.samp.size)
 
   return(values)
 }

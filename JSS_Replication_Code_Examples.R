@@ -1,7 +1,7 @@
 #--------------------------------------------------------------------------------------------------------
 # JSS_Replication_Code_Examples.R
 #
-# Examples 1 to 4 of Section 3.
+# Examples 1 to 4 of Section 4 of the manuscript.
 #-------------------------------------------------------------------------------------------------------
 
 # Example 1: A simple GLM example taken from Carroll et al. (2006) - The Framingham heart study data set.
@@ -46,17 +46,22 @@ t2 <- difftime(end, start, units = "secs")
 comp.time <- c(comp.time, t2)
 
 est.beta <- rbind(coef(mod_naiv1), coef(mod_simex1), est$beta)
-est.beta.se <- rbind(sqrt(diag(vcov(mod_naiv1))), sqrt(diag(mod_simex1$variance.jackknife)), est$beta.se2)
+est.beta.se <- rbind(sqrt(diag(vcov(mod_naiv1))),
+                     sqrt(diag(mod_simex1$variance.jackknife)),
+                     est$beta.se2)
 
 # Parameter estimates.
 
 row.names(est.beta) = row.names(est.beta.se) <- c("Naive GLM", "SIMEX", "MCEM")
 colnames(est.beta) = colnames(est.beta.se) <- c("(Intercept)", "SBP", "chol. level", "age", "smoke")
 
+round(est.beta, digits = 3)
+
 # Standard errors.
 
-round(est.beta, digits = 3)
 round(est.beta.se, digits = 3)
+
+# Computational times.
 
 names(comp.time) <- c("SIMEX", "MCEM")
 round(comp.time, digits = 3)
@@ -98,36 +103,27 @@ rel.rat
 
 B <- 50
 
-# Poisson model.
+epsilon <- 0.0001
+
+# Poisson models (we fitted negative binomial models but found no over-dispersion).
 
 # Naive GAM.
 
 start <- Sys.time()
-mod_naiv_P <- gam(Y ~ s(w1) + s(z1, k = 25) + s(z2) + s(z3), family = "poisson", data = dat, w1 = TRUE)
+mod_naiv_P <- gam(Y ~ s(w1) + s(z1, k = 25) + s(z2) + s(z3),
+                  family = "poisson", data = dat, w1 = TRUE)
 end <- Sys.time()
 difftime(end, start, units = "secs")
 
 # MCEM GAM.
 
 start <- Sys.time()
-est_P <- refitME(mod_naiv_P, sigma.sq.u, W, B, se.comp = FALSE)
+est_P <- refitME(mod_naiv_P, sigma.sq.u, W, B, epsilon, se.comp = FALSE)
 mean(est_P$eff.samp.size)/B
 end <- Sys.time()
 difftime(end, start, units = "secs")
 
-# Simex GAM.
-
-start <- Sys.time()
-mod_simex_P <- simex(mod_naiv_P, SIMEXvariable = c("w1"), measurement.error = cbind(sqrt(sigma.sq.u)), B = B, asymptotic = TRUE) # SIMEX.
-end <- Sys.time()
-difftime(end, start, units = "secs")
-
-# Plots.
-
-par(mfrow = c(1, 2), las = 1)
-
-plot(predict(est_P$mod), resid(est_P$mod), main = "Poisson model")
-plot(predict(est_NB$mod), resid(est_NB$mod), main = "NB model")
+# Plots (examine all smooth terms against covariates).
 
 est <- est_P
 
@@ -189,8 +185,7 @@ par(op)
 
 rm(list = ls())
 
-setwd("/Users/z3409479/Desktop/Data Sets")
-source("/Users/z3409479/Desktop/Post Doc/Algorithms and R-programs/MCEM Wrapper/MCEM_prog.r")
+source(".../MCEM_prog.r")
 
 set.seed(2020)
 
@@ -246,9 +241,11 @@ colnames(data.tr)[1:2] <- c("Y", "p.wt")
 
 mod1 <- glm(Y/p.wt ~ X1 + X2 + Z1 + Z2 + Z3 + Z4, family = "poisson", weights = p.wt, data = data.tr)
 
-# PPM - using MCEM.
+# PPM - using MCEM model.
 
 B <- 50
+
+# Set the measurement error variance here (we considered three in the study).
 
 #sigma.sq.u <- 0.25
 #sigma.sq.u <- 0.5
@@ -258,15 +255,17 @@ W.train <- W[train]
 W.test <- W[test]
 
 rel.rat <- (1 - sigma.sq.u/var(W.train))*100
-print(rel.rat)  # Express as a percentage % rel.
+print(rel.rat)  # Express as a relative percentage (%).
 
 sigma.sq.e <- var(W.test) - sigma.sq.u
 
 start <- Sys.time()
 
-mod2 <- MCEMfit_ppm(data.tr, sigma.sq.u, sigma.sq.e, n.train, B, case = "a")
+W <- X[train, ]
 
-# Prediction.
+mod2 <- refitME(mod1, sigma.sq.u, W, B, fit.PPM = TRUE)
+
+# Prediction on test and traning data.
 
 X.f <- cbind(rep(1, length(MNT)), poly((MNT), degree = 2, raw = TRUE), poly(Rain, degree = 2, raw = TRUE), poly(sqrt(D.Main), degree = 2, raw = TRUE))
 W.s <- MNT + scen_par
@@ -321,8 +320,7 @@ comp.time
 
 rm(list = ls())
 
-setwd("/Users/z3409479/Desktop/Data Sets")
-source("/Users/z3409479/Desktop/Post Doc/Algorithms and R-programs/MCEM Wrapper/MCEM_prog.r")
+source(".../MCEM_prog.r")
 
 library(VGAM)
 
@@ -355,9 +353,9 @@ CR_dat1 <- data.frame(cbind(w1, y, tau - y))
 
 colnames(CR_dat1) <- c("w1", "cap", "noncap")
 
-# Start fitting models here (model M_h).
+# Start fitting all  models here (model M_h).
 
-# True and naive models.
+# Naive model.
 
 mod_naiv1 <- vglm(cbind(cap, noncap) ~ w1, posbinomial(omit.constant = TRUE, parallel = TRUE ~ w1), data = CR_dat1, trace = F)
 
@@ -365,8 +363,9 @@ sigma.sq.u <- 0.37/var(w.obs)
 
 epsilon <- 0.00001
 B <- 100
+fit.CR <- TRUE
 
-# Conditional score method.
+# Conditional score (CS) model.
 
 CS_beta.est <- nleqslv(coef(mod_naiv1), est.cs, y = y, w1 = w1, tau = tau, sigma.sq.u = sigma.sq.u, method = c("Newton"))$x
 CS_N.est <- N.CS.est(CS_beta.est, y, w1, tau, sigma.sq.u)
@@ -374,21 +373,23 @@ CS_N.est <- N.CS.est(CS_beta.est, y, w1, tau, sigma.sq.u)
 var.ests1 <- var.CS(CS_beta.est, y, w1, tau, sigma.sq.u)
 CS_beta.est.se <- sqrt(var.ests1)[1:2]
 
-# MCEM.
+# MCEM model.
 
 sigma.sq.e <- var(w1) - sigma.sq.u
 
-mod_naiv2 <- vgam(cbind(cap, noncap) ~ s(w1, df = 2), posbinomial(omit.constant = TRUE, parallel = TRUE ~ s(w1, df = 2)), data = CR_dat1, trace = F)
+mod_naiv2 <- vgam(cbind(cap, noncap) ~ s(w1, df = 2), VGAM::posbinomial(omit.constant = TRUE, parallel = TRUE ~ s(w1, df = 2)), data = CR_dat1, trace = F)
 
-est <- MCEMfit_CR(CR_dat1, tau, par.int, mod_naiv2, sigma.sq.u, sigma.sq.e, B, epsilon)
+mod_MCEM <- refitME(mod_naiv2, sigma.sq.u, W, B, fit.CR = TRUE)
 
-N.hat_MCEM <- est$N.est
+N.hat_MCEM <- mod_MCEM$N.est
 
-N.hat.se_MCEM <- est$N.est.se
+N.hat.se_MCEM <- mod_MCEM$N.est.se
 
-AIC.mod <- c(round(AIC(mod_naiv1), digits = 2), NA, round(AIC(mod_naiv2), digits = 2), round(AIC(est$mod), digits = 2))
+# Model selection.
 
-colnames(CR_dat1) <- c("x1", "cap", "noncap")
+AIC.mod <- c(round(AIC(mod_naiv1), digits = 2), NA, round(AIC(mod_naiv2), digits = 2), round(AIC(mod_MCEM$mod), digits = 2))
+
+# Combine all results.
 
 Nhat.mod <- c(round(mod_naiv1@extra$N.hat, digits = 2), round(CS_N.est, digits = 2), round(mod_naiv2@extra$N.hat, digits = 2), round(N.hat_MCEM, digits = 2))
 
