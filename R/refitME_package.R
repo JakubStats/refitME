@@ -344,6 +344,10 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
 
     if (length(which(is.nan(beta.est.se2))) > 0) beta.est.se2 <- c(rep(NA, K1))
 
+    #model_temp <- summary(mod)
+    #model_temp$coefficients[, 2] <- beta.est.se2
+    #mod <- model_temp
+
     values <- list(beta = beta.est, beta.se1 = beta.est.se1, beta.se2 = beta.est.se2, mod = mod, eff.samp.size = eff.samp.size)
   }
 
