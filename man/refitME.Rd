@@ -7,7 +7,7 @@
 See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
 }
 \usage{
-refitME(mod, sigma.sq.u, W = NULL, B = 50, epsilon = 1e-05, se.comp = TRUE)
+refitME(mod, sigma.sq.u, W = NULL, B = 50, epsilon = 1e-05)
 }
 \arguments{
 \item{mod}{: a glm/gam object (this is the naive fitted model). Make sure the first input predictor variables are the selected error-contaminated variable (i.e., the \code{W}'s).}
@@ -19,11 +19,9 @@ refitME(mod, sigma.sq.u, W = NULL, B = 50, epsilon = 1e-05, se.comp = TRUE)
 \item{B}{: the number of Monte Carlo replication values (default is set 50).}
 
 \item{epsilon}{: convergence threshold (default is set to 0.00001).}
-
-\item{se.comp}{: a logical to indicate if standard errors for model parameters should be calculated and returned (default is set to \code{TRUE}).}
 }
 \value{
-\code{refitME} returns model coef estimates with standard errors and the effective sample size to diagnose how closely the proposal distribution matches the posterior, see equation (2) of Stoklosa, Hwang and Warton.
+\code{refitME} returns the naive fitted model object where coefficient estimates, the covariance matrix, fitted values and residuals have been replaced with the final MCEM model fit. Standard errors and effective sample size (which diagnose how closely the proposal distribution matches the posterior, see equation (2) of Stoklosa, Hwang and Warton) have been additional included.
 }
 \description{
 Function that extracts the fitted (naive) model object and wraps the MCEM algorithm to correct for measurement error/error-in-variables (currently available for \code{lm()}, \code{glm()} and \code{gam()}, excludes \code{lme()}, \code{nlme()} and \code{polr()} models).

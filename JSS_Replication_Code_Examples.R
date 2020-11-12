@@ -43,10 +43,10 @@ end <- Sys.time()
 t2 <- difftime(end, start, units = "secs")
 comp.time <- c(comp.time, t2)
 
-est.beta <- rbind(coef(glm_naiv1), coef(glm_simex1), glm_MCEM1$beta)
+est.beta <- rbind(coef(glm_naiv1), coef(glm_simex1), coef(glm_MCEM1))
 est.beta.se <- rbind(sqrt(diag(vcov(glm_naiv1))),
                      sqrt(diag(glm_simex1$variance.jackknife)),
-                     glm_MCEM1$beta.se2)
+                     glm_MCEM1$se)
 
 # Parameter estimates.
 
@@ -72,7 +72,6 @@ rm(list = ls())
 
 library(refitME)
 library(SemiPar)
-library(simex)
 
 set.seed(2020)
 
@@ -101,22 +100,20 @@ rel.rat
 
 B <- 50
 
-epsilon <- 0.00001
-
 # Poisson models (we fitted negative binomial models but found no over-dispersion).
 
 # Naive GAM.
 
 start <- Sys.time()
 gam_naiv <- gam(Y ~ s(w1) + s(z1, k = 25) + s(z2) + s(z3),
-                  family = "poisson", data = dat, w1 = TRUE)
+                  family = "poisson", data = dat)
 end <- Sys.time()
 difftime(end, start, units = "secs")
 
 # MCEM GAM.
 
 start <- Sys.time()
-gam_MCEM <- refitME(gam_naiv, sigma.sq.u, W, B, epsilon, se.comp = FALSE)
+gam_MCEM <- refitME(gam_naiv, sigma.sq.u, W, B, epsilon = 0.0001)
 mean(gam_MCEM$eff.samp.size)/B
 end <- Sys.time()
 difftime(end, start, units = "secs")
@@ -131,7 +128,7 @@ op <- par(mfrow = c(2, 2), las = 1)
 
 for(i in 1:4) {
   if (i == 1) {
-    plot(gam_MCEM$mod, select = i, ylim = c(-0.35, 0.1), xlim = range(plot_gam_naiv[[1]]$x), rug = FALSE, col = "blue", all.terms = TRUE,
+    plot(gam_MCEM, select = i, ylim = c(-0.35, 0.1), xlim = range(plot_gam_naiv[[1]]$x), rug = FALSE, col = "blue", all.terms = TRUE,
          xlab = xlab.names[i], ylab = "s(Mortality counts)", lwd = 2, cex.lab = 1.3, cex.axis = 1.3,
          cex.main = 2, font.lab = 1.1, cex = 1.4, shade = T)
     lines(plot_gam_naiv[[1]]$x, plot_gam_naiv[[1]]$fit, type= "l", col = "red", lwd = 2, lty = 2)
@@ -142,7 +139,7 @@ for(i in 1:4) {
     }
   }
   if (i == 2) {
-    plot(gam_MCEM$mod, select = i, ylim = c(-0.25, 0.3), rug = FALSE, col = "blue", all.terms = TRUE,
+    plot(gam_MCEM, select = i, ylim = c(-0.25, 0.3), rug = FALSE, col = "blue", all.terms = TRUE,
          xlab = xlab.names[i], ylab = "s(Mortality counts)", lwd = 2, cex.lab = 1.3, cex.axis = 1.3,
          cex.main = 2, font.lab = 1.1, cex = 1.4, shade = T)
     lines(plot_gam_naiv[[2]]$x, plot_gam_naiv[[2]]$fit, type= "l", col = "red", lwd = 2, lty = 2)
@@ -151,7 +148,7 @@ for(i in 1:4) {
     }
   }
   if (i == 3) {
-    plot(gam_MCEM$mod, select = i, ylim = c(-0.2, 0.4), rug = FALSE, col = "blue", all.terms = TRUE,
+    plot(gam_MCEM, select = i, ylim = c(-0.2, 0.4), rug = FALSE, col = "blue", all.terms = TRUE,
          xlab = xlab.names[i], ylab = "s(Mortality counts)", lwd = 2, cex.lab = 1.3, cex.axis = 1.3,
          cex.main = 2, font.lab = 1.1, cex = 1.4, shade = T)
     lines(plot_gam_naiv[[3]]$x, plot_gam_naiv[[3]]$fit, type= "l", col = "red", lwd = 2, lty = 2)
@@ -160,7 +157,7 @@ for(i in 1:4) {
     }
   }
   if (i == 4) {
-    plot(gam_MCEM$mod, select = i, ylim = c(-0.06, 0.08), rug = FALSE, col = "blue", all.terms = TRUE,
+    plot(gam_MCEM, select = i, ylim = c(-0.06, 0.08), rug = FALSE, col = "blue", all.terms = TRUE,
          xlab = xlab.names[i], ylab = "s(Mortality counts)", lwd = 2, cex.lab = 1.1, cex.axis = 1.1,
          cex.main = 2, font.lab = 1.1, cex = 1.4, shade = T)
     lines(plot_gam_naiv[[4]]$x, plot_gam_naiv[[4]]$fit, type= "l", col = "red", lwd = 2, lty = 2)
@@ -199,13 +196,7 @@ attach(dat)
 coord.dat <- cbind(dat$X, dat$Y)
 colnames(coord.dat) <- c("Longitude", "Latitude")
 
-family <- "poisson"
-
 scen_par <- 1.5
-
-up.wt <- (10^6)^(1 - dat$Y.obs)
-p.wt <- rep(1.e-6, length(dat$Y.obs))
-p.wt[dat$Y.obs == 0] = 86227/sum(dat$Y.obs == 0)
 
 Y <- dat$Y.obs
 
@@ -215,8 +206,8 @@ W <- dat$MNT
 
 # PPM - using a Poisson GLM.
 
-p.wt <- rep(1.e-6, length(Y))
-p.wt[Y == 0] = 86227/sum(Y == 0)
+p.wt <- rep(1.e-6, length(dat$Y.obs))
+p.wt[dat$Y.obs == 0] <- 1
 
 X <- cbind(rep(1, length(Y)),
            poly(W, degree = 2, raw = TRUE),
@@ -242,9 +233,9 @@ B <- 50
 
 # Set the measurement error variance here (we considered three values in this example).
 
-#sigma.sq.u <- 0.25
+sigma.sq.u <- 0.25
 #sigma.sq.u <- 0.5
-sigma.sq.u <- 1
+#sigma.sq.u <- 1
 
 W.train <- W[train]
 W.test <- W[test]
@@ -255,8 +246,6 @@ print(rel.rat)  # Express as a relative percentage (%).
 sigma.sq.e <- var(W.test) - sigma.sq.u
 
 start <- Sys.time()
-
-W <- X[train, ]
 
 PPM_MCEM1 <- refitME(PPM_naiv1, sigma.sq.u, W, B)
 
@@ -272,8 +261,8 @@ X.s.test <- X.s[test, ]
 preds1 <- exp(X.f.test%*%coef(PPM_naiv1))
 preds2 <- exp(X.s.test%*%coef(PPM_naiv1))
 
-preds3 <- exp(X.f.test%*%PPM_MCEM1$beta)
-preds4 <- exp(X.s.test%*%PPM_MCEM1$beta)
+preds3 <- exp(X.f.test%*%coef(PPM_MCEM1))
+preds4 <- exp(X.s.test%*%coef(PPM_MCEM1))
 
 coord.dat1 <- coord.dat[test, ]
 
@@ -293,7 +282,7 @@ op <- par(mfrow = c(2, 2), las = 1)
 plots <- factor(pred.dats[, 4], labels = c("(c) PPM MCEM", "(d) PPM MCEM (+1.5 degrees)", "(a) PPM", "(b) PPM (+1.5 degrees)"))
 pred.dats <- as.data.frame(pred.dats)
 colnames(pred.dats) <- c("x", "y", "preds", "plot")
-levelplot(preds ~ x + y | plots, cex = 1, data = pred.dats, asp = "iso", ylab = "Latitude", xlab = "Longitude", col.regions = heat.colors(1024)[900:1], cuts = 900, main = list("", cex = 5), scales = list(y = list(draw = FALSE), x = list(draw = FALSE), relation = "free"), colorkey = list(labels = list(cex = 1.4)))
+levelplot(preds ~ x + y | plots, cex = 1, data = pred.dats, asp = "iso", ylab = "Latitude", xlab = "Longitude", col.regions = heat.colors(1024)[900:1], cuts = 900, main = list("", cex = 5), scales = list(y = list(draw = FALSE), x = list(draw = FALSE), relation = "free"), colorkey = list(labels = list(cex = 0.8)))
 
 par(op)
 

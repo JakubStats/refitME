@@ -15,7 +15,6 @@ MCEMfit_glm(
   sigma.sq.e = 1,
   B = 50,
   epsilon = 1e-05,
-  se.comp = TRUE,
   theta.est = 1,
   shape.est = 1
 )
@@ -35,14 +34,12 @@ MCEMfit_glm(
 
 \item{epsilon}{: a set convergence threshold (default is set to 0.00001).}
 
-\item{se.comp}{: a logical to indicate if standard errors for model parameters should be calculated and returned (default is set to \code{TRUE}).}
-
 \item{theta.est}{: an initial value for the dispersion parameter (this is required for fitting negative binomial models).}
 
 \item{shape.est}{: an initial value for the shape parameter (this is required for fitting gamma models).}
 }
 \value{
-\code{MCEMfit_glm} returns model coefficient estimates with standard errors and the effective sample size.
+\code{MCEMfit_glm} returns the naive fitted model object where coefficient estimates, the covariance matrix, fitted values and residuals have been replaced with the final MCEM model fit. Standard errors and effective sample size have been additional included.
 }
 \description{
 Function for wrapping the MCEM algorithm on GLMs where covariates are subject to measurement error/error-in-variables.

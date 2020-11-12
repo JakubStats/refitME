@@ -5,7 +5,7 @@
 \alias{Framinghamdata}
 \title{The Framingham heart study data set.}
 \format{
-A data set that contains: 5 columns with 1615 observations. The columns are defined as follows:
+A data set that contains: 5 columns with 1,615 observations. The columns are defined as follows:
 \describe{
 \item{\code{Y}}{Response indicator (binary variable) of first evidence of CHD status of patient.}
 \item{\code{z1}}{Serum cholesterol level of patient.}

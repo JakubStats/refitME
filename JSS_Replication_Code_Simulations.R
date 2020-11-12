@@ -28,9 +28,7 @@ alpha <- c(0, 0)
 
 beta <- c(0.5, 1, -0.3); par.int <- 3
 
-# Un-hash below if you want to fit spline models.
-
-#par.int <- "spline"
+#par.int <- "spline" # Un-hash here if you want to fit spline models!
 
 scen_par <- 0.5  # Additional shift in "future" covariate values.
 
@@ -64,7 +62,6 @@ for(i in 1:length(sigma.sq.u_vec)) {
   beta_mat.se1 <- c()
   beta_mat.se2 <- c()
   beta_mat.se3 <- c()
-  beta_mat.se4 <- c()
 
   RMSE_CV0a <- c()
   RMSE_CV1a <- c()
@@ -174,13 +171,12 @@ for(i in 1:length(sigma.sq.u_vec)) {
       beta_mat0 <- rbind(beta_mat0, mod_true1$coef)
       beta_mat1 <- rbind(beta_mat1, mod_naiv1$coef)
       beta_mat2 <- rbind(beta_mat2, mod_simex1$coef)
-      beta_mat3 <- rbind(beta_mat3, c(est$beta))
+      beta_mat3 <- rbind(beta_mat3, est$coef)
 
       beta_mat.se0 <- rbind(beta_mat.se0, sqrt(diag(vcov(mod_true1))))
       beta_mat.se1 <- rbind(beta_mat.se1, sqrt(diag(vcov(mod_naiv1))))
       beta_mat.se2 <- rbind(beta_mat.se2, sqrt(diag(mod_simex1$variance.jackknife)))
-      beta_mat.se3 <- rbind(beta_mat.se3, c(est$beta.se1))
-      beta_mat.se4 <- rbind(beta_mat.se4, c(est$beta.se2))
+      beta_mat.se3 <- rbind(beta_mat.se3, est$se)
     }
 
     # CV/MSE on test data.
@@ -205,11 +201,11 @@ for(i in 1:length(sigma.sq.u_vec)) {
       if (test.W == T) eta_pred_simex <- as.matrix(W_test_scen)%*%mod_simex1$coef
       RMSE_CV2b <- c(RMSE_CV2b, sqrt(mean((eta_test_scen-eta_pred_simex)^2)))
 
-      if (test.W == F) eta_pred_mcem <- as.matrix(X_test)%*%est$beta
-      if (test.W == T) eta_pred_mcem <- as.matrix(W_test)%*%est$beta
+      if (test.W == F) eta_pred_mcem <- as.matrix(X_test)%*%est$coef
+      if (test.W == T) eta_pred_mcem <- as.matrix(W_test)%*%est$coef
       RMSE_CV3a <- c(RMSE_CV3a, sqrt(mean((eta_test-eta_pred_mcem)^2)))
-      if (test.W == F) eta_pred_mcem <- as.matrix(X_test_scen)%*%est$beta
-      if (test.W == T) eta_pred_mcem <- as.matrix(W_test_scen)%*%est$beta
+      if (test.W == F) eta_pred_mcem <- as.matrix(X_test_scen)%*%est$coef
+      if (test.W == T) eta_pred_mcem <- as.matrix(W_test_scen)%*%est$coef
       RMSE_CV3b <- c(RMSE_CV3b, sqrt(mean((eta_test_scen - eta_pred_mcem)^2)))
     }
 
@@ -227,9 +223,9 @@ for(i in 1:length(sigma.sq.u_vec)) {
       eta_pred_naiv <- predict(mod_naiv1, newdata = dat_test_scen, type = "link")
       RMSE_CV1b <- c(RMSE_CV1b, sqrt(mean((eta_test_scen - eta_pred_naiv)^2)))
 
-      eta_pred_mcem <- predict(est$mod, newdata = dat_test, type = "link")
+      eta_pred_mcem <- predict(est, newdata = dat_test, type = "link")
       RMSE_CV3a <- c(RMSE_CV3a, sqrt(mean((eta_test - eta_pred_mcem)^2)))
-      eta_pred_mcem <- predict(est$mod, newdata = dat_test_scen, type = "link")
+      eta_pred_mcem <- predict(est, newdata = dat_test_scen, type = "link")
       RMSE_CV3b <- c(RMSE_CV3b, sqrt(mean((eta_test_scen - eta_pred_mcem)^2)))
     }
 
@@ -237,18 +233,18 @@ for(i in 1:length(sigma.sq.u_vec)) {
   }
 
   if (par.int != "spline") {
-    SE_mat <- cbind(beta_mat.se0[, par.int], beta_mat.se1[, par.int], beta_mat.se2[, par.int], beta_mat.se3[, par.int], beta_mat.se4[, par.int])
+    SE_mat <- cbind(beta_mat.se0[, par.int], beta_mat.se1[, par.int], beta_mat.se2[, par.int], beta_mat.se3[, par.int])
     SD_mat <- c(sd(beta_mat0[, par.int], na.rm = T), sd(beta_mat1[, par.int], na.rm = T), sd(beta_mat2[, par.int], na.rm = T), sd(beta_mat3[, par.int], na.rm = T), sd(beta_mat3[, par.int], na.rm = T))
 
-    print(c(mean(SE_mat[, 1], na.rm = T), mean(SE_mat[, 2], na.rm = T), mean(SE_mat[, 3], na.rm = T), mean(SE_mat[, 4], na.rm = T), mean(SE_mat[, 5], na.rm = T)))
+    print(c(mean(SE_mat[, 1], na.rm = T), mean(SE_mat[, 2], na.rm = T), mean(SE_mat[, 3], na.rm = T), mean(SE_mat[, 4], na.rm = T)))
     print(SD_mat)
 
     bias_mat1 <- c(mean((beta_mat0[, par.int] - beta[par.int])/beta[par.int], na.rm = T), mean((beta_mat1[, par.int] - beta[par.int])/beta[par.int], na.rm = T), mean((beta_mat2[, par.int] - beta[par.int])/beta[par.int], na.rm = T), mean((beta_mat3[, par.int] - beta[par.int])/beta[par.int], na.rm = T))
     RMSE_mat1 <- c(sqrt(mean((beta_mat0[, par.int] - beta[par.int])^2, na.rm = T)), sqrt(mean((beta_mat1[, par.int] - beta[par.int])^2, na.rm = T)), sqrt(mean((beta_mat2[, par.int] - beta[par.int])^2, na.rm = T)), sqrt(mean((beta_mat3[, par.int] - beta[par.int])^2, na.rm = T)))
-    CP_mat_SE4 <- which(is.nan(beta_mat.se4[, par.int]) | is.na(beta_mat.se4[, par.int]))
-    if (length(CP_mat_SE4) == 0) CP_mat4 <- cov.pc(beta, beta_mat3, beta_mat.se4, N.sim - length(CP_mat_SE4))[par.int]
-    if (length(CP_mat_SE4) > 0) CP_mat4 <- cov.pc(beta, beta_mat3[-CP_mat_SE4, ], beta_mat.se4[-CP_mat_SE4, ], N.sim - length(CP_mat_SE4))[par.int]
-    CP_mat1 <- c(cov.pc(beta, beta_mat0, beta_mat.se0, N.sim)[par.int], cov.pc(beta, beta_mat1, beta_mat.se1, N.sim)[par.int], cov.pc(beta, beta_mat2, beta_mat.se2, N.sim)[par.int], CP_mat4)
+    CP_mat_SE3 <- which(is.nan(beta_mat.se3[, par.int]) | is.na(beta_mat.se3[, par.int]))
+    if (length(CP_mat_SE3) == 0) CP_mat3 <- cov.pc(beta, beta_mat3, beta_mat.se3, N.sim - length(CP_mat_SE3))[par.int]
+    if (length(CP_mat_SE3) > 0) CP_mat3 <- cov.pc(beta, beta_mat3[-CP_mat_SE3, ], beta_mat.se3[-CP_mat_SE3, ], N.sim - length(CP_mat_SE3))[par.int]
+    CP_mat1 <- c(cov.pc(beta, beta_mat0, beta_mat.se0, N.sim)[par.int], cov.pc(beta, beta_mat1, beta_mat.se1, N.sim)[par.int], cov.pc(beta, beta_mat2, beta_mat.se2, N.sim)[par.int], CP_mat3)
 
     bias_mat <- rbind(bias_mat, bias_mat1)
     RMSE_mat <- rbind(RMSE_mat, RMSE_mat1)
@@ -438,7 +434,6 @@ for(i in 1:length(sigma.sq.u_vec)) {
   beta_mat.se1 <- c()
   beta_mat.se2 <- c()
   beta_mat.se3 <- c()
-  beta_mat.se4 <- c()
 
   RMSE_CV0a <- c()
   RMSE_CV1a <- c()
@@ -547,13 +542,12 @@ for(i in 1:length(sigma.sq.u_vec)) {
       beta_mat0 <- rbind(beta_mat0, mod_true1$coef)
       beta_mat1 <- rbind(beta_mat1, mod_naiv1$coef)
       beta_mat2 <- rbind(beta_mat2, mod_simex1$coef)
-      beta_mat3 <- rbind(beta_mat3, c(est$beta))
+      beta_mat3 <- rbind(beta_mat3, est$coef)
 
       beta_mat.se0 <- rbind(beta_mat.se0, sqrt(diag(vcov(mod_true1))))
       beta_mat.se1 <- rbind(beta_mat.se1, sqrt(diag(vcov(mod_naiv1))))
       beta_mat.se2 <- rbind(beta_mat.se2, sqrt(diag(mod_simex1$variance.jackknife)))
-      beta_mat.se3 <- rbind(beta_mat.se3, c(est$beta.se1))
-      beta_mat.se4 <- rbind(beta_mat.se4, c(est$beta.se2))
+      beta_mat.se3 <- rbind(beta_mat.se3, est$se1)
     }
 
     # CV/MSE on test data.
@@ -574,9 +568,9 @@ for(i in 1:length(sigma.sq.u_vec)) {
       eta_pred_simex <- as.matrix(W_test_scen)%*%mod_simex1$coef
       RMSE_CV2b <- c(RMSE_CV2b, sqrt(mean((eta_test_scen - eta_pred_simex)^2)))
 
-      eta_pred_mcem <- as.matrix(W_test)%*%est$beta
+      eta_pred_mcem <- as.matrix(W_test)%*%est$coef
       RMSE_CV3a <- c(RMSE_CV3a, sqrt(mean((eta_test - eta_pred_mcem)^2)))
-      eta_pred_mcem <- as.matrix(W_test_scen)%*%est$beta
+      eta_pred_mcem <- as.matrix(W_test_scen)%*%est$coef
       RMSE_CV3b <- c(RMSE_CV3b, sqrt(mean((eta_test_scen - eta_pred_mcem)^2)))
     }
 
@@ -597,11 +591,11 @@ for(i in 1:length(sigma.sq.u_vec)) {
   if (par.int != "spline") {
     bias_mat1 <- c(mean((beta_mat0[, par.int] - beta[par.int])/beta[par.int], na.rm = T), mean((beta_mat1[, par.int] - beta[par.int])/beta[par.int], na.rm = T), mean((beta_mat2[, par.int] - beta[par.int])/beta[par.int], na.rm = T), mean((beta_mat3[, par.int] - beta[par.int])/beta[par.int], na.rm = T))
     RMSE_mat1 <- c(sqrt(mean((beta_mat0[, par.int] - beta[par.int])^2, na.rm = T)), sqrt(mean((beta_mat1[, par.int] - beta[par.int])^2, na.rm = T)), sqrt(mean((beta_mat2[, par.int] - beta[par.int])^2, na.rm = T)), sqrt(mean((beta_mat3[, par.int] - beta[par.int])^2, na.rm = T)))
-    CP_mat_SE4 <- which(is.nan(beta_mat.se4[, par.int]) | is.na(beta_mat.se4[, par.int]))
+    CP_mat_SE3 <- which(is.nan(beta_mat.se3[, par.int]) | is.na(beta_mat.se3[, par.int]))
 
-    if (length(CP_mat_SE4) == 0) CP_mat4 <- cov.pc(beta, beta_mat3, beta_mat.se4, N.sim - length(CP_mat_SE4))[par.int]
-    if (length(CP_mat_SE4) > 0) CP_mat4 <- cov.pc(beta, beta_mat3[-CP_mat_SE4, ], beta_mat.se4[-CP_mat_SE4, ], N.sim - length(CP_mat_SE4))[par.int]
-    CP_mat1 <- c(cov.pc(beta, beta_mat0, beta_mat.se0, N.sim)[par.int], cov.pc(beta, beta_mat1, beta_mat.se1, N.sim)[par.int], cov.pc(beta, beta_mat2, beta_mat.se2, N.sim)[par.int], CP_mat4)
+    if (length(CP_mat_SE3) == 0) CP_mat3 <- cov.pc(beta, beta_mat3, beta_mat.se3, N.sim - length(CP_mat_SE3))[par.int]
+    if (length(CP_mat_SE3) > 0) CP_mat3 <- cov.pc(beta, beta_mat3[-CP_mat_SE3, ], beta_mat.se3[-CP_mat_SE3, ], N.sim - length(CP_mat_SE3))[par.int]
+    CP_mat1 <- c(cov.pc(beta, beta_mat0, beta_mat.se0, N.sim)[par.int], cov.pc(beta, beta_mat1, beta_mat.se1, N.sim)[par.int], cov.pc(beta, beta_mat2, beta_mat.se2, N.sim)[par.int], CP_mat3)
 
     bias_mat <- rbind(bias_mat, bias_mat1)
     RMSE_mat <- rbind(RMSE_mat, RMSE_mat1)
@@ -939,11 +933,11 @@ for(i in 1:length(sigma.sq.u_vec)) {
 
   sigma.sq.u <- sigma.sq.u_vec[i]  # Measurement error variance.
 
-  beta_mat0 = beta_mat1 = beta_mat2 = beta_mat3 = beta_mat4 <- c()
-  beta_mat.se0 = beta_mat.se1 = beta_mat.se2 = beta_mat.se3 = beta_mat.se4 <- c()
+  beta_mat0 = beta_mat1 = beta_mat2 = beta_mat3 <- c()
+  beta_mat.se0 = beta_mat.se1 = beta_mat.se2 = beta_mat.se3 <- c()
 
-  N_mat0 = N_mat1 = N_mat2 = N_mat3 = N_mat4 <- c()
-  N_mat.se0 = N_mat.se1 = N_mat.se2 = N_mat.se3 = N_mat.se4 <- c()
+  N_mat0 = N_mat1 = N_mat2 = N_mat3 <- c()
+  N_mat.se0 = N_mat.se1 = N_mat.se2 = N_mat.se3 <- c()
 
   c.sim <- TRUE
   k <- 0

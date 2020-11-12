@@ -11,11 +11,12 @@ library(MASS)
 library(mgcv)
 library(Matrix)
 library(VGAM)
+library(expm)
 suppressMessages(library(sandwich))
 
 #' @title The Framingham heart study data set.
 #' @description Data set consisting of records of male patients with coronary heart disease collected from the Framingham heart study. The \code{Framinghamdata} data consists of binary responses and four predictor variables collected on `n = 1615` patients.
-#' @format A data set that contains: 5 columns with 1615 observations. The columns are defined as follows:
+#' @format A data set that contains: 5 columns with 1,615 observations. The columns are defined as follows:
 #' \describe{
 #' \item{\code{Y}}{Response indicator (binary variable) of first evidence of CHD status of patient.}
 #' \item{\code{z1}}{Serum cholesterol level of patient.}
@@ -41,20 +42,21 @@ suppressMessages(library(sandwich))
 #' @param sigma.sq.e : variance of the true covariate (X).
 #' @param B : the number of Monte Carlo replication values (default is set to 50).
 #' @param epsilon : a set convergence threshold (default is set to 0.00001).
-#' @param se.comp : a logical to indicate if standard errors for model parameters should be calculated and returned (default is set to \code{TRUE}).
 #' @param theta.est : an initial value for the dispersion parameter (this is required for fitting negative binomial models).
 #' @param shape.est : an initial value for the shape parameter (this is required for fitting gamma models).
-#' @return \code{MCEMfit_glm} returns model coefficient estimates with standard errors and the effective sample size.
+#' @return \code{MCEMfit_glm} returns the naive fitted model object where coefficient estimates, the covariance matrix, fitted values and residuals have been replaced with the final MCEM model fit. Standard errors and effective sample size have been additional included.
 #' @author Jakub Stoklosa and David I. Warton.
 #' @references Stoklosa, J., Hwang, W-H., and Warton, D.I. \pkg{refitME}: Measurement Error Modelling using Monte Carlo Expectation Maximization in \proglang{R}.
-#' @import mvtnorm MASS mgcv sandwich
+#' @import mvtnorm MASS mgcv sandwich expm
 #' @importFrom stats Gamma
 #' @export
 #' @seealso \code{\link{MCEMfit_gam}}
 #' @source See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
-MCEMfit_glm <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 50, epsilon = 0.00001, se.comp = TRUE, theta.est = 1, shape.est = 1) {
+MCEMfit_glm <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 50, epsilon = 0.00001, theta.est = 1, shape.est = 1) {
 
   options(warn = -1)
+
+  mod_n <- mod
 
   reps <- 0
   cond <- TRUE
@@ -64,11 +66,17 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
   d <- length(mod.terms)
 
   Y <- mod$model[, 1]
+
   bigY <- rep(Y, B)
 
   n <- length(Y)
 
-  p.wt <- weights(mod)
+  if (family == "gaussian") {
+    if (is.null(stats::weights(mod))) p.wt <- rep(1, n)
+    if (!is.null(stats::weights(mod))) p.wt <- stats::weights(mod)
+  }
+  if (family != "gaussian") p.wt <- stats::weights(mod)
+
   bigp.wt <- rep(p.wt, B)
 
   if(length(names(mod$model)) > (d + 1))  W1 <- as.matrix(mod$model[, -c(1, (d + 2))])
@@ -202,13 +210,16 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
     if (family == "Gamma") prY <- stats::dgamma(bigY, shape = shape.est, scale = muPred/shape.est)
     if (family == "negbin") prY <- stats::dnbinom(bigY, size = theta.est, mu = muPred)
 
-    # M-step (updates).
+    prY[prY == 0] <- 1.e-6
 
     bigW <- matrix(prY*prX, n, B)
     sumW <- rep(apply(bigW, 1, sum, na.rm = T), B)
+    weights1 <- as.vector(bigW)/sumW
 
-    weights1 <- bigp.wt*as.vector(bigW)/sumW
-    weights1[is.nan(weights1)] <- 0
+    weights2 <- weights1
+    weights1 <- bigp.wt*weights1
+
+    # M-step (updates).
 
     if (family == "gaussian") {
       mod <- stats::lm(bigY ~ X - 1, weights = weights1)
@@ -220,15 +231,16 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
     if (family == "negbin") mod <- MASS::glm.nb(bigY ~ X - 1, weights = weights1, init.theta = theta.est)
 
     beta.update <- stats::coef(mod)
+
     if (family == "negbin") theta.update <- mod$theta
+
     muPred <- stats::predict(mod, type = "response")
-    if (family == "Gamma") {
-      shape.update <- summary(mod)[14]$dispersion
-    }
+
+    if (family == "Gamma") shape.update <- summary(mod)[14]$dispersion
 
     if (is.matrix(sigma.sq.u) == F) {
-      sigma.sq.e1.update <- wt.var(X[, 2], w = weights1)
-      mu.e1.update <- stats::weighted.mean(X[, 2], w = weights1)
+      sigma.sq.e1.update <- wt.var(X[, 2], w = weights2)
+      mu.e1.update <- stats::weighted.mean(X[, 2], w = weights2)
     }
 
     if (is.matrix(sigma.sq.u) == T) {
@@ -236,11 +248,11 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
       mu.e1.update <- c()
 
       for(kk in 1:q1) {
-        sigma.sq.e1.update1 <- wt.var(XA[, kk], w = weights1)
+        sigma.sq.e1.update1 <- wt.var(XA[, kk], w = weights2)
         sigma.sq.e1.update <- c(sigma.sq.e1.update, sigma.sq.e1.update1)
 
-        mu.e1.update1 <- stats::weighted.mean(XA[, kk], w = weights1)
-        mu.e1.update <- c(mu.e1.update1, mu.e1.update)
+        mu.e1.update1 <- stats::weighted.mean(XA[, kk], w = weights2)
+        mu.e1.update <- c(mu.e1.update, mu.e1.update1)
       }
 
       sigma.sq.e1.update <- diag(sigma.sq.e1.update)
@@ -296,6 +308,26 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
     mu.e1 <- mu.e1.update
   }
 
+  mod_n$coefficients <- beta.est
+
+  eta <- stats::predict(mod_n)
+
+  if (family == "gaussian") {
+    residuals <- Y - stats::fitted(mod_n)
+    mod_n$residuals <- residuals
+  }
+
+  if (family != "gaussian") {
+    mu <- mod_n$family$linkinv(eta)
+    mu.eta <- mod_n$family$mu.eta(eta)
+    residuals <- (Y - mu)/mod_n$family$mu.eta(eta)
+    mod_n$residuals <- residuals
+  }
+
+  mod_n$linear.predictors <- stats::predict(mod_n)
+
+  mod_n$fitted.values <- stats::predict(mod_n, type = "response")
+
   sumW <- apply(bigW, 1, sum, na.rm = T)
   weights1 <- bigW/sumW
   weights1[is.nan(weights1)] <- 0
@@ -304,56 +336,52 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
   eff.samp.size[is.infinite(eff.samp.size)] <- "NA"
   eff.samp.size <- as.numeric(eff.samp.size)
 
+  mod_n$eff.samp.size <- eff.samp.size
+
   # Standard error calculations start here.
 
-  if(se.comp == T) {
-    beta.est.se1 <- sqrt(diag(stats::vcov(mod)))  # Naive SE estimator.
+  estfun_mat <- sandwich::estfun(mod)
+  if (family == "gaussian") estfun_mat <- sandwich::estfun(mod)*B
 
-    if (family == "gaussian") beta.est.se1 <- sqrt(diag(stats::vcov(mod)*B))
+  K1 <- length(beta.update)
 
-    estfun_mat <- sandwich::estfun(mod)
-    if (family == "gaussian") estfun_mat <- sandwich::estfun(mod)*B
+  S_1 <- matrix(0, nrow = K1, ncol = K1)
+  SS_1 <- matrix(0, nrow = K1, ncol = K1)
 
-    K1 <- length(beta.update)
+  ind_mat <- matrix(1:(n*B), ncol = n, byrow = T)
 
-    S_1 <- matrix(0, nrow = K1, ncol = K1)
-    SS_1 <- matrix(0, nrow = K1, ncol = K1)
-
-    ind_mat <- matrix(1:(n*B), ncol = n, byrow = T)
-
-    for(ii in 1:n) {
-      index_vec <- ind_mat[, ii]
-      S_1 <- S_1 + (apply(estfun_mat[index_vec, ], 2, sum))%*%t(apply(estfun_mat[index_vec, ], 2, sum))
-    }
-
-    if (family == "gaussian") {
-      sand1 <- (sandwich::estfun(mod)*B/mod$weights)
-      sand1[is.nan(sand1)] <- 1
-      SS_1 <- t(sandwich::estfun(mod)*B)%*%sand1
-      u.bar <- solve(stats::vcov(mod)*B)
-      beta.est.se2 <- sqrt(diag(solve(u.bar - SS_1/B^2 + S_1/B^2)))
-    }
-
-    if (family!="gaussian") {
-      sand1 <- (sandwich::estfun(mod)/mod$prior)
-      sand1[is.nan(sand1)] <- 1
-      SS_1 <- t(sandwich::estfun(mod))%*%sand1
-      u.bar <- solve(stats::vcov(mod))
-      beta.est.se2 <- sqrt(diag(solve(u.bar - SS_1 + S_1)))
-    }
-
-    if (length(which(is.nan(beta.est.se2))) > 0) beta.est.se2 <- c(rep(NA, K1))
-
-    #model_temp <- summary(mod)
-    #model_temp$coefficients[, 2] <- beta.est.se2
-    #mod <- model_temp
-
-    values <- list(beta = beta.est, beta.se1 = beta.est.se1, beta.se2 = beta.est.se2, mod = mod, eff.samp.size = eff.samp.size)
+  for(ii in 1:n) {
+    index_vec <- ind_mat[, ii]
+    S_1 <- S_1 + (apply(estfun_mat[index_vec, ], 2, sum))%*%t(apply(estfun_mat[index_vec, ], 2, sum))
   }
 
-  if(se.comp == F) values <- list(beta = beta.est, mod = mod, eff.samp.size = eff.samp.size)
+  if (family == "gaussian") {
+    sand1 <- (sandwich::estfun(mod)*B/mod$weights)
+    sand1[is.nan(sand1)] <- 1
+    SS_1 <- t(sandwich::estfun(mod)*B)%*%sand1
+    u.bar <- solve(stats::vcov(mod)*B)
+    beta.est.se2 <- sqrt(diag(solve(u.bar - SS_1/B^2 + S_1/B^2)))
+    AA <- expm::sqrtm((u.bar - SS_1/B^2 + S_1/B^2)*(stats::summary.lm(mod_n)$sigma)^2)
+  }
 
-  return(values)
+  if (family != "gaussian") {
+    sand1 <- (sandwich::estfun(mod)/mod$prior)
+    sand1[is.nan(sand1)] <- 1
+    SS_1 <- t(sandwich::estfun(mod))%*%sand1
+    u.bar <- solve(stats::vcov(mod))
+    beta.est.se2 <- sqrt(diag(solve(u.bar - SS_1 + S_1)))
+    AA <- expm::sqrtm((u.bar - SS_1 + S_1)*stats::summary.glm(mod_n)$dispersion)
+  }
+
+  if (length(which(is.nan(beta.est.se2))) > 0) beta.est.se2 <- c(rep(NA, K1))
+
+  mod_n$se <- beta.est.se2
+
+  mod_n$qr <- qr(AA)
+  dim_temp <- ncol(mod_n$qr$qr)*nrow(mod_n$qr$qr) - ncol(mod_n$qr$qr)*ncol(mod_n$qr$qr)
+  mod_n$qr$qr <- rbind(qr(AA)$qr, matrix(rep(0, dim_temp), ncol = ncol(mod_n$qr$qr)))
+
+  return(mod_n)
 }
 
 #' MCEMfit_gam
@@ -367,11 +395,9 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
 #' @param sigma.sq.e : variance of the true covariate (X).
 #' @param B : the number of Monte Carlo replication values (default is set to 50).
 #' @param epsilon : convergence threshold (default is set to 0.00001).
-#' @return \code{refitME} returns model coef estimates with standard errors and the effective sample size.
-#' @param se.comp : a logical to indicate if standard errors for model parameters should be calculated and returned (default is set to \code{TRUE}).
 #' @param theta.est : an initial value for the dispersion parameter (this is required for fitting negative binomial models).
 #' @param shape.est : an initial value for the shape parameter (this is required for fitting gamma models).
-#' @return \code{MCEMfit_glm} returns model coef estimates with standard errors.
+#' @return \code{MCEMfit_gam} returns the naive fitted model object where coefficient estimates, the covariance matrix, fitted values and residuals have been replaced with the final MCEM model fit. Standard errors and effective sample size have been additional included.
 #' @author Jakub Stoklosa and David I. Warton.
 #' @references Stoklosa, J., Hwang, W-H., and Warton, D.I. \pkg{refitME}: Measurement Error Modelling using Monte Carlo Expectation Maximization in \proglang{R}.
 #' @import mvtnorm MASS mgcv sandwich
@@ -379,7 +405,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
 #' @export
 #' @seealso \code{\link{MCEMfit_glm}}
 #' @source See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
-MCEMfit_gam <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 50, epsilon = 0.00001, se.comp = TRUE, theta.est = 1, shape.est = 10) {
+MCEMfit_gam <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 50, epsilon = 0.00001, theta.est = 1, shape.est = 10) {
 
   options(warn = -1)
 
@@ -391,11 +417,17 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
   d <- length(mod.terms)
 
   Y <- mod$model[, 1]
+
   bigY <- rep(Y, B)
 
   n <- length(Y)
 
-  p.wt <- weights(mod)
+  if (family == "gaussian") {
+    if (is.null(stats::weights(mod))) p.wt <- rep(1, n)
+    if (!is.null(stats::weights(mod))) p.wt <- stats::weights(mod)
+  }
+  if (family != "gaussian") p.wt <- stats::weights(mod)
+
   bigp.wt <- rep(p.wt, B)
 
   if(length(names(mod$model)) > (d + 1))  W1 <- as.matrix(mod$model[, -c(1, (d + 2))])
@@ -515,15 +547,18 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
     if (family == "Gamma") prY <- stats::dgamma(bigY, rate = shape.est/muPred, shape = shape.est)
     if (family == "negbin") prY <- stats::dnbinom(bigY, size = theta.est, mu = muPred)
 
-    # M-step (updates).
+    prY[prY == 0] <- 1.e-6
 
     bigW <- matrix(prY*prX, n, B)
-    sumW <- rep(apply(bigW, 1, sum), B)
+    sumW <- rep(apply(bigW, 1, sum, na.rm = T), B)
+    weights1 <- as.vector(bigW)/sumW
 
-    weights1 <- bigp.wt*as.vector(bigW)/sumW
-    weights1[is.nan(weights1)] <- 0
+    weights2 <- weights1
+    weights1 <- bigp.wt*weights1
 
     dat_new$weights1 <- weights1
+
+    # M-step (updates).
 
     if (family == "gaussian") {
       mod <- mgcv::gam(formula = form.name, weights = weights1, data = dat_new)
@@ -538,11 +573,12 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
 
     if (family == "negbin") theta.update <- mod$family$getTheta(TRUE)
     if (family == "Gamma") shape.update <- MASS::gamma.shape(mod)[1]$alpha
-    muPred <- stats::predict(mod, type = "response")
+
+    muPred <- mgcv::predict.gam(mod, type = "response")
 
     if (is.matrix(sigma.sq.u) == F) {
-      sigma.sq.e1.update <- wt.var(X[, 1], w = weights1)
-      mu.e1.update <- stats::weighted.mean(X[, 1], w = weights1)
+      sigma.sq.e1.update <- wt.var(X[, 1], w = weights2)
+      mu.e1.update <- stats::weighted.mean(X[, 1], w = weights2)
     }
 
     if (is.matrix(sigma.sq.u) == T) {
@@ -550,11 +586,11 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
       mu.e1.update <- c()
 
       for(kk in 1:q1) {
-        sigma.sq.e1.update1 <- wt.var(X[, kk], w = weights1)
+        sigma.sq.e1.update1 <- wt.var(X[, kk], w = weights2)
         sigma.sq.e1.update <- c(sigma.sq.e1.update, sigma.sq.e1.update1)
 
-        mu.e1.update1 <- stats::weighted.mean(X[, kk], w = weights1)
-        mu.e1.update <- c(mu.e1.update1, mu.e1.update)
+        mu.e1.update1 <- stats::weighted.mean(X[, kk], w = weights2)
+        mu.e1.update <- c(mu.e1.update, mu.e1.update1)
       }
       sigma.sq.e1.update <- diag(sigma.sq.e1.update)
     }
@@ -617,54 +653,49 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
   eff.samp.size[is.infinite(eff.samp.size)] <- "NA"
   eff.samp.size <- as.numeric(eff.samp.size)
 
+  mod$eff.samp.size <- eff.samp.size
+
   # Standard error calculations start here.
 
-  if(se.comp == T) {
-    beta.est <- stats::coef(mod)
-    beta.est.se1 <- sqrt(diag(stats::vcov(mod)))   # Naive SE estimator.
+  beta.est <- stats::coef(mod)
 
-    if (family == "gaussian") beta.est.se1 <- sqrt(diag(stats::vcov(mod)*B))
+  estfun_mat <- sandwich::estfun(mod)
 
-    estfun_mat <- sandwich::estfun(mod)
+  if (family == "gaussian") estfun_mat <- sandwich::estfun(mod)*B
 
-    if (family == "gaussian") estfun_mat <- sandwich::estfun(mod)*B
+  X <- stats::model.matrix(mod)
+  K1 <- ncol(X)
 
-    X <- stats::model.matrix(mod)
-    K1 <- ncol(X)
+  ind_mat <- matrix(1:(n*B), ncol = n, byrow = T)
 
-    ind_mat <- matrix(1:(n*B), ncol = n, byrow = T)
+  S_1 <- matrix(0, nrow = K1, ncol = K1)
+  SS_1 <- matrix(0, nrow = K1, ncol = K1)
 
-    S_1 <- matrix(0, nrow = K1, ncol = K1)
-    SS_1 <- matrix(0, nrow = K1, ncol = K1)
-
-    for(ii in 1:n) {
-      index_vec <- ind_mat[, ii]
-      S_1 <- S_1 + (apply(estfun_mat[index_vec, ], 2, sum))%*%t(apply(estfun_mat[index_vec, ], 2, sum))
-    }
-
-    if (family == "gaussian") {
-      u.bar <- solve(stats::vcov(mod)*B)
-      beta.est.se2 <- sqrt(diag(solve(u.bar - SS_1/B^2 + S_1/B^2)))
-      mod$Vp <- solve(u.bar - SS_1/B^2 + S_1/B^2)
-    }
-
-    if (family == "binomial" | family == "poisson" | family == "Gamma" | family == "negbin") {
-      sand1 <- (sandwich::estfun(mod)/mod$prior)
-      sand1[is.nan(sand1)] <- 1
-      SS_1 <- t(sandwich::estfun(mod))%*%sand1
-      u.bar <- solve(stats::vcov(mod))
-      beta.est.se2 <- sqrt(diag(solve(u.bar - SS_1 + S_1)))
-      mod$Vp <- solve(u.bar - SS_1 + S_1)
-    }
-
-    if (length(which(is.nan(beta.est.se2))) > 0) beta.est.se2 <- c(rep(NA, K1))
-
-    values <- list(beta = beta.est, beta.se1 = beta.est.se1, beta.se2 = beta.est.se2, mod = mod, eff.samp.size = eff.samp.size)
+  for(ii in 1:n) {
+    index_vec <- ind_mat[, ii]
+    S_1 <- S_1 + (apply(estfun_mat[index_vec, ], 2, sum))%*%t(apply(estfun_mat[index_vec, ], 2, sum))
   }
 
-  if(se.comp == F) values <- list(beta = beta.est, mod = mod, eff.samp.size = eff.samp.size)
+  if (family == "gaussian") {
+    u.bar <- solve(stats::vcov(mod)*B)
+    beta.est.se2 <- sqrt(diag(solve(u.bar - SS_1/B^2 + S_1/B^2)))
+    mod$Vp <- solve(u.bar - SS_1/B^2 + S_1/B^2)
+  }
 
-  return(values)
+  if (family == "binomial" | family == "poisson" | family == "Gamma" | family == "negbin") {
+    sand1 <- (sandwich::estfun(mod)/mod$prior)
+    sand1[is.nan(sand1)] <- 1
+    SS_1 <- t(sandwich::estfun(mod))%*%sand1
+    u.bar <- solve(stats::vcov(mod))
+    beta.est.se2 <- sqrt(diag(solve(u.bar - SS_1 + S_1)))
+    mod$Vp <- solve(u.bar - SS_1 + S_1)
+  }
+
+  if (length(which(is.nan(beta.est.se2))) > 0) beta.est.se2 <- c(rep(NA, K1))
+
+  mod$se <- beta.est.se2
+
+  return(mod)
 }
 
 #' MCEMfit_CR
@@ -676,7 +707,6 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
 #' @param sigma.sq.e : variance of the true covariate (X).
 #' @param B : the number of Monte Carlo replication values (default is set to 50).
 #' @param epsilon : a set convergence threshold (default is set to 0.00001).
-#' @param se.comp : a logical to indicate if standard errors for model parameters should be calculated and returned (default is set to \code{TRUE}).
 #' @return \code{MCEMfit_CR} returns model coefficient and population size estimates with standard errors and the effective sample size.
 #' @author Jakub Stoklosa and David I. Warton.
 #' @references Stoklosa, J., Hwang, W-H., and Warton, D.I. \pkg{refitME}: Measurement Error Modelling using Monte Carlo Expectation Maximization in \proglang{R}.
@@ -685,10 +715,7 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
 #' @export
 #' @seealso \code{\link{MCEMfit_glm}}
 #' @source See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
-
-# Function for fitting the MCEM algorithm for capture-recapture (CR) data with measurement error.
-
-MCEMfit_CR <- function(mod, sigma.sq.u, sigma.sq.e = 1, B = 100, epsilon = 0.00001, se.comp = TRUE) {
+MCEMfit_CR <- function(mod, sigma.sq.u, sigma.sq.e = 1, B = 100, epsilon = 0.00001) {
 
   options(warn = -1)
 
@@ -822,51 +849,47 @@ MCEMfit_CR <- function(mod, sigma.sq.u, sigma.sq.e = 1, B = 100, epsilon = 0.000
 
   # Standard error calculations start here.
 
-  if(se.comp == T) {
-    K1 <- length(beta.update)
+  K1 <- length(beta.update)
 
-    S_1 <- matrix(0, nrow = K1, ncol = K1)
-    SS_1 <- matrix(0, nrow = K1, ncol = K1)
-    II_1 <- matrix(0, nrow = K1, ncol = K1)
+  S_1 <- matrix(0, nrow = K1, ncol = K1)
+  SS_1 <- matrix(0, nrow = K1, ncol = K1)
+  II_1 <- matrix(0, nrow = K1, ncol = K1)
 
-    pi.est_1 <- c()
-    pr.est_1 <- c()
+  pi.est_1 <- c()
+  pr.est_1 <- c()
 
-    iii1 <- 1
+  iii1 <- 1
 
-    ind_mat <- matrix(1:(n*B), ncol = n, byrow = T)
+  ind_mat <- matrix(1:(n*B), ncol = n, byrow = T)
 
-    for(iii in 1:n) {
-      index_vec <- ind_mat[, iii]
-      x <- X[index_vec, ]
+  for(iii in 1:n) {
+    index_vec <- ind_mat[, iii]
+    x <- X[index_vec, ]
 
-      if (p1 == 2 | p1 == 3) {
-        SS_1 <- SS_1 + t(x*(((bigY[index_vec] - tau*(1/(1 + exp(-VGAM::predictvglm(mod, type = "link"))))[index_vec]/pi.est[index_vec]))*VGAM::weights(mod, type = "working")[index_vec]))%*%(x*((bigY[index_vec] - tau*(1/(1 + exp(-VGAM::predictvglm(mod, type = "link"))))[index_vec]/pi.est[index_vec])))
-        S_1 <- S_1 + (apply(x*(bigY[index_vec] - tau*(1/(1 + exp(-VGAM::predictvglm(mod, type = "link"))))[index_vec]/pi.est[index_vec])*VGAM::weights(mod, type = "working")[index_vec], 2, sum))%*%t(apply(x*(bigY[index_vec] - tau*(1/(1 + exp(-VGAM::predictvglm(mod, type = "link"))))[index_vec]/pi.est[index_vec])*VGAM::weights(mod, type = "working")[index_vec], 2, sum))
-      }
-
-      if (p1 == "spline") {
-        SS_1 <- SS_1 + t(x*(((bigY[index_vec] - tau*(1/(1 + exp(-VGAM::predict.vgam(mod, type = "link"))))[index_vec]/pi.est[index_vec]))*VGAM::weights(mod, type = "working")[index_vec]))%*%(x*((bigY[index_vec] - tau*(1/(1 + exp(-VGAM::predict.vgam(mod, type = "link"))))[index_vec]/pi.est[index_vec])))
-        S_1 <- S_1 + (apply(x*(bigY[index_vec] - tau*(1/(1 + exp(-VGAM::predict.vgam(mod, type = "link"))))[index_vec]/pi.est[index_vec])*VGAM::weights(mod, type = "working")[index_vec], 2, sum))%*%t(apply(x*(bigY[index_vec] - tau*(1/(1 + exp(-VGAM::predict.vgam(mod, type = "link"))))[index_vec]/pi.est[index_vec])*VGAM::weights(mod, type = "working")[index_vec], 2, sum))
-      }
+    if (p1 == 2 | p1 == 3) {
+      SS_1 <- SS_1 + t(x*(((bigY[index_vec] - tau*(1/(1 + exp(-VGAM::predictvglm(mod, type = "link"))))[index_vec]/pi.est[index_vec]))*VGAM::weights(mod, type = "working")[index_vec]))%*%(x*((bigY[index_vec] - tau*(1/(1 + exp(-VGAM::predictvglm(mod, type = "link"))))[index_vec]/pi.est[index_vec])))
+      S_1 <- S_1 + (apply(x*(bigY[index_vec] - tau*(1/(1 + exp(-VGAM::predictvglm(mod, type = "link"))))[index_vec]/pi.est[index_vec])*VGAM::weights(mod, type = "working")[index_vec], 2, sum))%*%t(apply(x*(bigY[index_vec] - tau*(1/(1 + exp(-VGAM::predictvglm(mod, type = "link"))))[index_vec]/pi.est[index_vec])*VGAM::weights(mod, type = "working")[index_vec], 2, sum))
     }
 
-    u.bar <- solve(VGAM::vcov(mod))
-    beta.est.se <- sqrt(diag(solve(u.bar - SS_1 + S_1)))
-
-    if (length(which(is.nan(beta.est.se))) > 0) beta.est.se2 <- c(rep(NA, K1))
-
-    idG <- solve(u.bar - SS_1 + S_1)
-    X.s <- VGAM::model.matrix(mod)
-
-    dpi <- w.est*tau*pr.est*(1 - pi.est)/pi.est/pi.est
-    dNhat <- apply(X.s*c(dpi), 2, sum)
-    N.est.se <- sqrt(sum(w.est*(1 - pi.est)/pi.est/pi.est) + t(dNhat)%*%idG%*%dNhat)
-
-    values <- list(beta = beta.est, beta.se = beta.est.se, N.est = N.est, N.est.se = N.est.se, mod = mod, eff.samp.size = eff.samp.size)
+    if (p1 == "spline") {
+      SS_1 <- SS_1 + t(x*(((bigY[index_vec] - tau*(1/(1 + exp(-VGAM::predict.vgam(mod, type = "link"))))[index_vec]/pi.est[index_vec]))*VGAM::weights(mod, type = "working")[index_vec]))%*%(x*((bigY[index_vec] - tau*(1/(1 + exp(-VGAM::predict.vgam(mod, type = "link"))))[index_vec]/pi.est[index_vec])))
+      S_1 <- S_1 + (apply(x*(bigY[index_vec] - tau*(1/(1 + exp(-VGAM::predict.vgam(mod, type = "link"))))[index_vec]/pi.est[index_vec])*VGAM::weights(mod, type = "working")[index_vec], 2, sum))%*%t(apply(x*(bigY[index_vec] - tau*(1/(1 + exp(-VGAM::predict.vgam(mod, type = "link"))))[index_vec]/pi.est[index_vec])*VGAM::weights(mod, type = "working")[index_vec], 2, sum))
+    }
   }
 
-  if(se.comp == F) values <- list(beta = beta.est, N.est = N.est, mod = mod, eff.samp.size = eff.samp.size)
+  u.bar <- solve(VGAM::vcov(mod))
+  beta.est.se <- sqrt(diag(solve(u.bar - SS_1 + S_1)))
+
+  if (length(which(is.nan(beta.est.se))) > 0) beta.est.se2 <- c(rep(NA, K1))
+
+  idG <- solve(u.bar - SS_1 + S_1)
+  X.s <- VGAM::model.matrix(mod)
+
+  dpi <- w.est*tau*pr.est*(1 - pi.est)/pi.est/pi.est
+  dNhat <- apply(X.s*c(dpi), 2, sum)
+  N.est.se <- sqrt(sum(w.est*(1 - pi.est)/pi.est/pi.est) + t(dNhat)%*%idG%*%dNhat)
+
+  values <- list(beta = beta.est, beta.se = beta.est.se, N.est = N.est, N.est.se = N.est.se, mod = mod, eff.samp.size = eff.samp.size)
 
   return(values)
 }
@@ -880,16 +903,15 @@ MCEMfit_CR <- function(mod, sigma.sq.u, sigma.sq.e = 1, B = 100, epsilon = 0.000
 #' @param W : a matrix of error-contaminated covariates (if not specified, the default assumes all covariates in the naive fitted model are error-contaminated).
 #' @param B : the number of Monte Carlo replication values (default is set 50).
 #' @param epsilon : convergence threshold (default is set to 0.00001).
-#' @param se.comp : a logical to indicate if standard errors for model parameters should be calculated and returned (default is set to \code{TRUE}).
-#' @return \code{refitME} returns model coef estimates with standard errors and the effective sample size to diagnose how closely the proposal distribution matches the posterior, see equation (2) of Stoklosa, Hwang and Warton.
+#' @return \code{refitME} returns the naive fitted model object where coefficient estimates, the covariance matrix, fitted values and residuals have been replaced with the final MCEM model fit. Standard errors and effective sample size (which diagnose how closely the proposal distribution matches the posterior, see equation (2) of Stoklosa, Hwang and Warton) have been additional included.
 #' @author Jakub Stoklosa and David I. Warton.
 #' @references Stoklosa, J., Hwang, W-H., and Warton, D.I. \pkg{refitME}: Measurement Error Modelling using Monte Carlo Expectation Maximization in \proglang{R}.
-#' @import mvtnorm MASS mgcv sandwich VGAM
+#' @import mvtnorm MASS mgcv sandwich VGAM expm
 #' @importFrom stats Gamma
 #' @export
 #' @seealso \code{\link{MCEMfit_glm}} and \code{\link{MCEMfit_gam}}
 #' @source See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
-refitME <- function(mod, sigma.sq.u, W = NULL, B = 50, epsilon = 0.00001, se.comp = TRUE) {
+refitME <- function(mod, sigma.sq.u, W = NULL, B = 50, epsilon = 0.00001) {
   if (is.matrix(sigma.sq.u) == F) {
     print("One specified error-contaminated covariate.")
 
@@ -915,17 +937,17 @@ refitME <- function(mod, sigma.sq.u, W = NULL, B = 50, epsilon = 0.00001, se.com
     if (ob.type == "glm") family <- mod$family$family
     if (ob.type == "negbin") family <- "negbin"
 
-    return(MCEMfit_glm(mod, family, sigma.sq.u, W, sigma.sq.e, B, epsilon, se.comp))
+    return(MCEMfit_glm(mod, family, sigma.sq.u, W, sigma.sq.e, B, epsilon))
   }
 
   if (ob.type == "gam") {
     family <- mod$family$family
     if (strsplit(family, NULL)[[1]][1] == "N") family <- "negbin"
 
-    return(MCEMfit_gam(mod, family, sigma.sq.u, W, sigma.sq.e, B, epsilon, se.comp))
+    return(MCEMfit_gam(mod, family, sigma.sq.u, W, sigma.sq.e, B, epsilon))
   }
 
-  if ((ob.type == "vglm" | ob.type == "vgam")) return(MCEMfit_CR(mod, sigma.sq.u, sigma.sq.e, B, epsilon, se.comp))
+  if ((ob.type == "vglm" | ob.type == "vgam")) return(MCEMfit_CR(mod, sigma.sq.u, sigma.sq.e, B, epsilon))
 
 }
 
