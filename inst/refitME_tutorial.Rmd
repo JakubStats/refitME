@@ -117,6 +117,7 @@ family <- "poisson"
 data(milan.mort)
 dat.air <- milan.mort
 ``` 
+This model takes ages to fit, set `B<-10` if you lack patience and are OK with a quick-and-dirty answer.
 
 ### Setup all variables.
 
@@ -148,6 +149,7 @@ plot_gam_naiv <- plot(gam_naiv1, select = 1)
 ```
 
 ### Fit the MCEM model.
+Note this will take a fair while to run (consider reducing `B` if you just want a rough answer).
 
 Note this will take a fair while to run (consider reducing `B` if you just want a rough answer).
 
