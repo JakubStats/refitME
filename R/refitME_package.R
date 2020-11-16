@@ -340,12 +340,13 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
 
     if (length(which(is.nan(beta.est.se2))) > 0) beta.est.se2 <- c(rep(NA, K1))
 
-    values <- list(beta = beta.est, beta.se1 = beta.est.se1, beta.se2 = beta.est.se2, mod = mod, eff.samp.size = eff.samp.size)
-  }
+  class(mod_n) <- c(class(mod_n), "refitME")
 
-  if(se.comp == F) values <- list(beta = beta.est, mod = mod, eff.samp.size = eff.samp.size)
+  mod_n$call <- match.call()
 
-  return(values)
+  mod_n$sigma.sq.u <- sigma.sq.u
+
+  return(mod_n)
 }
 
 #' MCEMfit_gam
@@ -643,12 +644,9 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
 
     if (length(which(is.nan(beta.est.se2))) > 0) beta.est.se2 <- c(rep(NA, K1))
 
-    values <- list(beta = beta.est, beta.se1 = beta.est.se1, beta.se2 = beta.est.se2, mod = mod, eff.samp.size = eff.samp.size)
-  }
+  mod$sigma.sq.u <- sigma.sq.u
 
-  if(se.comp == F) values <- list(beta = beta.est, mod = mod, eff.samp.size = eff.samp.size)
-
-  return(values)
+  return(mod)
 }
 
 #' MCEMfit_CR
@@ -665,6 +663,8 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
 #' @author Jakub Stoklosa and David I. Warton.
 #' @references Stoklosa, J., Hwang, W-H., and Warton, D.I. \pkg{refitME}: Measurement Error Modelling using Monte Carlo Expectation Maximization in \proglang{R}.
 #' @import MASS VGAM
+#' @importFrom VGAM s
+#' @importFrom VGAM posbinomial
 #' @export
 #' @seealso \code{\link{MCEMfit_glm}}
 #' @source See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
@@ -1084,7 +1084,24 @@ MCEMfit_PPM <- function(mod, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 50, epsil
 #' @export
 #' @seealso \code{\link{MCEMfit_glm}} and \code{\link{MCEMfit_gam}}
 #' @source See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
-refitME <- function(mod, sigma.sq.u, W = NULL, B = 50, epsilon = 0.00001, se.comp = TRUE, fit.PPM = FALSE) {
+#' @examples
+#'
+#' library(refitME)
+#'
+#' set.seed(2020)
+#'
+#' B <- 100  # The number of Monte Carlo replication values/SIMEX simulations.
+#'
+#' data(Framinghamdata)
+#'
+#' W <- as.matrix(Framinghamdata$w1) # Matrix of error-contaminated covariate.
+#' sigma.sq.u <- 0.01259/2 # ME variance, obtained from Carroll et al. (2006) monograph.
+#'
+#' glm_naiv1 <- glm(Y ~ w1 + z1 + z2 + z3, x = TRUE, family = binomial, data = Framinghamdata)
+#'
+#' glm_MCEM1 <- refitME(glm_naiv1, sigma.sq.u, W, B)
+#'
+refitME <- function(mod, sigma.sq.u, W = NULL, B = 50, epsilon = 0.00001) {
   if (is.matrix(sigma.sq.u) == F) {
     print("One specified error-contaminated covariate.")
 
