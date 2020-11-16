@@ -381,6 +381,12 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
   dim_temp <- ncol(mod_n$qr$qr)*nrow(mod_n$qr$qr) - ncol(mod_n$qr$qr)*ncol(mod_n$qr$qr)
   mod_n$qr$qr <- rbind(qr(AA)$qr, matrix(rep(0, dim_temp), ncol = ncol(mod_n$qr$qr)))
 
+  class(mod_n) <- c(class(mod_n), "refitME")
+
+  mod_n$call <- match.call()
+
+  mod_n$sigma.sq.u <- sigma.sq.u
+
   return(mod_n)
 }
 
@@ -695,6 +701,8 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
 
   mod$se <- beta.est.se2
 
+  mod$sigma.sq.u <- sigma.sq.u
+
   return(mod)
 }
 
@@ -712,6 +720,7 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
 #' @references Stoklosa, J., Hwang, W-H., and Warton, D.I. \pkg{refitME}: Measurement Error Modelling using Monte Carlo Expectation Maximization in \proglang{R}.
 #' @import MASS VGAM
 #' @importFrom VGAM s
+#' @importFrom VGAM posbinomial
 #' @export
 #' @seealso \code{\link{MCEMfit_glm}}
 #' @source See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
@@ -911,6 +920,23 @@ MCEMfit_CR <- function(mod, sigma.sq.u, sigma.sq.e = 1, B = 100, epsilon = 0.000
 #' @export
 #' @seealso \code{\link{MCEMfit_glm}} and \code{\link{MCEMfit_gam}}
 #' @source See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
+#' @examples
+#'
+#' library(refitME)
+#'
+#' set.seed(2020)
+#'
+#' B <- 100  # The number of Monte Carlo replication values/SIMEX simulations.
+#'
+#' data(Framinghamdata)
+#'
+#' W <- as.matrix(Framinghamdata$w1) # Matrix of error-contaminated covariate.
+#' sigma.sq.u <- 0.01259/2 # ME variance, obtained from Carroll et al. (2006) monograph.
+#'
+#' glm_naiv1 <- glm(Y ~ w1 + z1 + z2 + z3, x = TRUE, family = binomial, data = Framinghamdata)
+#'
+#' glm_MCEM1 <- refitME(glm_naiv1, sigma.sq.u, W, B)
+#'
 refitME <- function(mod, sigma.sq.u, W = NULL, B = 50, epsilon = 0.00001) {
   if (is.matrix(sigma.sq.u) == F) {
     print("One specified error-contaminated covariate.")

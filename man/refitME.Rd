@@ -26,6 +26,24 @@ refitME(mod, sigma.sq.u, W = NULL, B = 50, epsilon = 1e-05)
 \description{
 Function that extracts the fitted (naive) model object and wraps the MCEM algorithm to correct for measurement error/error-in-variables (currently available for \code{lm()}, \code{glm()} and \code{gam()}, excludes \code{lme()}, \code{nlme()} and \code{polr()} models).
 }
+\examples{
+
+library(refitME)
+
+set.seed(2020)
+
+B <- 100  # The number of Monte Carlo replication values/SIMEX simulations.
+
+data(Framinghamdata)
+
+W <- as.matrix(Framinghamdata$w1) # Matrix of error-contaminated covariate.
+sigma.sq.u <- 0.01259/2 # ME variance, obtained from Carroll et al. (2006) monograph.
+
+glm_naiv1 <- glm(Y ~ w1 + z1 + z2 + z3, x = TRUE, family = binomial, data = Framinghamdata)
+
+glm_MCEM1 <- refitME(glm_naiv1, sigma.sq.u, W, B)
+
+}
 \references{
 Stoklosa, J., Hwang, W-H., and Warton, D.I. \pkg{refitME}: Measurement Error Modelling using Monte Carlo Expectation Maximization in \proglang{R}.
 }
