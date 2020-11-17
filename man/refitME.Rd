@@ -7,7 +7,7 @@
 See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
 }
 \usage{
-refitME(mod, sigma.sq.u, W = NULL, B = 50, epsilon = 1e-05)
+refitME(mod, sigma.sq.u, W = NULL, B = 50, epsilon = 1e-05, ...)
 }
 \arguments{
 \item{mod}{: a glm/gam object (this is the naive fitted model). Make sure the first input predictor variables are the selected error-contaminated variable (i.e., the \code{W}'s).}
@@ -19,6 +19,8 @@ refitME(mod, sigma.sq.u, W = NULL, B = 50, epsilon = 1e-05)
 \item{B}{: the number of Monte Carlo replication values (default is set 50).}
 
 \item{epsilon}{: convergence threshold (default is set to 0.00001).}
+
+\item{...}{: further arguments passed through to \code{glm} or \code{gam}.}
 }
 \value{
 \code{refitME} returns the naive fitted model object where coefficient estimates, the covariance matrix, fitted values and residuals have been replaced with the final MCEM model fit. Standard errors and effective sample size (which diagnose how closely the proposal distribution matches the posterior, see equation (2) of Stoklosa, Hwang and Warton) have been additional included.
@@ -27,10 +29,9 @@ refitME(mod, sigma.sq.u, W = NULL, B = 50, epsilon = 1e-05)
 Function that extracts the fitted (naive) model object and wraps the MCEM algorithm to correct for measurement error/error-in-variables (currently available for \code{lm()}, \code{glm()} and \code{gam()}, excludes \code{lme()}, \code{nlme()} and \code{polr()} models).
 }
 \examples{
+# A GLM example I - binary response data.
 
 library(refitME)
-
-set.seed(2020)
 
 B <- 100  # The number of Monte Carlo replication values/SIMEX simulations.
 
@@ -43,8 +44,80 @@ glm_naiv1 <- glm(Y ~ w1 + z1 + z2 + z3, x = TRUE, family = binomial, data = Fram
 
 glm_MCEM1 <- refitME(glm_naiv1, sigma.sq.u, W, B)
 
+
+
+# A GLM example II - presence-only data using a point-process model.
+
+data(Corymbiaeximiadata)
+
+attach(Corymbiaeximiadata)
+
+Y <- Corymbiaeximiadata$Y.obs
+
+n <- length(Y)
+
+W <- Corymbiaeximiadata$MNT
+
+# PPM - using a Poisson GLM.
+
+p.wt <- rep(1.e-6, length(Corymbiaeximiadata$Y.obs))
+p.wt[Corymbiaeximiadata$Y.obs == 0] <- 1
+
+X <- cbind(rep(1, length(Y)), poly(W, degree = 2, raw = TRUE),
+          poly(Rain, degree = 2, raw = TRUE),
+            poly(sqrt(D.Main), degree = 2, raw = TRUE))
+
+colnames(X) <- c("(Intercept)", "X1", "X2", "Z1", "Z2", "Z3", "Z4")
+
+dat <- data.frame(cbind(Y, p.wt, X))
+colnames(dat)[1:2] <- c("Y", "p.wt")
+
+PPM_naiv1 <- glm(Y/p.wt ~ X1 + X2 + Z1 + Z2 + Z3 + Z4, family = "poisson",
+ weights = p.wt, data = dat)
+
+# PPM - using MCEM model.
+
+B <- 50
+
+sigma.sq.u <- 0.25
+
+PPM_MCEM1 <- refitME(PPM_naiv1, sigma.sq.u, W, B)
+
+
+
+# A GAM example using the air pollution data set from the SemiPar package.
+
+library(refitME)
+library(SemiPar)
+
+B <- 5  # Consider increasing this if you want a more accurate answer.
+
+data(milan.mort)
+
+dat.air <- milan.mort
+
+Y <- dat.air[, 6]  # Mortality counts.
+
+n <- length(Y)
+
+z1 <- (dat.air[, 1])
+z2 <- (dat.air[, 4])
+z3 <- (dat.air[, 5])
+w1 <- log(dat.air[, 9])
+W <- as.matrix(w1)
+
+dat <- data.frame(cbind(Y, z1, z2, z3, w1))
+
+sigma.sq.u <- 0.0915
+
+gam_naiv1 <- gam(Y ~ s(w1) + s(z1, k = 25) + s(z2) + s(z3), family = "poisson", data = dat)
+
+gam_MCEM1 <- refitME(gam_naiv1, sigma.sq.u, W, B)
+
 }
 \references{
+Carroll, R. J., Ruppert, D., Stefanski, L. A., and Crainiceanu, C. M. (2006). \emph{Measurement Error in Nonlinear Models: A Modern Perspective.} 2nd Ed. London: Chapman \& Hall/CRC.
+
 Stoklosa, J., Hwang, W-H., and Warton, D.I. \pkg{refitME}: Measurement Error Modelling using Monte Carlo Expectation Maximization in \proglang{R}.
 }
 \seealso{

@@ -16,7 +16,8 @@ MCEMfit_glm(
   B = 50,
   epsilon = 1e-05,
   theta.est = 1,
-  shape.est = 1
+  shape.est = 1,
+  ...
 )
 }
 \arguments{
@@ -37,6 +38,8 @@ MCEMfit_glm(
 \item{theta.est}{: an initial value for the dispersion parameter (this is required for fitting negative binomial models).}
 
 \item{shape.est}{: an initial value for the shape parameter (this is required for fitting gamma models).}
+
+\item{...}{: further arguments passed to \code{glm}.}
 }
 \value{
 \code{MCEMfit_glm} returns the naive fitted model object where coefficient estimates, the covariance matrix, fitted values and residuals have been replaced with the final MCEM model fit. Standard errors and effective sample size have been additional included.
@@ -44,7 +47,65 @@ MCEMfit_glm(
 \description{
 Function for wrapping the MCEM algorithm on GLMs where covariates are subject to measurement error/error-in-variables.
 }
+\examples{
+# A GLM example I - binary response data.
+
+library(refitME)
+
+B <- 100  # The number of Monte Carlo replication values.
+
+data(Framinghamdata)
+
+W <- as.matrix(Framinghamdata$w1) # Matrix of error-contaminated covariate.
+sigma.sq.u <- 0.01259/2 # ME variance, obtained from Carroll et al. (2006) monograph.
+
+glm_naiv1 <- glm(Y ~ w1 + z1 + z2 + z3, x = TRUE, family = binomial, data = Framinghamdata)
+
+glm_MCEM1 <- refitME(glm_naiv1, sigma.sq.u, W, B)
+
+
+
+# A GLM example II - presence-only data using a point-process model.
+
+data(Corymbiaeximiadata)
+
+attach(Corymbiaeximiadata)
+
+Y <- Corymbiaeximiadata$Y.obs
+
+n <- length(Y)
+
+W <- Corymbiaeximiadata$MNT
+
+# PPM - using a Poisson GLM.
+
+p.wt <- rep(1.e-6, length(Corymbiaeximiadata$Y.obs))
+p.wt[Corymbiaeximiadata$Y.obs == 0] <- 1
+
+X <- cbind(rep(1, length(Y)), poly(W, degree = 2, raw = TRUE),
+          poly(Rain, degree = 2, raw = TRUE),
+            poly(sqrt(D.Main), degree = 2, raw = TRUE))
+
+colnames(X) <- c("(Intercept)", "X1", "X2", "Z1", "Z2", "Z3", "Z4")
+
+dat <- data.frame(cbind(Y, p.wt, X))
+colnames(dat)[1:2] <- c("Y", "p.wt")
+
+PPM_naiv1 <- glm(Y/p.wt ~ X1 + X2 + Z1 + Z2 + Z3 + Z4, family = "poisson",
+ weights = p.wt, data = dat)
+
+# PPM - using MCEM model.
+
+B <- 50
+
+sigma.sq.u <- 0.25
+
+PPM_MCEM1 <- refitME(PPM_naiv1, sigma.sq.u, W, B)
+
+}
 \references{
+Carroll, R. J., Ruppert, D., Stefanski, L. A., and Crainiceanu, C. M. (2006). \emph{Measurement Error in Nonlinear Models: A Modern Perspective.} 2nd Ed. London: Chapman \& Hall/CRC.
+
 Stoklosa, J., Hwang, W-H., and Warton, D.I. \pkg{refitME}: Measurement Error Modelling using Monte Carlo Expectation Maximization in \proglang{R}.
 }
 \seealso{

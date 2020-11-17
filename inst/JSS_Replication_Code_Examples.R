@@ -177,8 +177,6 @@ par(op)
 
 rm(list = ls())
 
-source(".../MCEM_prog.r")
-
 set.seed(2020)
 
 load("Quad1km.RData")
@@ -216,7 +214,7 @@ X <- cbind(rep(1, length(Y)),
 
 colnames(X) <- c("(Intercept)", "X1", "X2", "Z1", "Z2", "Z3", "Z4")
 
-# Full data.
+# Training/test data.
 
 train <- (1:n)
 n.train <- n.test <- n
@@ -242,8 +240,6 @@ W.test <- W[test]
 
 rel.rat <- (1 - sigma.sq.u/var(W.train))*100
 print(rel.rat)  # Express as a relative percentage (%).
-
-sigma.sq.e <- var(W.test) - sigma.sq.u
 
 start <- Sys.time()
 

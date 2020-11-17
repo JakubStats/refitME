@@ -12,6 +12,7 @@ library(mgcv)
 library(Matrix)
 library(VGAM)
 library(expm)
+library(SemiPar)
 suppressMessages(library(sandwich))
 
 #' @title The Framingham heart study data set.
@@ -31,6 +32,26 @@ suppressMessages(library(sandwich))
 #' data(Framinghamdata)
 "Framinghamdata"
 
+#' @title The Corymbia eximia presence-only data set.
+#' @description Data set consisting of presence-only records for the plant species \emph{Corymbia eximia}, site coordinates 5 covariates for each site.
+#' @format A data set that contains: 8 columns with 86,316 observations (or sites). The columns are defined as follows:
+#' \describe{
+#' \item{\code{X}}{Longitude coordinate.}
+#' \item{\code{Y}}{Latitude coordinate.}
+#' \item{\code{FC}}{Recorded number of fire counts for each site.}
+#' \item{\code{MNT}}{Recorded minimum temperatures for each site.}
+#' \item{\code{MXT}}{Recorded maximum temperature for each site. }
+#' \item{\code{Rain}}{Recorded rainfall for each site.}
+#' \item{\code{D.Main}}{Recorded distance from nearest major road.}
+#' \item{\code{Y.obs}}{Presences for the plant species \emph{Corymbia eximia} for each site.}
+#' }
+#' @source See Renner and Warton (2013) for full details of the data and study.
+#' @references Renner, I. W. and Warton, D. I. (2013). Equivalence of MAXENT and Poisson point process models for species distribution modeling in ecology. \emph{Biometrics}, \strong{69}, 274–281.
+#' @examples # Load the data.
+#'
+#' data(Corymbiaeximiadata)
+"Corymbiaeximiadata"
+
 #' MCEMfit_glm
 #'
 #' Function for wrapping the MCEM algorithm on GLMs where covariates are subject to measurement error/error-in-variables.
@@ -44,15 +65,71 @@ suppressMessages(library(sandwich))
 #' @param epsilon : a set convergence threshold (default is set to 0.00001).
 #' @param theta.est : an initial value for the dispersion parameter (this is required for fitting negative binomial models).
 #' @param shape.est : an initial value for the shape parameter (this is required for fitting gamma models).
+#' @param ... : further arguments passed to \code{glm}.
 #' @return \code{MCEMfit_glm} returns the naive fitted model object where coefficient estimates, the covariance matrix, fitted values and residuals have been replaced with the final MCEM model fit. Standard errors and effective sample size have been additional included.
 #' @author Jakub Stoklosa and David I. Warton.
+#' @references Carroll, R. J., Ruppert, D., Stefanski, L. A., and Crainiceanu, C. M. (2006). \emph{Measurement Error in Nonlinear Models: A Modern Perspective.} 2nd Ed. London: Chapman \& Hall/CRC.
 #' @references Stoklosa, J., Hwang, W-H., and Warton, D.I. \pkg{refitME}: Measurement Error Modelling using Monte Carlo Expectation Maximization in \proglang{R}.
 #' @import mvtnorm MASS mgcv sandwich expm
 #' @importFrom stats Gamma
 #' @export
 #' @seealso \code{\link{MCEMfit_gam}}
 #' @source See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
-MCEMfit_glm <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 50, epsilon = 0.00001, theta.est = 1, shape.est = 1) {
+#' @examples # A GLM example I - binary response data.
+#'
+#' library(refitME)
+#'
+#' B <- 100  # The number of Monte Carlo replication values.
+#'
+#' data(Framinghamdata)
+#'
+#' W <- as.matrix(Framinghamdata$w1) # Matrix of error-contaminated covariate.
+#' sigma.sq.u <- 0.01259/2 # ME variance, obtained from Carroll et al. (2006) monograph.
+#'
+#' glm_naiv1 <- glm(Y ~ w1 + z1 + z2 + z3, x = TRUE, family = binomial, data = Framinghamdata)
+#'
+#' glm_MCEM1 <- refitME(glm_naiv1, sigma.sq.u, W, B)
+#'
+#'
+#'
+#' # A GLM example II - presence-only data using a point-process model.
+#'
+#' data(Corymbiaeximiadata)
+#'
+#' attach(Corymbiaeximiadata)
+#'
+#' Y <- Corymbiaeximiadata$Y.obs
+#'
+#' n <- length(Y)
+#'
+#' W <- Corymbiaeximiadata$MNT
+#'
+#' # PPM - using a Poisson GLM.
+#'
+#' p.wt <- rep(1.e-6, length(Corymbiaeximiadata$Y.obs))
+#' p.wt[Corymbiaeximiadata$Y.obs == 0] <- 1
+#'
+#' X <- cbind(rep(1, length(Y)), poly(W, degree = 2, raw = TRUE),
+#'           poly(Rain, degree = 2, raw = TRUE),
+#'             poly(sqrt(D.Main), degree = 2, raw = TRUE))
+#'
+#' colnames(X) <- c("(Intercept)", "X1", "X2", "Z1", "Z2", "Z3", "Z4")
+#'
+#' dat <- data.frame(cbind(Y, p.wt, X))
+#' colnames(dat)[1:2] <- c("Y", "p.wt")
+#'
+#' PPM_naiv1 <- glm(Y/p.wt ~ X1 + X2 + Z1 + Z2 + Z3 + Z4, family = "poisson",
+#'  weights = p.wt, data = dat)
+#'
+#' # PPM - using MCEM model.
+#'
+#' B <- 50
+#'
+#' sigma.sq.u <- 0.25
+#'
+#' PPM_MCEM1 <- refitME(PPM_naiv1, sigma.sq.u, W, B)
+#'
+MCEMfit_glm <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 50, epsilon = 0.00001, theta.est = 1, shape.est = 1, ...) {
 
   options(warn = -1)
 
@@ -222,13 +299,13 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
     # M-step (updates).
 
     if (family == "gaussian") {
-      mod <- stats::lm(bigY ~ X - 1, weights = weights1)
+      mod <- stats::lm(bigY ~ X - 1, weights = weights1, ...)
       sigma.sq.est <- (summary(mod)$sigma)^2
     }
-    if (family == "binomial") mod <- stats::glm(bigY ~ X - 1, weights = weights1, family = "binomial")
-    if (family == "poisson") mod <- stats::glm(bigY ~ X - 1, weights = weights1, family = "poisson")
-    if (family == "Gamma") mod <- stats::glm(bigY ~ X - 1, weights = weights1, family = Gamma(link = "log"))
-    if (family == "negbin") mod <- MASS::glm.nb(bigY ~ X - 1, weights = weights1, init.theta = theta.est)
+    if (family == "binomial") mod <- stats::glm(bigY ~ X - 1, weights = weights1, family = "binomial", ...)
+    if (family == "poisson") mod <- stats::glm(bigY ~ X - 1, weights = weights1, family = "poisson", ...)
+    if (family == "Gamma") mod <- stats::glm(bigY ~ X - 1, weights = weights1, family = Gamma(link = "log"), ...)
+    if (family == "negbin") mod <- MASS::glm.nb(bigY ~ X - 1, weights = weights1, init.theta = theta.est, ...)
 
     beta.update <- stats::coef(mod)
 
@@ -310,23 +387,21 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
 
   mod_n$coefficients <- beta.est
 
-  eta <- stats::predict(mod_n)
+  mod_n$linear.predictors <- eta <- stats::predict(mod_n, newdata = mod_n$model)
 
-  if (family == "gaussian") {
-    residuals <- Y - stats::fitted(mod_n)
-    mod_n$residuals <- residuals
-  }
+  if (family == "gaussian") residuals <- Y - stats::fitted(mod_n)
 
   if (family != "gaussian") {
     mu <- mod_n$family$linkinv(eta)
     mu.eta <- mod_n$family$mu.eta(eta)
     residuals <- (Y - mu)/mod_n$family$mu.eta(eta)
-    mod_n$residuals <- residuals
   }
+
+  mod_n$residuals <- residuals
 
   mod_n$linear.predictors <- stats::predict(mod_n)
 
-  mod_n$fitted.values <- stats::predict(mod_n, type = "response")
+  mod_n$fitted.values <- stats::predict(mod_n, type = "response", newdata = mod_n$model)
 
   sumW <- apply(bigW, 1, sum, na.rm = T)
   weights1 <- bigW/sumW
@@ -403,15 +478,47 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
 #' @param epsilon : convergence threshold (default is set to 0.00001).
 #' @param theta.est : an initial value for the dispersion parameter (this is required for fitting negative binomial models).
 #' @param shape.est : an initial value for the shape parameter (this is required for fitting gamma models).
+#' @param ... : further arguments passed to \code{gam}.
 #' @return \code{MCEMfit_gam} returns the naive fitted model object where coefficient estimates, the covariance matrix, fitted values and residuals have been replaced with the final MCEM model fit. Standard errors and effective sample size have been additional included.
 #' @author Jakub Stoklosa and David I. Warton.
+#' @references Ganguli, B, Staudenmayer, J., and Wand, M. P. (2005). Additive models with predictors subject to measurement error. \emph{Australian & New Zealand Journal of Statistics}, \strong{47}, 193–202.
+#' @references Wand, M. P. (2018). \pkg{SemiPar}: Semiparametic Regression. \proglang{R} package version 1.0-4.2., URL \url{https: //CRAN.R-project.org/package=SemiPar}.
 #' @references Stoklosa, J., Hwang, W-H., and Warton, D.I. \pkg{refitME}: Measurement Error Modelling using Monte Carlo Expectation Maximization in \proglang{R}.
-#' @import mvtnorm MASS mgcv sandwich
+#' @import mvtnorm MASS mgcv sandwich SemiPar
 #' @importFrom stats Gamma
 #' @export
 #' @seealso \code{\link{MCEMfit_glm}}
 #' @source See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
-MCEMfit_gam <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 50, epsilon = 0.00001, theta.est = 1, shape.est = 10) {
+#' @examples # A GAM example using the air pollution data set from the SemiPar package.
+#'
+#' library(refitME)
+#' library(SemiPar)
+#'
+#' B <- 5  # Consider increasing this if you want a more accurate answer.
+#'
+#' data(milan.mort)
+#'
+#' dat.air <- milan.mort
+#'
+#' Y <- dat.air[, 6]  # Mortality counts.
+#'
+#' n <- length(Y)
+#'
+#' z1 <- (dat.air[, 1])
+#' z2 <- (dat.air[, 4])
+#' z3 <- (dat.air[, 5])
+#' w1 <- log(dat.air[, 9])
+#' W <- as.matrix(w1)
+#'
+#' dat <- data.frame(cbind(Y, z1, z2, z3, w1))
+#'
+#' sigma.sq.u <- 0.0915
+#'
+#' gam_naiv1 <- gam(Y ~ s(w1) + s(z1, k = 25) + s(z2) + s(z3), family = "poisson", data = dat)
+#'
+#' gam_MCEM1 <- refitME(gam_naiv1, sigma.sq.u, W, B)
+#'
+MCEMfit_gam <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 50, epsilon = 0.00001, theta.est = 1, shape.est = 10, ...) {
 
   options(warn = -1)
 
@@ -466,7 +573,7 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
 
     colnames(dat_new)[2] <- "x1"
 
-    form.name <- stats::as.formula(stats::update(stats::formula(mod), bigY ~ s(x1) +. - s(w1)))
+    form.name <- stats::as.formula(stats::update(stats::formula(mod), bigY ~ s(x1) +. - s(w1)), ...)
 
     if (d > 1) {
       smooth.err <- which(W1[1, ]%in%w1[1])
@@ -531,10 +638,10 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
       }
     }
 
-    if (q1 == 2) form.name <- stats::as.formula(stats::update(stats::formula(mod), bigY ~ s(x1) + s(x2) +. - s(w1) - s(w2)))
-    if (q1 == 3) form.name <- stats::as.formula(stats::update(stats::formula(mod), bigY ~ s(x1) + s(x2) + s(x3) +. - s(w1) - s(w2) - s(w3)))
-    if (q1 == 4) form.name <- stats::as.formula(stats::update(stats::formula(mod), bigY ~ s(x1) + s(x2) + s(x3) + s(x4) +. - s(w1) - s(w2) - s(w3) - s(w4)))
-    if (q1 == 5) form.name <- stats::as.formula(stats::update(stats::formula(mod), bigY ~ s(x1) + s(x2) + s(x3) + s(x4) + s(x5) +. - s(w1) - s(w2) - s(w3) - s(w4) - s(w5)))
+    if (q1 == 2) form.name <- stats::as.formula(stats::update(stats::formula(mod), bigY ~ s(x1) + s(x2) +. - s(w1) - s(w2)), ...)
+    if (q1 == 3) form.name <- stats::as.formula(stats::update(stats::formula(mod), bigY ~ s(x1) + s(x2) + s(x3) +. - s(w1) - s(w2) - s(w3)), ...)
+    if (q1 == 4) form.name <- stats::as.formula(stats::update(stats::formula(mod), bigY ~ s(x1) + s(x2) + s(x3) + s(x4) +. - s(w1) - s(w2) - s(w3) - s(w4)), ...)
+    if (q1 == 5) form.name <- stats::as.formula(stats::update(stats::formula(mod), bigY ~ s(x1) + s(x2) + s(x3) + s(x4) + s(x5) +. - s(w1) - s(w2) - s(w3) - s(w4) - s(w5)), ...)
     if (q1 > 5) print("Sorry, refitME cannot handle more than 5 error-contaminated varaibles with GAM! But we're working on this...")
   }
 
@@ -912,19 +1019,19 @@ MCEMfit_CR <- function(mod, sigma.sq.u, sigma.sq.e = 1, B = 100, epsilon = 0.000
 #' @param W : a matrix of error-contaminated covariates (if not specified, the default assumes all covariates in the naive fitted model are error-contaminated).
 #' @param B : the number of Monte Carlo replication values (default is set 50).
 #' @param epsilon : convergence threshold (default is set to 0.00001).
+#' @param ... : further arguments passed through to \code{glm} or \code{gam}.
 #' @return \code{refitME} returns the naive fitted model object where coefficient estimates, the covariance matrix, fitted values and residuals have been replaced with the final MCEM model fit. Standard errors and effective sample size (which diagnose how closely the proposal distribution matches the posterior, see equation (2) of Stoklosa, Hwang and Warton) have been additional included.
 #' @author Jakub Stoklosa and David I. Warton.
+#' @references Carroll, R. J., Ruppert, D., Stefanski, L. A., and Crainiceanu, C. M. (2006). \emph{Measurement Error in Nonlinear Models: A Modern Perspective.} 2nd Ed. London: Chapman \& Hall/CRC.
 #' @references Stoklosa, J., Hwang, W-H., and Warton, D.I. \pkg{refitME}: Measurement Error Modelling using Monte Carlo Expectation Maximization in \proglang{R}.
 #' @import mvtnorm MASS mgcv sandwich VGAM expm
 #' @importFrom stats Gamma
 #' @export
 #' @seealso \code{\link{MCEMfit_glm}} and \code{\link{MCEMfit_gam}}
 #' @source See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
-#' @examples
+#' @examples # A GLM example I - binary response data.
 #'
 #' library(refitME)
-#'
-#' set.seed(2020)
 #'
 #' B <- 100  # The number of Monte Carlo replication values/SIMEX simulations.
 #'
@@ -937,7 +1044,77 @@ MCEMfit_CR <- function(mod, sigma.sq.u, sigma.sq.e = 1, B = 100, epsilon = 0.000
 #'
 #' glm_MCEM1 <- refitME(glm_naiv1, sigma.sq.u, W, B)
 #'
-refitME <- function(mod, sigma.sq.u, W = NULL, B = 50, epsilon = 0.00001) {
+#'
+#'
+#' # A GLM example II - presence-only data using a point-process model.
+#'
+#' data(Corymbiaeximiadata)
+#'
+#' attach(Corymbiaeximiadata)
+#'
+#' Y <- Corymbiaeximiadata$Y.obs
+#'
+#' n <- length(Y)
+#'
+#' W <- Corymbiaeximiadata$MNT
+#'
+#' # PPM - using a Poisson GLM.
+#'
+#' p.wt <- rep(1.e-6, length(Corymbiaeximiadata$Y.obs))
+#' p.wt[Corymbiaeximiadata$Y.obs == 0] <- 1
+#'
+#' X <- cbind(rep(1, length(Y)), poly(W, degree = 2, raw = TRUE),
+#'           poly(Rain, degree = 2, raw = TRUE),
+#'             poly(sqrt(D.Main), degree = 2, raw = TRUE))
+#'
+#' colnames(X) <- c("(Intercept)", "X1", "X2", "Z1", "Z2", "Z3", "Z4")
+#'
+#' dat <- data.frame(cbind(Y, p.wt, X))
+#' colnames(dat)[1:2] <- c("Y", "p.wt")
+#'
+#' PPM_naiv1 <- glm(Y/p.wt ~ X1 + X2 + Z1 + Z2 + Z3 + Z4, family = "poisson",
+#'  weights = p.wt, data = dat)
+#'
+#' # PPM - using MCEM model.
+#'
+#' B <- 50
+#'
+#' sigma.sq.u <- 0.25
+#'
+#' PPM_MCEM1 <- refitME(PPM_naiv1, sigma.sq.u, W, B)
+#'
+#'
+#'
+#' # A GAM example using the air pollution data set from the SemiPar package.
+#'
+#' library(refitME)
+#' library(SemiPar)
+#'
+#' B <- 5  # Consider increasing this if you want a more accurate answer.
+#'
+#' data(milan.mort)
+#'
+#' dat.air <- milan.mort
+#'
+#' Y <- dat.air[, 6]  # Mortality counts.
+#'
+#' n <- length(Y)
+#'
+#' z1 <- (dat.air[, 1])
+#' z2 <- (dat.air[, 4])
+#' z3 <- (dat.air[, 5])
+#' w1 <- log(dat.air[, 9])
+#' W <- as.matrix(w1)
+#'
+#' dat <- data.frame(cbind(Y, z1, z2, z3, w1))
+#'
+#' sigma.sq.u <- 0.0915
+#'
+#' gam_naiv1 <- gam(Y ~ s(w1) + s(z1, k = 25) + s(z2) + s(z3), family = "poisson", data = dat)
+#'
+#' gam_MCEM1 <- refitME(gam_naiv1, sigma.sq.u, W, B)
+#'
+refitME <- function(mod, sigma.sq.u, W = NULL, B = 50, epsilon = 0.00001, ...) {
   if (is.matrix(sigma.sq.u) == F) {
     print("One specified error-contaminated covariate.")
 
@@ -963,14 +1140,14 @@ refitME <- function(mod, sigma.sq.u, W = NULL, B = 50, epsilon = 0.00001) {
     if (ob.type == "glm") family <- mod$family$family
     if (ob.type == "negbin") family <- "negbin"
 
-    return(MCEMfit_glm(mod, family, sigma.sq.u, W, sigma.sq.e, B, epsilon))
+    return(MCEMfit_glm(mod, family, sigma.sq.u, W, sigma.sq.e, B, epsilon, ...))
   }
 
   if (ob.type == "gam") {
     family <- mod$family$family
     if (strsplit(family, NULL)[[1]][1] == "N") family <- "negbin"
 
-    return(MCEMfit_gam(mod, family, sigma.sq.u, W, sigma.sq.e, B, epsilon))
+    return(MCEMfit_gam(mod, family, sigma.sq.u, W, sigma.sq.e, B, epsilon, ...))
   }
 
   if ((ob.type == "vglm" | ob.type == "vgam")) return(MCEMfit_CR(mod, sigma.sq.u, sigma.sq.e, B, epsilon))
@@ -985,8 +1162,7 @@ refitME <- function(mod, sigma.sq.u, W = NULL, B = 50, epsilon = 0.00001) {
 #' @param w : a vector of equal length to \code{x} representing the weights.
 #' @return \code{wt.var} returns a single value from analysis requested.
 #' @author Jeremy VanDerWal \email{jjvanderwal@@gmail.com}
-#' @examples
-#' # Define simple data
+#' @examples # Define simple data
 #' x = 1:25 # Set of numbers.
 #' wt = runif(25) # Some arbitrary weights.
 #'

@@ -112,8 +112,6 @@ set.seed(2020)
 epsilon <- 0.00001  # A set convergence threshold.
 B <- 50  # The number of Monte Carlo replication values.
 
-family <- "poisson"
-
 data(milan.mort)
 dat.air <- milan.mort
 ``` 

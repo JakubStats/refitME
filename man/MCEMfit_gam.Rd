@@ -16,7 +16,8 @@ MCEMfit_gam(
   B = 50,
   epsilon = 1e-05,
   theta.est = 1,
-  shape.est = 10
+  shape.est = 10,
+  ...
 )
 }
 \arguments{
@@ -37,6 +38,8 @@ MCEMfit_gam(
 \item{theta.est}{: an initial value for the dispersion parameter (this is required for fitting negative binomial models).}
 
 \item{shape.est}{: an initial value for the shape parameter (this is required for fitting gamma models).}
+
+\item{...}{: further arguments passed to \code{gam}.}
 }
 \value{
 \code{MCEMfit_gam} returns the naive fitted model object where coefficient estimates, the covariance matrix, fitted values and residuals have been replaced with the final MCEM model fit. Standard errors and effective sample size have been additional included.
@@ -44,7 +47,42 @@ MCEMfit_gam(
 \description{
 Function for wrapping the MCEM algorithm on GAMs where covariates are subject to measurement error/error-in-variables.
 }
+\examples{
+# A GAM example using the air pollution data set from the SemiPar package.
+
+library(refitME)
+library(SemiPar)
+
+B <- 5  # Consider increasing this if you want a more accurate answer.
+
+data(milan.mort)
+
+dat.air <- milan.mort
+
+Y <- dat.air[, 6]  # Mortality counts.
+
+n <- length(Y)
+
+z1 <- (dat.air[, 1])
+z2 <- (dat.air[, 4])
+z3 <- (dat.air[, 5])
+w1 <- log(dat.air[, 9])
+W <- as.matrix(w1)
+
+dat <- data.frame(cbind(Y, z1, z2, z3, w1))
+
+sigma.sq.u <- 0.0915
+
+gam_naiv1 <- gam(Y ~ s(w1) + s(z1, k = 25) + s(z2) + s(z3), family = "poisson", data = dat)
+
+gam_MCEM1 <- refitME(gam_naiv1, sigma.sq.u, W, B)
+
+}
 \references{
+Ganguli, B, Staudenmayer, J., and Wand, M. P. (2005). Additive models with predictors subject to measurement error. \emph{Australian & New Zealand Journal of Statistics}, \strong{47}, 193–202.
+
+Wand, M. P. (2018). \pkg{SemiPar}: Semiparametic Regression. \proglang{R} package version 1.0-4.2., URL \url{https: //CRAN.R-project.org/package=SemiPar}.
+
 Stoklosa, J., Hwang, W-H., and Warton, D.I. \pkg{refitME}: Measurement Error Modelling using Monte Carlo Expectation Maximization in \proglang{R}.
 }
 \seealso{
