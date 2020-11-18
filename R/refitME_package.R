@@ -302,6 +302,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
       mod <- stats::lm(bigY ~ X - 1, weights = weights1, ...)
       sigma.sq.est <- (summary(mod)$sigma)^2
     }
+    #if (family == "binomial") mod <- stats::glm(bigY ~ X - 1, weights = weights1, family = "binomial")
     if (family == "binomial") mod <- stats::glm(bigY ~ X - 1, weights = weights1, family = "binomial", ...)
     if (family == "poisson") mod <- stats::glm(bigY ~ X - 1, weights = weights1, family = "poisson", ...)
     if (family == "Gamma") mod <- stats::glm(bigY ~ X - 1, weights = weights1, family = Gamma(link = "log"), ...)
@@ -389,7 +390,9 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
 
   mod_n$linear.predictors <- eta <- stats::predict(mod_n, newdata = mod_n$model)
 
-  if (family == "gaussian") residuals <- Y - stats::fitted(mod_n)
+  mod_n$fitted.values <- stats::predict(mod_n, type = "response", newdata = mod_n$model)
+
+  if (family == "gaussian") residuals <- Y - mod_n$linear.predictors
 
   if (family != "gaussian") {
     mu <- mod_n$family$linkinv(eta)
@@ -399,9 +402,23 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
 
   mod_n$residuals <- residuals
 
-  mod_n$linear.predictors <- stats::predict(mod_n)
+  qq <- mod_n$rank
 
-  mod_n$fitted.values <- stats::predict(mod_n, type = "response", newdata = mod_n$model)
+  if (family %in% c("gaussian", "Gamma")) qq <- qq + 1
+
+  if (family != "gaussian") {
+    mod_n$deviance <- sum(mod_n$family$dev.resids(Y, mod_n$fitted.values, p.wt))
+    mod_n$aic <- mod_n$deviance + 2*qq
+    logLik.value <- mod_n$deviance/(-2)
+  }
+
+  if (family == "gaussian") logLik.value <- logLik(mod_n)
+
+  class(logLik.value) <- "logLik"
+
+  mod_n$logLik <- logLik.value
+
+  mod_n$sigma.sq.u <- sigma.sq.u
 
   sumW <- apply(bigW, 1, sum, na.rm = T)
   weights1 <- bigW/sumW
@@ -459,8 +476,6 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
   class(mod_n) <- c(class(mod_n), "refitME")
 
   mod_n$call <- match.call()
-
-  mod_n$sigma.sq.u <- sigma.sq.u
 
   return(mod_n)
 }
@@ -1042,7 +1057,7 @@ MCEMfit_CR <- function(mod, sigma.sq.u, sigma.sq.e = 1, B = 100, epsilon = 0.000
 #'
 #' glm_naiv1 <- glm(Y ~ w1 + z1 + z2 + z3, x = TRUE, family = binomial, data = Framinghamdata)
 #'
-#' glm_MCEM1 <- refitME(glm_naiv1, sigma.sq.u, W, B)
+#' #glm_MCEM1 <- refitME(glm_naiv1, sigma.sq.u, W, B)
 #'
 #'
 #'

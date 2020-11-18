@@ -98,7 +98,7 @@ sigma.sq.u <- 0.09154219 # Rel. ratio of 70%.
 rel.rat <- (1 - sigma.sq.u/var(dat$w1))*100
 rel.rat
 
-B <- 50
+B <- 5
 
 # Poisson models (we fitted negative binomial models but found no over-dispersion).
 
@@ -107,13 +107,14 @@ B <- 50
 start <- Sys.time()
 gam_naiv <- gam(Y ~ s(w1) + s(z1, k = 25) + s(z2) + s(z3),
                   family = "poisson", data = dat)
+
 end <- Sys.time()
 difftime(end, start, units = "secs")
 
 # MCEM GAM.
 
 start <- Sys.time()
-gam_MCEM <- refitME(gam_naiv, sigma.sq.u, W, B, epsilon = 0.0001)
+gam_MCEM <- refitME(gam_naiv, sigma.sq.u, W, B)
 mean(gam_MCEM$eff.samp.size)/B
 end <- Sys.time()
 difftime(end, start, units = "secs")
@@ -177,17 +178,13 @@ par(op)
 
 rm(list = ls())
 
+library(caret)
+
 set.seed(2020)
 
-load("Quad1km.RData")
-load("Corymbia eximia Presence-Only.RData")
+data(Corymbiaeximiadata)
 
-quad <- dat.quad
-
-dat <- rbind(quad, sp.po)
-dat <- cbind(dat, c(rep(0, nrow(quad)), rep(1, nrow(sp.po))))
-dat[, 1:2] <- round(dat[, 1:2])
-colnames(dat)[ncol(dat)] <- "Y.obs"
+dat <- Corymbiaeximiadata
 
 attach(dat)
 
