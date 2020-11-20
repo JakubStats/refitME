@@ -302,7 +302,6 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
       mod <- stats::lm(bigY ~ X - 1, weights = weights1, ...)
       sigma.sq.est <- (summary(mod)$sigma)^2
     }
-    #if (family == "binomial") mod <- stats::glm(bigY ~ X - 1, weights = weights1, family = "binomial")
     if (family == "binomial") mod <- stats::glm(bigY ~ X - 1, weights = weights1, family = "binomial", ...)
     if (family == "poisson") mod <- stats::glm(bigY ~ X - 1, weights = weights1, family = "poisson", ...)
     if (family == "Gamma") mod <- stats::glm(bigY ~ X - 1, weights = weights1, family = Gamma(link = "log"), ...)
@@ -657,7 +656,7 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
     if (q1 == 3) form.name <- stats::as.formula(stats::update(stats::formula(mod), bigY ~ s(x1) + s(x2) + s(x3) +. - s(w1) - s(w2) - s(w3)), ...)
     if (q1 == 4) form.name <- stats::as.formula(stats::update(stats::formula(mod), bigY ~ s(x1) + s(x2) + s(x3) + s(x4) +. - s(w1) - s(w2) - s(w3) - s(w4)), ...)
     if (q1 == 5) form.name <- stats::as.formula(stats::update(stats::formula(mod), bigY ~ s(x1) + s(x2) + s(x3) + s(x4) + s(x5) +. - s(w1) - s(w2) - s(w3) - s(w4) - s(w5)), ...)
-    if (q1 > 5) print("Sorry, refitME cannot handle more than 5 error-contaminated varaibles with GAM! But we're working on this...")
+    if (q1 > 5) print("Sorry, but refitME cannot handle more than 5 error-contaminated varaibles with GAM! However, we're working on this...")
   }
 
   dat_new <- as.data.frame(dat_new)
@@ -1057,7 +1056,7 @@ MCEMfit_CR <- function(mod, sigma.sq.u, sigma.sq.e = 1, B = 100, epsilon = 0.000
 #'
 #' glm_naiv1 <- glm(Y ~ w1 + z1 + z2 + z3, x = TRUE, family = binomial, data = Framinghamdata)
 #'
-#' #glm_MCEM1 <- refitME(glm_naiv1, sigma.sq.u, W, B)
+#' glm_MCEM1 <- refitME(glm_naiv1, sigma.sq.u, W, B)
 #'
 #'
 #'
@@ -1130,43 +1129,49 @@ MCEMfit_CR <- function(mod, sigma.sq.u, sigma.sq.e = 1, B = 100, epsilon = 0.000
 #' gam_MCEM1 <- refitME(gam_naiv1, sigma.sq.u, W, B)
 #'
 refitME <- function(mod, sigma.sq.u, W = NULL, B = 50, epsilon = 0.00001, ...) {
-  if (is.matrix(sigma.sq.u) == F) {
-    print("One specified error-contaminated covariate.")
 
-    if (attr(mod, "class")[1] == "lm" | attr(mod, "class")[1] == "glm" | attr(mod, "class")[1] == "negbin" | attr(mod, "class")[1] == "gam") sigma.sq.e <- stats::var(mod$model[, 2]) - sigma.sq.u
-    if (attr(mod, "class")[1] == "vglm" | attr(mod, "class")[1] == "vgam") sigma.sq.e <- stats::var(mod@x[, 2]) - sigma.sq.u
+  if (formula(mod$model)[-2] == ~1) {
+    stop("Your fitted naive model is an intercept-only model. Please specify/include the error-contaminated covariate in your model fit.", call. = TRUE)
   }
 
-  if (is.matrix(sigma.sq.u) == T) {
-    print("Multiple specified error-contaminated covariates.")
-    q1 <- dim(W)[2]
-    sigma.sq.e <- c()
+  if (formula(mod$model)[-2] != ~1) {
+    if (is.matrix(sigma.sq.u) == FALSE) {
+      print("One specified error-contaminated covariate.")
 
-    for(kk in 1:q1) {
-      sigma.sq.e1 <- stats::var(W[, kk]) - sigma.sq.u[kk, kk]
-      sigma.sq.e <- c(sigma.sq.e, sigma.sq.e1)
+      if (attr(mod, "class")[1] == "lm" | attr(mod, "class")[1] == "glm" | attr(mod, "class")[1] == "negbin" | attr(mod, "class")[1] == "gam") sigma.sq.e <- stats::var(mod$model[, 2]) - sigma.sq.u
+      if (attr(mod, "class")[1] == "vglm" | attr(mod, "class")[1] == "vgam") sigma.sq.e <- stats::var(mod@x[, 2]) - sigma.sq.u
     }
+
+    if (is.matrix(sigma.sq.u) == TRUE) {
+      print("Multiple specified error-contaminated covariates.")
+      q1 <- dim(W)[2]
+      sigma.sq.e <- c()
+
+      for(kk in 1:q1) {
+        sigma.sq.e1 <- stats::var(W[, kk]) - sigma.sq.u[kk, kk]
+        sigma.sq.e <- c(sigma.sq.e, sigma.sq.e1)
+      }
+    }
+
+    ob.type <- attr(mod, "class")[1]
+
+    if (ob.type == "lm" | ob.type == "glm" | ob.type == "negbin") {
+      if (ob.type == "lm") family <- "gaussian"
+      if (ob.type == "glm") family <- mod$family$family
+      if (ob.type == "negbin") family <- "negbin"
+
+      return(MCEMfit_glm(mod, family, sigma.sq.u, W, sigma.sq.e, B, epsilon, ...))
+    }
+
+    if (ob.type == "gam") {
+      family <- mod$family$family
+      if (strsplit(family, NULL)[[1]][1] == "N") family <- "negbin"
+
+      return(MCEMfit_gam(mod, family, sigma.sq.u, W, sigma.sq.e, B, epsilon, ...))
+    }
+
+    if (ob.type == "vglm" | ob.type == "vgam") return(MCEMfit_CR(mod, sigma.sq.u, sigma.sq.e, B, epsilon))
   }
-
-  ob.type <- attr(mod, "class")[1]
-
-  if ((ob.type == "lm" | ob.type == "glm" | ob.type == "negbin")) {
-    if (ob.type == "lm") family <- "gaussian"
-    if (ob.type == "glm") family <- mod$family$family
-    if (ob.type == "negbin") family <- "negbin"
-
-    return(MCEMfit_glm(mod, family, sigma.sq.u, W, sigma.sq.e, B, epsilon, ...))
-  }
-
-  if (ob.type == "gam") {
-    family <- mod$family$family
-    if (strsplit(family, NULL)[[1]][1] == "N") family <- "negbin"
-
-    return(MCEMfit_gam(mod, family, sigma.sq.u, W, sigma.sq.e, B, epsilon, ...))
-  }
-
-  if ((ob.type == "vglm" | ob.type == "vgam")) return(MCEMfit_CR(mod, sigma.sq.u, sigma.sq.e, B, epsilon))
-
 }
 
 #' wt.var

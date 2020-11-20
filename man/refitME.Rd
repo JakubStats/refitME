@@ -42,7 +42,7 @@ sigma.sq.u <- 0.01259/2 # ME variance, obtained from Carroll et al. (2006) monog
 
 glm_naiv1 <- glm(Y ~ w1 + z1 + z2 + z3, x = TRUE, family = binomial, data = Framinghamdata)
 
-#glm_MCEM1 <- refitME(glm_naiv1, sigma.sq.u, W, B)
+glm_MCEM1 <- refitME(glm_naiv1, sigma.sq.u, W, B)
 
 
 
