@@ -42,7 +42,7 @@ MCEMfit_gam(
 \item{...}{: further arguments passed to \code{gam}.}
 }
 \value{
-\code{MCEMfit_gam} returns the naive fitted model object where coefficient estimates, the covariance matrix, fitted values and residuals have been replaced with the final MCEM model fit. Standard errors and effective sample size have been additional included.
+\code{MCEMfit_gam} returns the naive fitted model object where coefficient estimates and the covariance matrix have been replaced with the final MCEM model fit. Standard errors, measurement error variance, the entropy term and the effective sample size (which diagnose how closely the proposal distribution matches the posterior, see equation (2) of Stoklosa, Hwang and Warton) have been additional included.
 }
 \description{
 Function for wrapping the MCEM algorithm on GAMs where covariates are subject to measurement error/error-in-variables.
@@ -75,7 +75,7 @@ sigma.sq.u <- 0.0915
 
 gam_naiv1 <- gam(Y ~ s(w1) + s(z1, k = 25) + s(z2) + s(z3), family = "poisson", data = dat)
 
-gam_MCEM1 <- refitME(gam_naiv1, sigma.sq.u, W, B)
+#gam_MCEM1 <- refitME(gam_naiv1, sigma.sq.u, W, B)
 
 }
 \references{

@@ -66,7 +66,7 @@ suppressMessages(library(sandwich))
 #' @param theta.est : an initial value for the dispersion parameter (this is required for fitting negative binomial models).
 #' @param shape.est : an initial value for the shape parameter (this is required for fitting gamma models).
 #' @param ... : further arguments passed to \code{glm}.
-#' @return \code{MCEMfit_glm} returns the naive fitted model object where coefficient estimates, the covariance matrix, fitted values and residuals have been replaced with the final MCEM model fit. Standard errors and effective sample size have been additional included.
+#' @return \code{MCEMfit_glm} returns the naive fitted model object where coefficient estimates, the covariance matrix, fitted values, log-likelihood, AIC and residuals have been replaced with the final MCEM model fit. Standard errors, measurement error variance, the entropy term and the effective sample size (which diagnose how closely the proposal distribution matches the posterior, see equation (2) of Stoklosa, Hwang and Warton) have been additional included.
 #' @author Jakub Stoklosa and David I. Warton.
 #' @references Carroll, R. J., Ruppert, D., Stefanski, L. A., and Crainiceanu, C. M. (2006). \emph{Measurement Error in Nonlinear Models: A Modern Perspective.} 2nd Ed. London: Chapman \& Hall/CRC.
 #' @references Stoklosa, J., Hwang, W-H., and Warton, D.I. \pkg{refitME}: Measurement Error Modelling using Monte Carlo Expectation Maximization in \proglang{R}.
@@ -88,7 +88,7 @@ suppressMessages(library(sandwich))
 #'
 #' glm_naiv1 <- glm(Y ~ w1 + z1 + z2 + z3, x = TRUE, family = binomial, data = Framinghamdata)
 #'
-#' glm_MCEM1 <- refitME(glm_naiv1, sigma.sq.u, W, B)
+#' #glm_MCEM1 <- refitME(glm_naiv1, sigma.sq.u, W, B)
 #'
 #'
 #'
@@ -127,7 +127,7 @@ suppressMessages(library(sandwich))
 #'
 #' sigma.sq.u <- 0.25
 #'
-#' PPM_MCEM1 <- refitME(PPM_naiv1, sigma.sq.u, W, B)
+#' #PPM_MCEM1 <- refitME(PPM_naiv1, sigma.sq.u, W, B)
 #'
 MCEMfit_glm <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 50, epsilon = 0.00001, theta.est = 1, shape.est = 1, ...) {
 
@@ -217,7 +217,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
 
       kk1 <- 1
 
-      for(kk in 1:q1) {
+      for (kk in 1:q1) {
         if (sum((W[, kk])^2 != (W1[, kk1 + 1])) == n) {
           p1 <- 1
           kk1 <- kk
@@ -251,7 +251,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
 
     mu.e1 <- mean(X1_j)
 
-    for(kk in 2:q1) {
+    for (kk in 2:q1) {
       w1 <- W[, kk]
       U1_j <- stats::rnorm(n*B, 0, sd = sqrt(rep(sigma.sq.u1[kk, kk], B)))
       X1_j <- rep(w1, B) - U1_j
@@ -300,8 +300,10 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
 
     if (family == "gaussian") {
       mod <- stats::lm(bigY ~ X - 1, weights = weights1, ...)
+      #mod <- stats::lm(bigY ~ X - 1, weights = weights1)
       sigma.sq.est <- (summary(mod)$sigma)^2
     }
+    #if (family == "binomial") mod <- stats::glm(bigY ~ X - 1, weights = weights1, family = "binomial")
     if (family == "binomial") mod <- stats::glm(bigY ~ X - 1, weights = weights1, family = "binomial", ...)
     if (family == "poisson") mod <- stats::glm(bigY ~ X - 1, weights = weights1, family = "poisson", ...)
     if (family == "Gamma") mod <- stats::glm(bigY ~ X - 1, weights = weights1, family = Gamma(link = "log"), ...)
@@ -324,7 +326,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
       sigma.sq.e1.update <- c()
       mu.e1.update <- c()
 
-      for(kk in 1:q1) {
+      for (kk in 1:q1) {
         sigma.sq.e1.update1 <- wt.var(XA[, kk], w = weights2)
         sigma.sq.e1.update <- c(sigma.sq.e1.update, sigma.sq.e1.update1)
 
@@ -403,30 +405,34 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
 
   qq <- mod_n$rank
 
+  sumW <- apply(bigW, 1, sum, na.rm = T)
+  weights1 <- as.vector(bigW)/sumW
+  weights1[is.nan(weights1)] <- 0
+
+  entropy <- sum(weights1*log(weights1))
+  mod_n$entropy <- entropy/B
+
   if (family %in% c("gaussian", "Gamma")) qq <- qq + 1
 
   if (family != "gaussian") {
-    mod_n$deviance <- sum(mod_n$family$dev.resids(Y, mod_n$fitted.values, p.wt))
+    mod_n$deviance <- mod$deviance - mod_n$entropy
     mod_n$aic <- mod_n$deviance + 2*qq
-    logLik.value <- mod_n$deviance/(-2)
+    logLik.value <- mod_n$deviance/-2
   }
 
-  if (family == "gaussian") logLik.value <- logLik(mod_n)
+  if (family == "gaussian") {
+    logLik.value <- 0.5 * (sum(log(p.wt)) - n * (log(2 * pi) + 1 - log(n) +  log(sum(p.wt * residuals^2)))) - mod_n$entropy
+    mod_n$aic <- -2*logLik.value + 2*qq
+  }
 
   class(logLik.value) <- "logLik"
-
   mod_n$logLik <- logLik.value
 
   mod_n$sigma.sq.u <- sigma.sq.u
 
-  sumW <- apply(bigW, 1, sum, na.rm = T)
-  weights1 <- bigW/sumW
-  weights1[is.nan(weights1)] <- 0
-
-  eff.samp.size <- 1/apply(weights1^2, 1, sum)
+  eff.samp.size <- 1/apply((bigW/sumW)^2, 1, sum)
   eff.samp.size[is.infinite(eff.samp.size)] <- "NA"
   eff.samp.size <- as.numeric(eff.samp.size)
-
   mod_n$eff.samp.size <- eff.samp.size
 
   # Standard error calculations start here.
@@ -441,7 +447,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
 
   ind_mat <- matrix(1:(n*B), ncol = n, byrow = T)
 
-  for(ii in 1:n) {
+  for (ii in 1:n) {
     index_vec <- ind_mat[, ii]
     S_1 <- S_1 + (apply(estfun_mat[index_vec, ], 2, sum))%*%t(apply(estfun_mat[index_vec, ], 2, sum))
   }
@@ -493,7 +499,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
 #' @param theta.est : an initial value for the dispersion parameter (this is required for fitting negative binomial models).
 #' @param shape.est : an initial value for the shape parameter (this is required for fitting gamma models).
 #' @param ... : further arguments passed to \code{gam}.
-#' @return \code{MCEMfit_gam} returns the naive fitted model object where coefficient estimates, the covariance matrix, fitted values and residuals have been replaced with the final MCEM model fit. Standard errors and effective sample size have been additional included.
+#' @return \code{MCEMfit_gam} returns the naive fitted model object where coefficient estimates and the covariance matrix have been replaced with the final MCEM model fit. Standard errors, measurement error variance, the entropy term and the effective sample size (which diagnose how closely the proposal distribution matches the posterior, see equation (2) of Stoklosa, Hwang and Warton) have been additional included.
 #' @author Jakub Stoklosa and David I. Warton.
 #' @references Ganguli, B, Staudenmayer, J., and Wand, M. P. (2005). Additive models with predictors subject to measurement error. \emph{Australian & New Zealand Journal of Statistics}, \strong{47}, 193–202.
 #' @references Wand, M. P. (2018). \pkg{SemiPar}: Semiparametic Regression. \proglang{R} package version 1.0-4.2., URL \url{https: //CRAN.R-project.org/package=SemiPar}.
@@ -530,7 +536,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
 #'
 #' gam_naiv1 <- gam(Y ~ s(w1) + s(z1, k = 25) + s(z2) + s(z3), family = "poisson", data = dat)
 #'
-#' gam_MCEM1 <- refitME(gam_naiv1, sigma.sq.u, W, B)
+#' #gam_MCEM1 <- refitME(gam_naiv1, sigma.sq.u, W, B)
 #'
 MCEMfit_gam <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 50, epsilon = 0.00001, theta.est = 1, shape.est = 10, ...) {
 
@@ -594,7 +600,7 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
       non.err.names <- mod.terms[-smooth.err]
       W2 <- as.matrix(W1[, -smooth.err])
 
-      for(jj in 1:(d - 1)) {
+      for (jj in 1:(d - 1)) {
         dat_new <- cbind(dat_new, rep(W2[, jj], B))
         colnames(dat_new)[dim(dat_new)[2]] <- non.err.names[jj]
       }
@@ -610,7 +616,7 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
 
     if (d > q1) {
       col.nameX <- c()
-      for(kk in 1:q1) {
+      for (kk in 1:q1) {
         col.nameX1 <- paste0('x', kk)
         col.nameX <- c(col.nameX, col.nameX1)
       }
@@ -626,7 +632,7 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
     X <- cbind(X1_j)
     mu.e1 <- mean(X1_j)
 
-    for(kk in 2:q1) {
+    for (kk in 2:q1) {
       w1 <- W[, kk]
       U1_j <- stats::rnorm(n*B, 0, sd = sqrt(rep(sigma.sq.u1[kk, kk], B)))
       X1_j <- rep(w1, B) - U1_j
@@ -646,7 +652,7 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
 
       W2 <- as.matrix(W1[, -smooth.err])
 
-      for(jj in 1:(d - q1)) {
+      for (jj in 1:(d - q1)) {
         dat_new <- cbind(dat_new, rep(W2[, jj], B))
         colnames(dat_new)[dim(dat_new)[2]] <- non.err.names[jj]
       }
@@ -712,7 +718,7 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
       sigma.sq.e1.update <- c()
       mu.e1.update <- c()
 
-      for(kk in 1:q1) {
+      for (kk in 1:q1) {
         sigma.sq.e1.update1 <- wt.var(X[, kk], w = weights2)
         sigma.sq.e1.update <- c(sigma.sq.e1.update, sigma.sq.e1.update1)
 
@@ -798,7 +804,7 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
   S_1 <- matrix(0, nrow = K1, ncol = K1)
   SS_1 <- matrix(0, nrow = K1, ncol = K1)
 
-  for(ii in 1:n) {
+  for (ii in 1:n) {
     index_vec <- ind_mat[, ii]
     S_1 <- S_1 + (apply(estfun_mat[index_vec, ], 2, sum))%*%t(apply(estfun_mat[index_vec, ], 2, sum))
   }
@@ -840,8 +846,7 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
 #' @author Jakub Stoklosa and David I. Warton.
 #' @references Stoklosa, J., Hwang, W-H., and Warton, D.I. \pkg{refitME}: Measurement Error Modelling using Monte Carlo Expectation Maximization in \proglang{R}.
 #' @import MASS VGAM
-#' @importFrom VGAM s
-#' @importFrom VGAM posbinomial
+#' @importFrom VGAM s posbinomial
 #' @export
 #' @seealso \code{\link{MCEMfit_glm}}
 #' @source See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
@@ -992,7 +997,7 @@ MCEMfit_CR <- function(mod, sigma.sq.u, sigma.sq.e = 1, B = 100, epsilon = 0.000
 
   ind_mat <- matrix(1:(n*B), ncol = n, byrow = T)
 
-  for(iii in 1:n) {
+  for (iii in 1:n) {
     index_vec <- ind_mat[, iii]
     x <- X[index_vec, ]
 
@@ -1034,7 +1039,7 @@ MCEMfit_CR <- function(mod, sigma.sq.u, sigma.sq.e = 1, B = 100, epsilon = 0.000
 #' @param B : the number of Monte Carlo replication values (default is set 50).
 #' @param epsilon : convergence threshold (default is set to 0.00001).
 #' @param ... : further arguments passed through to \code{glm} or \code{gam}.
-#' @return \code{refitME} returns the naive fitted model object where coefficient estimates, the covariance matrix, fitted values and residuals have been replaced with the final MCEM model fit. Standard errors and effective sample size (which diagnose how closely the proposal distribution matches the posterior, see equation (2) of Stoklosa, Hwang and Warton) have been additional included.
+#' @return \code{refitME} returns the naive fitted model object where coefficient estimates, the covariance matrix, fitted values, the log-likelihood, AIC and residuals have been replaced with the final MCEM model fit. Standard errors, measurement error variance, the entropy term and the effective sample size (which diagnose how closely the proposal distribution matches the posterior, see equation (2) of Stoklosa, Hwang and Warton) have been additional included.
 #' @author Jakub Stoklosa and David I. Warton.
 #' @references Carroll, R. J., Ruppert, D., Stefanski, L. A., and Crainiceanu, C. M. (2006). \emph{Measurement Error in Nonlinear Models: A Modern Perspective.} 2nd Ed. London: Chapman \& Hall/CRC.
 #' @references Stoklosa, J., Hwang, W-H., and Warton, D.I. \pkg{refitME}: Measurement Error Modelling using Monte Carlo Expectation Maximization in \proglang{R}.
@@ -1056,7 +1061,7 @@ MCEMfit_CR <- function(mod, sigma.sq.u, sigma.sq.e = 1, B = 100, epsilon = 0.000
 #'
 #' glm_naiv1 <- glm(Y ~ w1 + z1 + z2 + z3, x = TRUE, family = binomial, data = Framinghamdata)
 #'
-#' glm_MCEM1 <- refitME(glm_naiv1, sigma.sq.u, W, B)
+#' #glm_MCEM1 <- refitME(glm_naiv1, sigma.sq.u, W, B)
 #'
 #'
 #'
@@ -1095,7 +1100,7 @@ MCEMfit_CR <- function(mod, sigma.sq.u, sigma.sq.e = 1, B = 100, epsilon = 0.000
 #'
 #' sigma.sq.u <- 0.25
 #'
-#' PPM_MCEM1 <- refitME(PPM_naiv1, sigma.sq.u, W, B)
+#' #PPM_MCEM1 <- refitME(PPM_naiv1, sigma.sq.u, W, B)
 #'
 #'
 #'
@@ -1126,7 +1131,7 @@ MCEMfit_CR <- function(mod, sigma.sq.u, sigma.sq.e = 1, B = 100, epsilon = 0.000
 #'
 #' gam_naiv1 <- gam(Y ~ s(w1) + s(z1, k = 25) + s(z2) + s(z3), family = "poisson", data = dat)
 #'
-#' gam_MCEM1 <- refitME(gam_naiv1, sigma.sq.u, W, B)
+#' #gam_MCEM1 <- refitME(gam_naiv1, sigma.sq.u, W, B)
 #'
 refitME <- function(mod, sigma.sq.u, W = NULL, B = 50, epsilon = 0.00001, ...) {
 
@@ -1147,7 +1152,7 @@ refitME <- function(mod, sigma.sq.u, W = NULL, B = 50, epsilon = 0.00001, ...) {
       q1 <- dim(W)[2]
       sigma.sq.e <- c()
 
-      for(kk in 1:q1) {
+      for (kk in 1:q1) {
         sigma.sq.e1 <- stats::var(W[, kk]) - sigma.sq.u[kk, kk]
         sigma.sq.e <- c(sigma.sq.e, sigma.sq.e1)
       }
@@ -1191,6 +1196,7 @@ refitME <- function(mod, sigma.sq.u, W = NULL, B = 50, epsilon = 0.00001, ...) {
 #' wt.var(x, wt)
 #' @export
 #' @source See \url{https://rdrr.io/cran/SDMTools/src/R/wt.mean.R}
+#'
 wt.var <- function(x, w) {
   s <- which(is.finite(x + w))
   wt <- w[s]
@@ -1199,3 +1205,19 @@ wt.var <- function(x, w) {
 
   return(sum(wt*(x - xbar)^2)*(sum(wt)/(sum(wt)^2 - sum(wt^2)))) # Return the variance.
 }
+
+#' anova.refitME
+#'
+#' An ANOVA function for fitted refitME objects.
+#' @name anova.refitME
+#' @param object : fitted model objects of class refitME.
+#' @param ... : further arguments passed through to \code{glm} or \code{gam}.
+#' @return \code{ranova.refitME} produces output identical to \code{anova.gam}.
+#' @author Jakub Stoklosa and David I. Warton.
+#' @import mgcv
+#' @export
+#' @seealso \code{\link{anova.gam}}
+#'
+anova.refitME <- function(object, ...) {
+  return(mgcv::anova.gam(object, ...))
+  }
