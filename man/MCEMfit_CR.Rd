@@ -2,7 +2,7 @@
 % Please edit documentation in R/refitME_package.R
 \name{MCEMfit_CR}
 \alias{MCEMfit_CR}
-\title{MCEMfit_CR}
+\title{Function for fitting \code{VGAM} capture-recapture (CR) model using the MCEM algorithm}
 \source{
 See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
 }
@@ -12,7 +12,7 @@ MCEMfit_CR(mod, sigma.sq.u, sigma.sq.e = 1, B = 100, epsilon = 1e-05)
 \arguments{
 \item{mod}{: a vglm/vgam object (this is the naive fitted CR model). Make sure the first input predictor variables are the selected error-contaminated variable (i.e., the \code{W}'s).}
 
-\item{sigma.sq.u}{: measurement error variance. A scalar if there is only one error-contaminated variable, otherwise this must stored as a covariance matrix.}
+\item{sigma.sq.u}{: measurement error variance. A scalar if there is only one error-contaminated variable, otherwise this must be stored as a covariance matrix.}
 
 \item{sigma.sq.e}{: variance of the true covariate (X).}
 
@@ -24,8 +24,13 @@ MCEMfit_CR(mod, sigma.sq.u, sigma.sq.e = 1, B = 100, epsilon = 1e-05)
 \code{MCEMfit_CR} returns model coefficient and population size estimates with standard errors and the effective sample size.
 }
 \description{
-Function for fitting VGAM capture-recapture (CR) model using the MCEM algorithm where covariates have measurement error.
+Function for fitting \code{VGAM} capture-recapture (CR) model using the MCEM algorithm where covariates have measurement error.
 }
+\section{Warning}{
+
+This function is still under development. Currently the function can only fit the CR model used in the manuscript. IT DOES NOT SUPPORT ALL \code{VGAM} families.
+}
+
 \references{
 Stoklosa, J., Hwang, W-H., and Warton, D.I. \pkg{refitME}: Measurement Error Modelling using Monte Carlo Expectation Maximization in \proglang{R}.
 }

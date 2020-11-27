@@ -64,6 +64,11 @@ round(est.beta.se, digits = 3)
 names(comp.time) <- c("SIMEX", "MCEM")
 round(comp.time, digits = 3)
 
+# ANOVA.
+
+anova(glm_naiv1)
+anova(glm_MCEM1)
+
 #----------------------------------------------------------------------------------------
 
 # Example 2: A GAM example taken from Ganguli et al. (2005) - The air pollution data set.
@@ -362,7 +367,7 @@ N.hat.se_MCEM <- CR_MCEM$N.est.se
 
 # Model selection.
 
-AIC.mod <- c(round(AIC(CR_naiv1), digits = 2), NA, round(AIC(CR_naiv2), digits = 2), round(AIC(CR_MCEM$mod), digits = 2))
+AIC.mod <- c(round(AIC(CR_naiv1), digits = 2), NA, round(AIC(CR_naiv2), digits = 2), round(CR_MCEM$aic.value, digits = 2))
 
 # Combine all results.
 

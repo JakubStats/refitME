@@ -2,7 +2,7 @@
 % Please edit documentation in R/refitME_package.R
 \name{MCEMfit_glm}
 \alias{MCEMfit_glm}
-\title{MCEMfit_glm}
+\title{Function for wrapping the MCEM algorithm on GLMs objects.}
 \source{
 See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
 }
@@ -25,7 +25,7 @@ MCEMfit_glm(
 
 \item{family}{: a specified family/distribution.}
 
-\item{sigma.sq.u}{: measurement error variance. A scalar if there is only one error-contaminated variable, otherwise this must stored as a covariance matrix.}
+\item{sigma.sq.u}{: measurement error variance. A scalar if there is only one error-contaminated variable, otherwise this must be stored as a covariance matrix.}
 
 \item{W}{: a matrix of error-contaminated covariates (if not specified, the default assumes all covariates in the naive fitted model are error-contaminated).}
 
@@ -42,7 +42,7 @@ MCEMfit_glm(
 \item{...}{: further arguments passed to \code{glm}.}
 }
 \value{
-\code{MCEMfit_glm} returns the naive fitted model object where coefficient estimates, the covariance matrix, fitted values, log-likelihood, AIC and residuals have been replaced with the final MCEM model fit. Standard errors, measurement error variance, the entropy term and the effective sample size (which diagnose how closely the proposal distribution matches the posterior, see equation (2) of Stoklosa, Hwang and Warton) have been additional included.
+\code{MCEMfit_glm} returns the naive fitted model object where coefficient estimates, the covariance matrix, fitted values, log-likelihood, AIC and residuals have been replaced with the final MCEM model fit. Standard errors, measurement error variance, the entropy term, \code{W}, \code{B} and the effective sample size (which diagnose how closely the proposal distribution matches the posterior, see equation (2) of Stoklosa, Hwang and Warton) have also been included as outputs.
 }
 \description{
 Function for wrapping the MCEM algorithm on GLMs where covariates are subject to measurement error/error-in-variables.
@@ -61,7 +61,7 @@ sigma.sq.u <- 0.01259/2 # ME variance, obtained from Carroll et al. (2006) monog
 
 glm_naiv1 <- glm(Y ~ w1 + z1 + z2 + z3, x = TRUE, family = binomial, data = Framinghamdata)
 
-#glm_MCEM1 <- refitME(glm_naiv1, sigma.sq.u, W, B)
+glm_MCEM1 <- refitME(glm_naiv1, sigma.sq.u, W, B)
 
 
 
@@ -100,7 +100,7 @@ B <- 50
 
 sigma.sq.u <- 0.25
 
-#PPM_MCEM1 <- refitME(PPM_naiv1, sigma.sq.u, W, B)
+PPM_MCEM1 <- refitME(PPM_naiv1, sigma.sq.u, W, B)
 
 }
 \references{

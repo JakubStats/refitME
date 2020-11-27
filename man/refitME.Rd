@@ -2,7 +2,7 @@
 % Please edit documentation in R/refitME_package.R
 \name{refitME}
 \alias{refitME}
-\title{refitME}
+\title{A wrapper function for correcting measurement error via the MCEM algorithm.}
 \source{
 See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
 }
@@ -12,7 +12,7 @@ refitME(mod, sigma.sq.u, W = NULL, B = 50, epsilon = 1e-05, ...)
 \arguments{
 \item{mod}{: a glm/gam object (this is the naive fitted model). Make sure the first input predictor variables are the selected error-contaminated variable (i.e., the \code{W}'s).}
 
-\item{sigma.sq.u}{: measurement error variance. A scalar if there is only one error-contaminated variable, otherwise must be a covariance matrix}
+\item{sigma.sq.u}{: measurement error variance. A scalar if there is only one error-contaminated variable, otherwise this must be stored as a covariance matrix}
 
 \item{W}{: a matrix of error-contaminated covariates (if not specified, the default assumes all covariates in the naive fitted model are error-contaminated).}
 
@@ -23,7 +23,7 @@ refitME(mod, sigma.sq.u, W = NULL, B = 50, epsilon = 1e-05, ...)
 \item{...}{: further arguments passed through to \code{glm} or \code{gam}.}
 }
 \value{
-\code{refitME} returns the naive fitted model object where coefficient estimates, the covariance matrix, fitted values, the log-likelihood, AIC and residuals have been replaced with the final MCEM model fit. Standard errors, measurement error variance, the entropy term and the effective sample size (which diagnose how closely the proposal distribution matches the posterior, see equation (2) of Stoklosa, Hwang and Warton) have been additional included.
+\code{refitME} returns the naive fitted model object where coefficient estimates, the covariance matrix, fitted values, the log-likelihood, AIC and residuals have been replaced with the final MCEM model fit. Standard errors, measurement error variance, the entropy term, \code{W}, \code{B} and the effective sample size (which diagnose how closely the proposal distribution matches the posterior, see equation (2) of Stoklosa, Hwang and Warton) have also been included as outputs.
 }
 \description{
 Function that extracts the fitted (naive) model object and wraps the MCEM algorithm to correct for measurement error/error-in-variables (currently available for \code{lm()}, \code{glm()} and \code{gam()}, excludes \code{lme()}, \code{nlme()} and \code{polr()} models).
@@ -42,7 +42,7 @@ sigma.sq.u <- 0.01259/2 # ME variance, obtained from Carroll et al. (2006) monog
 
 glm_naiv1 <- glm(Y ~ w1 + z1 + z2 + z3, x = TRUE, family = binomial, data = Framinghamdata)
 
-#glm_MCEM1 <- refitME(glm_naiv1, sigma.sq.u, W, B)
+glm_MCEM1 <- refitME(glm_naiv1, sigma.sq.u, W, B)
 
 
 
@@ -81,7 +81,7 @@ B <- 50
 
 sigma.sq.u <- 0.25
 
-#PPM_MCEM1 <- refitME(PPM_naiv1, sigma.sq.u, W, B)
+PPM_MCEM1 <- refitME(PPM_naiv1, sigma.sq.u, W, B)
 
 
 
@@ -112,7 +112,7 @@ sigma.sq.u <- 0.0915
 
 gam_naiv1 <- gam(Y ~ s(w1) + s(z1, k = 25) + s(z2) + s(z3), family = "poisson", data = dat)
 
-#gam_MCEM1 <- refitME(gam_naiv1, sigma.sq.u, W, B)
+gam_MCEM1 <- refitME(gam_naiv1, sigma.sq.u, W, B)
 
 }
 \references{

@@ -2,7 +2,7 @@
 % Please edit documentation in R/refitME_package.R
 \name{wt.var}
 \alias{wt.var}
-\title{wt.var}
+\title{Function that calculates a weighted variance.}
 \source{
 See \url{https://rdrr.io/cran/SDMTools/src/R/wt.mean.R}
 }
@@ -18,7 +18,7 @@ wt.var(x, w)
 \code{wt.var} returns a single value from analysis requested.
 }
 \description{
-Function that calculates a weighted variance.
+This function that calculates a weighted variance for a given vector.
 }
 \examples{
 # Define simple data

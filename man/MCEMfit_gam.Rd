@@ -2,7 +2,7 @@
 % Please edit documentation in R/refitME_package.R
 \name{MCEMfit_gam}
 \alias{MCEMfit_gam}
-\title{MCEMfit_gam}
+\title{Function for wrapping the MCEM algorithm on GAM objects.}
 \source{
 See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
 }
@@ -25,7 +25,7 @@ MCEMfit_gam(
 
 \item{family}{: a specified family/distribution.}
 
-\item{sigma.sq.u}{: measurement error variance. A scalar if there is only one error-contaminated variable, otherwise this must stored as a covariance matrix.}
+\item{sigma.sq.u}{: measurement error variance. A scalar if there is only one error-contaminated variable, otherwise this must be stored as a covariance matrix.}
 
 \item{W}{: a matrix of error-contaminated covariates (if not specified, the default assumes all covariates in the naive fitted model are error-contaminated).}
 
@@ -42,7 +42,7 @@ MCEMfit_gam(
 \item{...}{: further arguments passed to \code{gam}.}
 }
 \value{
-\code{MCEMfit_gam} returns the naive fitted model object where coefficient estimates and the covariance matrix have been replaced with the final MCEM model fit. Standard errors, measurement error variance, the entropy term and the effective sample size (which diagnose how closely the proposal distribution matches the posterior, see equation (2) of Stoklosa, Hwang and Warton) have been additional included.
+\code{MCEMfit_gam} returns the naive fitted model object where coefficient estimates and the covariance matrix have been replaced with the final MCEM model fit. Standard errors, measurement error variance, the entropy term, \code{W}, \code{B} and the effective sample size (which diagnose how closely the proposal distribution matches the posterior, see equation (2) of Stoklosa, Hwang and Warton) have also been included as outputs.
 }
 \description{
 Function for wrapping the MCEM algorithm on GAMs where covariates are subject to measurement error/error-in-variables.
@@ -75,7 +75,7 @@ sigma.sq.u <- 0.0915
 
 gam_naiv1 <- gam(Y ~ s(w1) + s(z1, k = 25) + s(z2) + s(z3), family = "poisson", data = dat)
 
-#gam_MCEM1 <- refitME(gam_naiv1, sigma.sq.u, W, B)
+gam_MCEM1 <- refitME(gam_naiv1, sigma.sq.u, W, B)
 
 }
 \references{
