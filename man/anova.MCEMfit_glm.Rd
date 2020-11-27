@@ -2,12 +2,12 @@
 % Please edit documentation in R/refitME_package.R
 \name{anova.MCEMfit_glm}
 \alias{anova.MCEMfit_glm}
-\title{An ANOVA function for fitted \code{anova.MCEMfit_glm} objects}
+\title{An ANOVA function for fitted \code{MCEMfit_glm} objects}
 \usage{
 \method{anova}{MCEMfit_glm}(object, ..., dispersion = NULL, test = NULL)
 }
 \arguments{
-\item{object}{: fitted model objects of class refitME.}
+\item{object}{: fitted model objects of class \code{MCEMfit_glm}.}
 
 \item{...}{: further arguments passed through to \code{glm}.}
 
@@ -19,7 +19,7 @@
 \code{anova.MCEMfit_glm} produces output identical to \code{anova.glm}.
 }
 \description{
-An ANOVA function for fitted \code{anova.MCEMfit_glm} objects.
+An ANOVA function for fitted \code{MCEMfit_glm} objects.
 }
 \seealso{
 \code{\link{anova.glm}}

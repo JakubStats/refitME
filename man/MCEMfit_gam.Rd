@@ -42,7 +42,7 @@ MCEMfit_gam(
 \item{...}{: further arguments passed to \code{gam}.}
 }
 \value{
-\code{MCEMfit_gam} returns the naive fitted model object where coefficient estimates and the covariance matrix have been replaced with the final MCEM model fit. Standard errors, measurement error variance, the entropy term, \code{W}, \code{B} and the effective sample size (which diagnose how closely the proposal distribution matches the posterior, see equation (2) of Stoklosa, Hwang and Warton) have also been included as outputs.
+\code{MCEMfit_gam} returns the naive fitted model object where coefficient estimates and the covariance matrix have been replaced with the final MCEM model fit. Standard errors and the effective sample size (which diagnose how closely the proposal distribution matches the posterior, see equation (2) of Stoklosa, Hwang and Warton) have also been included as outputs.
 }
 \description{
 Function for wrapping the MCEM algorithm on GAMs where covariates are subject to measurement error/error-in-variables.

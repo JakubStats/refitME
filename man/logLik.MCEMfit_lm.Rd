@@ -2,12 +2,12 @@
 % Please edit documentation in R/refitME_package.R
 \name{logLik.MCEMfit_lm}
 \alias{logLik.MCEMfit_lm}
-\title{Extract log-Likelihoods for \code{logLik.MCEMfit_lm} model objects}
+\title{Extract log-Likelihoods for \code{MCEMfit_lm} model objects}
 \usage{
 \method{logLik}{MCEMfit_lm}(object, REML = FALSE, ...)
 }
 \arguments{
-\item{object}{: fitted model objects of class refitME.}
+\item{object}{: fitted model objects of class \code{MCEMfit_lm}.}
 
 \item{REML}{: an optional logical value. If \code{TRUE} the restricted log-likelihood is returned, else, if \code{FALSE}, the log-likelihood is returned. Defaults to \code{FALSE}.}
 
@@ -17,7 +17,7 @@
 \code{logLik.MCEMfit_lm} produces output identical to \code{logLik}.
 }
 \description{
-Extract log-Likelihoods for \code{refitME} model objects.
+Extract log-Likelihoods for \code{MCEMfit_lm} model objects. This function subtracts the entropy term from the observed likelihood.
 }
 \seealso{
 \code{\link{logLik}}

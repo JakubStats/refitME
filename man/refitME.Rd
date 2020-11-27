@@ -23,7 +23,7 @@ refitME(mod, sigma.sq.u, W = NULL, B = 50, epsilon = 1e-05, ...)
 \item{...}{: further arguments passed through to \code{glm} or \code{gam}.}
 }
 \value{
-\code{refitME} returns the naive fitted model object where coefficient estimates, the covariance matrix, fitted values, the log-likelihood, AIC and residuals have been replaced with the final MCEM model fit. Standard errors, measurement error variance, the entropy term, \code{W}, \code{B} and the effective sample size (which diagnose how closely the proposal distribution matches the posterior, see equation (2) of Stoklosa, Hwang and Warton) have also been included as outputs.
+\code{refitME} returns the naive fitted model object where coefficient estimates, the covariance matrix, fitted values, the log-likelihood, and residuals have been replaced with the final MCEM model fit. Standard errors and the effective sample size (which diagnose how closely the proposal distribution matches the posterior, see equation (2) of Stoklosa, Hwang and Warton) have also been included as outputs.
 }
 \description{
 Function that extracts the fitted (naive) model object and wraps the MCEM algorithm to correct for measurement error/error-in-variables (currently available for \code{lm()}, \code{glm()} and \code{gam()}, excludes \code{lme()}, \code{nlme()} and \code{polr()} models).
