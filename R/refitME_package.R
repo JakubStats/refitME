@@ -61,6 +61,7 @@ suppressMessages(library(sandwich))
 #' @param W : a matrix of error-contaminated covariates (if not specified, the default assumes all covariates in the naive fitted model are error-contaminated).
 #' @param B : the number of Monte Carlo replication values (default is set 50).
 #' @param epsilon : convergence threshold (default is set to 0.00001).
+#' @param silent : 	if \code{TRUE}, convergence message is suppressed (default is set to \code{FALSE}).
 #' @param ... : further arguments passed through to \code{glm} or \code{gam}.
 #' @return \code{refitME} returns the naive fitted model object where coefficient estimates, the covariance matrix, fitted values, the log-likelihood, and residuals have been replaced with the final MCEM model fit. Standard errors and the effective sample size (which diagnose how closely the proposal distribution matches the posterior, see equation (2) of Stoklosa, Hwang and Warton) have also been included as outputs.
 #' @author Jakub Stoklosa and David I. Warton.
@@ -156,7 +157,7 @@ suppressMessages(library(sandwich))
 #'
 #' gam_MCEM1 <- refitME(gam_naiv1, sigma.sq.u, W, B)
 #'
-refitME <- function(mod, sigma.sq.u, W = NULL, B = 50, epsilon = 0.00001, ...) {
+refitME <- function(mod, sigma.sq.u, W = NULL, B = 50, epsilon = 0.00001, silent = FALSE, ...) {
   if (!isS4(mod)) {
     if (formula(mod$model)[-2] == ~1) {
       stop("Your fitted naive model is an intercept-only model. Please specify/include the error-contaminated covariate in your model fit.", call. = TRUE)
@@ -187,20 +188,20 @@ refitME <- function(mod, sigma.sq.u, W = NULL, B = 50, epsilon = 0.00001, ...) {
       if (ob.type == "glm") family <- mod$family$family
       if (ob.type == "negbin") family <- "negbin"
 
-      return(MCEMfit_glm(mod, family, sigma.sq.u, W, sigma.sq.e, B, epsilon, ...))
+      return(MCEMfit_glm(mod, family, sigma.sq.u, W, sigma.sq.e, B, epsilon, silent, ...))
     }
 
     if (ob.type == "gam") {
       family <- mod$family$family
       if (strsplit(family, NULL)[[1]][1] == "N") family <- "negbin"
 
-      return(MCEMfit_gam(mod, family, sigma.sq.u, W, sigma.sq.e, B, epsilon, ...))
+      return(MCEMfit_gam(mod, family, sigma.sq.u, W, sigma.sq.e, B, epsilon, silent, ...))
     }
   }
 
   if (isS4(mod)) {
     sigma.sq.e <- stats::var(mod@x[, 2]) - sigma.sq.u
-    return(MCEMfit_CR(mod, sigma.sq.u, sigma.sq.e, B, epsilon))
+    return(MCEMfit_CR(mod, sigma.sq.u, sigma.sq.e, B, epsilon, silent))
   }
 }
 
@@ -215,6 +216,7 @@ refitME <- function(mod, sigma.sq.u, W = NULL, B = 50, epsilon = 0.00001, ...) {
 #' @param sigma.sq.e : variance of the true covariate (X).
 #' @param B : the number of Monte Carlo replication values (default is set to 50).
 #' @param epsilon : a set convergence threshold (default is set to 0.00001).
+#' @param silent : if \code{TRUE}, convergence message is suppressed (default is set to \code{FALSE}).
 #' @param theta.est : an initial value for the dispersion parameter (this is required for fitting negative binomial models).
 #' @param shape.est : an initial value for the shape parameter (this is required for fitting gamma models).
 #' @param ... : further arguments passed to \code{glm}.
@@ -281,7 +283,7 @@ refitME <- function(mod, sigma.sq.u, W = NULL, B = 50, epsilon = 0.00001, ...) {
 #'
 #' PPM_MCEM1 <- refitME(PPM_naiv1, sigma.sq.u, W, B)
 #'
-MCEMfit_glm <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 50, epsilon = 0.00001, theta.est = 1, shape.est = 1, ...) {
+MCEMfit_glm <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 50, epsilon = 0.00001, silent = FALSE, theta.est = 1, shape.est = 1, ...) {
 
   options(warn = -1)
 
@@ -508,8 +510,11 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
     if (family == "binomial" | family == "poisson" | family == "gaussian") {
       if (diff.mu_e < epsilon & diff.sig_e < epsilon & beta.norm < epsilon) {
         cond <- FALSE
-        print("convergence :-)")
-        print(reps)
+        if (silent == FALSE) {
+          print("convergence :-)")
+          print(reps)
+        }
+        if (silent == TRUE) reps
         break
       }
     }
@@ -517,8 +522,11 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
     if (family == "negbin") {
       if (diff.mu_e < epsilon & diff.sig_e < epsilon & beta.norm < epsilon & theta.norm < epsilon) {
         cond <- FALSE
-        print("convergence :-)")
-        print(reps)
+        if (silent == FALSE) {
+          print("convergence :-)")
+          print(reps)
+        }
+        if (silent == TRUE) reps
         break
       }
     }
@@ -526,8 +534,11 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
     if (family == "Gamma") {
       if (diff.mu_e < epsilon & diff.sig_e < epsilon & beta.norm < epsilon & shape.norm < epsilon) {
         cond <- FALSE
-        print("convergence :-)")
-        print(reps)
+        if (silent == FALSE) {
+          print("convergence :-)")
+          print(reps)
+        }
+        if (silent == TRUE) reps
         break
       }
     }
@@ -664,6 +675,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
 #' @param sigma.sq.e : variance of the true covariate (X).
 #' @param B : the number of Monte Carlo replication values (default is set to 50).
 #' @param epsilon : convergence threshold (default is set to 0.00001).
+#' @param silent : if \code{TRUE}, convergence message is suppressed (default is set to \code{FALSE}).
 #' @param theta.est : an initial value for the dispersion parameter (this is required for fitting negative binomial models).
 #' @param shape.est : an initial value for the shape parameter (this is required for fitting gamma models).
 #' @param ... : further arguments passed to \code{gam}.
@@ -706,7 +718,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
 #'
 #' gam_MCEM1 <- refitME(gam_naiv1, sigma.sq.u, W, B)
 #'
-MCEMfit_gam <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 50, epsilon = 0.00001, theta.est = 1, shape.est = 10, ...) {
+MCEMfit_gam <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 50, epsilon = 0.00001, silent = FALSE, theta.est = 1, shape.est = 10, ...) {
 
   options(warn = -1)
 
@@ -915,8 +927,11 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
     if (family == "binomial" | family == "poisson" | family == "gaussian") {
       if ((diff.mu_e < epsilon & diff.sig_e < epsilon & beta.norm < epsilon) | reps > 50) {
         cond <- FALSE
-        print("convergence :-)")
-        print(reps)
+        if (silent == FALSE) {
+          print("convergence :-)")
+          print(reps)
+        }
+        if (silent == TRUE) reps
         break
       }
     }
@@ -924,17 +939,22 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
     if (family == "negbin") {
       if ((diff.mu_e < epsilon & diff.sig_e < epsilon & beta.norm < epsilon & theta.norm < epsilon) | reps > 50) {
         cond <- FALSE
-        print("convergence :-)")
-        print(reps)
+        if (silent == FALSE) {
+          print("convergence :-)")
+          print(reps)
+        }
+        if (silent == TRUE) reps
         break
       }
     }
 
     if (family == "Gamma") {
       if ((diff.mu_e < epsilon & diff.sig_e < epsilon & beta.norm < epsilon & shape.norm < epsilon) | reps > 50) {
-        cond <- FALSE
-        print("convergence :-)")
-        print(reps)
+        if (silent == FALSE) {
+          print("convergence :-)")
+          print(reps)
+        }
+        if (silent == TRUE) reps
         break
       }
     }
@@ -1024,16 +1044,18 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
 #' @param sigma.sq.e : variance of the true covariate (X).
 #' @param B : the number of Monte Carlo replication values (default is set to 50).
 #' @param epsilon : a set convergence threshold (default is set to 0.00001).
+#' @param silent : if \code{TRUE}, convergence message is suppressed (default is set to \code{FALSE}).
 #' @return \code{MCEMfit_CR} returns model coefficient and population size estimates with standard errors and the effective sample size.
 #' @author Jakub Stoklosa and David I. Warton.
 #' @references Stoklosa, J., Hwang, W-H., and Warton, D.I. \pkg{refitME}: Measurement Error Modelling using Monte Carlo Expectation Maximization in \proglang{R}.
-#' @import MASS VGAM
+#' @import MASS VGAM VGAMdata
 #' @importFrom stats logLik
 #' @importFrom VGAM s posbinomial
+#' @importFrom VGAMdata dposbinom
 #' @export
 #' @seealso \code{\link{MCEMfit_glm}}
 #' @source See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
-MCEMfit_CR <- function(mod, sigma.sq.u, sigma.sq.e = 1, B = 100, epsilon = 0.00001) {
+MCEMfit_CR <- function(mod, sigma.sq.u, sigma.sq.e = 1, B = 100, epsilon = 0.00001, silent = FALSE) {
 
   options(warn = -1)
 
@@ -1099,7 +1121,7 @@ MCEMfit_CR <- function(mod, sigma.sq.u, sigma.sq.e = 1, B = 100, epsilon = 0.000
     # MC and E-step.
 
     prX <- stats::dnorm(X1_j, mu.e1, sd = sqrt(sigma.sq.e1))
-    prY <- VGAM::dposbinom(bigY, tau, muPred)
+    prY <- VGAMdata::dposbinom(bigY, tau, muPred)
 
     # M-step (updates).
 
@@ -1130,8 +1152,11 @@ MCEMfit_CR <- function(mod, sigma.sq.u, sigma.sq.e = 1, B = 100, epsilon = 0.000
 
     if ((diff.sig_e < epsilon & beta.norm < epsilon) | reps > 50) {
       cond <- FALSE
-      print("convergence :-)")
-      print(reps)
+      if (silent == FALSE) {
+        print("convergence :-)")
+        print(reps)
+      }
+      if (silent == TRUE) reps
       break
     }
 
@@ -1303,12 +1328,12 @@ anova.MCEMfit_glm <- function(object, ..., dispersion = NULL, test = NULL) {
     for (i in seq_len(max(nvars - 1L, 0))) {
       x1 <- x[, varseq <= i, drop = FALSE]
       mod <- stats::glm(y ~ x1 - 1, family = object$family)
-      fit <- eval(call(if (is.function(method)) "method" else method, mod = mod, family = object$family, sigma.sq.u = object$sigma.sq.u, W = object$W, B = B, sigma.sq.e = sigma.sq.e))
+      fit <- eval(call(if (is.function(method)) "method" else method, mod = mod, family = object$family, sigma.sq.u = object$sigma.sq.u, W = object$W, B = B, sigma.sq.e = sigma.sq.e, silent = TRUE))
 
       if (doscore) {
         x1 = x[, varseq <= i, drop = FALSE]
         mod <- stats::glm(y ~ x1 - 1, family = object$family)
-        zz <- eval(call(if (is.function(method)) "method" else method, mod = mod, family = object$family, sigma.sq.u = object$sigma.sq.u, W = object$W, B = B, sigma.sq.e = sigma.sq.e, y = r, weights = w, intercept = icpt))
+        zz <- eval(call(if (is.function(method)) "method" else method, mod = mod, family = object$family, sigma.sq.u = object$sigma.sq.u, W = object$W, B = B, sigma.sq.e = sigma.sq.e, silent = TRUE, y = r, weights = w, intercept = icpt))
         score[i] <- zz$null.deviance - zz$deviance
         r <- fit$residuals
         w <- fit$weights

@@ -15,6 +15,7 @@ MCEMfit_glm(
   sigma.sq.e = 1,
   B = 50,
   epsilon = 1e-05,
+  silent = FALSE,
   theta.est = 1,
   shape.est = 1,
   ...
@@ -34,6 +35,8 @@ MCEMfit_glm(
 \item{B}{: the number of Monte Carlo replication values (default is set to 50).}
 
 \item{epsilon}{: a set convergence threshold (default is set to 0.00001).}
+
+\item{silent}{: if \code{TRUE}, convergence message is suppressed (default is set to \code{FALSE}).}
 
 \item{theta.est}{: an initial value for the dispersion parameter (this is required for fitting negative binomial models).}
 

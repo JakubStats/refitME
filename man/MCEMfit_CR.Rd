@@ -7,7 +7,14 @@
 See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
 }
 \usage{
-MCEMfit_CR(mod, sigma.sq.u, sigma.sq.e = 1, B = 100, epsilon = 1e-05)
+MCEMfit_CR(
+  mod,
+  sigma.sq.u,
+  sigma.sq.e = 1,
+  B = 100,
+  epsilon = 1e-05,
+  silent = FALSE
+)
 }
 \arguments{
 \item{mod}{: a vglm/vgam object (this is the naive fitted CR model). Make sure the first input predictor variables are the selected error-contaminated variable (i.e., the \code{W}'s).}
@@ -19,6 +26,8 @@ MCEMfit_CR(mod, sigma.sq.u, sigma.sq.e = 1, B = 100, epsilon = 1e-05)
 \item{B}{: the number of Monte Carlo replication values (default is set to 50).}
 
 \item{epsilon}{: a set convergence threshold (default is set to 0.00001).}
+
+\item{silent}{: if \code{TRUE}, convergence message is suppressed (default is set to \code{FALSE}).}
 }
 \value{
 \code{MCEMfit_CR} returns model coefficient and population size estimates with standard errors and the effective sample size.

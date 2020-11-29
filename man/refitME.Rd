@@ -7,7 +7,15 @@
 See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
 }
 \usage{
-refitME(mod, sigma.sq.u, W = NULL, B = 50, epsilon = 1e-05, ...)
+refitME(
+  mod,
+  sigma.sq.u,
+  W = NULL,
+  B = 50,
+  epsilon = 1e-05,
+  silent = FALSE,
+  ...
+)
 }
 \arguments{
 \item{mod}{: a glm/gam object (this is the naive fitted model). Make sure the first input predictor variables are the selected error-contaminated variable (i.e., the \code{W}'s).}
@@ -19,6 +27,8 @@ refitME(mod, sigma.sq.u, W = NULL, B = 50, epsilon = 1e-05, ...)
 \item{B}{: the number of Monte Carlo replication values (default is set 50).}
 
 \item{epsilon}{: convergence threshold (default is set to 0.00001).}
+
+\item{silent}{:     if \code{TRUE}, convergence message is suppressed (default is set to \code{FALSE}).}
 
 \item{...}{: further arguments passed through to \code{glm} or \code{gam}.}
 }
