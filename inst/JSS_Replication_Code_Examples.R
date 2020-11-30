@@ -304,8 +304,6 @@ rm(list = ls())
 
 source(".../MCEM_prog.r")
 
-library(VGAM)
-
 set.seed(2020)
 
 Bird <- read.csv("HK1993.csv", blank.lines.skip = TRUE, colClasses = NA)
