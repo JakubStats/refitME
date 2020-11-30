@@ -27,7 +27,7 @@ MCEMfit_CR(
 
 \item{epsilon}{: a set convergence threshold (default is set to 0.00001).}
 
-\item{silent}{: if \code{TRUE}, convergence message is suppressed (default is set to \code{FALSE}).}
+\item{silent}{: if \code{TRUE}, the convergence message (which tells the user if the model has converged and reports the number of iterations required) is suppressed (default is set to \code{FALSE}).}
 }
 \value{
 \code{MCEMfit_CR} returns model coefficient and population size estimates with standard errors and the effective sample size.

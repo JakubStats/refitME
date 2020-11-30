@@ -36,7 +36,7 @@ MCEMfit_glm(
 
 \item{epsilon}{: a set convergence threshold (default is set to 0.00001).}
 
-\item{silent}{: if \code{TRUE}, convergence message is suppressed (default is set to \code{FALSE}).}
+\item{silent}{: if \code{TRUE}, the convergence message (which tells the user if the model has converged and reports the number of iterations required) is suppressed (default is set to \code{FALSE}).}
 
 \item{theta.est}{: an initial value for the dispersion parameter (this is required for fitting negative binomial models).}
 
@@ -70,13 +70,13 @@ glm_MCEM1 <- refitME(glm_naiv1, sigma.sq.u, W, B)
 
 # A GLM example II - presence-only data using a point-process model.
 
+library(caret)
+
 data(Corymbiaeximiadata)
 
 attach(Corymbiaeximiadata)
 
 Y <- Corymbiaeximiadata$Y.obs
-
-n <- length(Y)
 
 W <- Corymbiaeximiadata$MNT
 
@@ -104,6 +104,21 @@ B <- 50
 sigma.sq.u <- 0.25
 
 PPM_MCEM1 <- refitME(PPM_naiv1, sigma.sq.u, W, B)
+
+coord.dat <- cbind(Corymbiaeximiadata$X, Corymbiaeximiadata$Y)
+
+colnames(coord.dat) <- c("Longitude", "Latitude")
+
+pred.dats <- as.data.frame(cbind(coord.dat[, 1], coord.dat[, 2],
+  PPM_MCEM1$fitted.values))
+
+colnames(pred.dats) <- c("x", "y", "preds")
+
+levelplot(preds ~ x + y, data = pred.dats, asp = "iso", ylab = "Latitude",
+  xlab = "Longitude", col.regions = heat.colors(1024)[900:1], cuts = 900,
+  main = list("", cex = 5), scales = list(y = list(draw = FALSE),
+  x = list(draw = FALSE), relation = "free"),
+  colorkey = list(labels = list(cex = 0.8)))
 
 }
 \references{

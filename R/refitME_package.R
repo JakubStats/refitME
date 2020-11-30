@@ -61,13 +61,13 @@ suppressMessages(library(sandwich))
 #' @param W : a matrix of error-contaminated covariates (if not specified, the default assumes all covariates in the naive fitted model are error-contaminated).
 #' @param B : the number of Monte Carlo replication values (default is set 50).
 #' @param epsilon : convergence threshold (default is set to 0.00001).
-#' @param silent : 	if \code{TRUE}, convergence message is suppressed (default is set to \code{FALSE}).
+#' @param silent : 	if \code{TRUE}, the convergence message (which tells the user if the model has converged and reports the number of iterations required) is suppressed (default is set to \code{FALSE}).
 #' @param ... : further arguments passed through to \code{glm} or \code{gam}.
 #' @return \code{refitME} returns the naive fitted model object where coefficient estimates, the covariance matrix, fitted values, the log-likelihood, and residuals have been replaced with the final MCEM model fit. Standard errors and the effective sample size (which diagnose how closely the proposal distribution matches the posterior, see equation (2) of Stoklosa, Hwang and Warton) have also been included as outputs.
 #' @author Jakub Stoklosa and David I. Warton.
 #' @references Carroll, R. J., Ruppert, D., Stefanski, L. A., and Crainiceanu, C. M. (2006). \emph{Measurement Error in Nonlinear Models: A Modern Perspective.} 2nd Ed. London: Chapman \& Hall/CRC.
 #' @references Stoklosa, J., Hwang, W-H., and Warton, D.I. \pkg{refitME}: Measurement Error Modelling using Monte Carlo Expectation Maximization in \proglang{R}.
-#' @import mvtnorm MASS mgcv sandwich VGAM expm
+#' @import mvtnorm MASS mgcv sandwich VGAM expm caret
 #' @importFrom stats Gamma
 #' @export
 #' @seealso \code{\link{MCEMfit_glm}} and \code{\link{MCEMfit_gam}}
@@ -91,13 +91,13 @@ suppressMessages(library(sandwich))
 #'
 #' # A GLM example II - presence-only data using a point-process model.
 #'
+#' library(caret)
+#'
 #' data(Corymbiaeximiadata)
 #'
 #' attach(Corymbiaeximiadata)
 #'
 #' Y <- Corymbiaeximiadata$Y.obs
-#'
-#' n <- length(Y)
 #'
 #' W <- Corymbiaeximiadata$MNT
 #'
@@ -125,6 +125,21 @@ suppressMessages(library(sandwich))
 #' sigma.sq.u <- 0.25
 #'
 #' PPM_MCEM1 <- refitME(PPM_naiv1, sigma.sq.u, W, B)
+#'
+#' coord.dat <- cbind(Corymbiaeximiadata$X, Corymbiaeximiadata$Y)
+#'
+#' colnames(coord.dat) <- c("Longitude", "Latitude")
+#'
+#' pred.dats <- as.data.frame(cbind(coord.dat[, 1], coord.dat[, 2],
+#'   PPM_MCEM1$fitted.values))
+#'
+#' colnames(pred.dats) <- c("x", "y", "preds")
+#'
+#' levelplot(preds ~ x + y, data = pred.dats, asp = "iso", ylab = "Latitude",
+#'   xlab = "Longitude", col.regions = heat.colors(1024)[900:1], cuts = 900,
+#'   main = list("", cex = 5), scales = list(y = list(draw = FALSE),
+#'   x = list(draw = FALSE), relation = "free"),
+#'   colorkey = list(labels = list(cex = 0.8)))
 #'
 #'
 #'
@@ -216,7 +231,7 @@ refitME <- function(mod, sigma.sq.u, W = NULL, B = 50, epsilon = 0.00001, silent
 #' @param sigma.sq.e : variance of the true covariate (X).
 #' @param B : the number of Monte Carlo replication values (default is set to 50).
 #' @param epsilon : a set convergence threshold (default is set to 0.00001).
-#' @param silent : if \code{TRUE}, convergence message is suppressed (default is set to \code{FALSE}).
+#' @param silent : if \code{TRUE}, the convergence message (which tells the user if the model has converged and reports the number of iterations required) is suppressed (default is set to \code{FALSE}).
 #' @param theta.est : an initial value for the dispersion parameter (this is required for fitting negative binomial models).
 #' @param shape.est : an initial value for the shape parameter (this is required for fitting gamma models).
 #' @param ... : further arguments passed to \code{glm}.
@@ -224,7 +239,7 @@ refitME <- function(mod, sigma.sq.u, W = NULL, B = 50, epsilon = 0.00001, silent
 #' @author Jakub Stoklosa and David I. Warton.
 #' @references Carroll, R. J., Ruppert, D., Stefanski, L. A., and Crainiceanu, C. M. (2006). \emph{Measurement Error in Nonlinear Models: A Modern Perspective.} 2nd Ed. London: Chapman \& Hall/CRC.
 #' @references Stoklosa, J., Hwang, W-H., and Warton, D.I. \pkg{refitME}: Measurement Error Modelling using Monte Carlo Expectation Maximization in \proglang{R}.
-#' @import mvtnorm MASS mgcv sandwich expm
+#' @import mvtnorm MASS mgcv sandwich expm caret
 #' @importFrom stats Gamma
 #' @export
 #' @seealso \code{\link{MCEMfit_gam}}
@@ -248,13 +263,13 @@ refitME <- function(mod, sigma.sq.u, W = NULL, B = 50, epsilon = 0.00001, silent
 #'
 #' # A GLM example II - presence-only data using a point-process model.
 #'
+#' library(caret)
+#'
 #' data(Corymbiaeximiadata)
 #'
 #' attach(Corymbiaeximiadata)
 #'
 #' Y <- Corymbiaeximiadata$Y.obs
-#'
-#' n <- length(Y)
 #'
 #' W <- Corymbiaeximiadata$MNT
 #'
@@ -282,6 +297,21 @@ refitME <- function(mod, sigma.sq.u, W = NULL, B = 50, epsilon = 0.00001, silent
 #' sigma.sq.u <- 0.25
 #'
 #' PPM_MCEM1 <- refitME(PPM_naiv1, sigma.sq.u, W, B)
+#'
+#' coord.dat <- cbind(Corymbiaeximiadata$X, Corymbiaeximiadata$Y)
+#'
+#' colnames(coord.dat) <- c("Longitude", "Latitude")
+#'
+#' pred.dats <- as.data.frame(cbind(coord.dat[, 1], coord.dat[, 2],
+#'   PPM_MCEM1$fitted.values))
+#'
+#' colnames(pred.dats) <- c("x", "y", "preds")
+#'
+#' levelplot(preds ~ x + y, data = pred.dats, asp = "iso", ylab = "Latitude",
+#'   xlab = "Longitude", col.regions = heat.colors(1024)[900:1], cuts = 900,
+#'   main = list("", cex = 5), scales = list(y = list(draw = FALSE),
+#'   x = list(draw = FALSE), relation = "free"),
+#'   colorkey = list(labels = list(cex = 0.8)))
 #'
 MCEMfit_glm <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 50, epsilon = 0.00001, silent = FALSE, theta.est = 1, shape.est = 1, ...) {
 
@@ -675,7 +705,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
 #' @param sigma.sq.e : variance of the true covariate (X).
 #' @param B : the number of Monte Carlo replication values (default is set to 50).
 #' @param epsilon : convergence threshold (default is set to 0.00001).
-#' @param silent : if \code{TRUE}, convergence message is suppressed (default is set to \code{FALSE}).
+#' @param silent : if \code{TRUE}, the convergence message (which tells the user if the model has converged and reports the number of iterations required) is suppressed (default is set to \code{FALSE}).
 #' @param theta.est : an initial value for the dispersion parameter (this is required for fitting negative binomial models).
 #' @param shape.est : an initial value for the shape parameter (this is required for fitting gamma models).
 #' @param ... : further arguments passed to \code{gam}.
@@ -1044,7 +1074,7 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
 #' @param sigma.sq.e : variance of the true covariate (X).
 #' @param B : the number of Monte Carlo replication values (default is set to 50).
 #' @param epsilon : a set convergence threshold (default is set to 0.00001).
-#' @param silent : if \code{TRUE}, convergence message is suppressed (default is set to \code{FALSE}).
+#' @param silent : if \code{TRUE}, the convergence message (which tells the user if the model has converged and reports the number of iterations required) is suppressed (default is set to \code{FALSE}).
 #' @return \code{MCEMfit_CR} returns model coefficient and population size estimates with standard errors and the effective sample size.
 #' @author Jakub Stoklosa and David I. Warton.
 #' @references Stoklosa, J., Hwang, W-H., and Warton, D.I. \pkg{refitME}: Measurement Error Modelling using Monte Carlo Expectation Maximization in \proglang{R}.

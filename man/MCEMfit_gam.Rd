@@ -36,7 +36,7 @@ MCEMfit_gam(
 
 \item{epsilon}{: convergence threshold (default is set to 0.00001).}
 
-\item{silent}{: if \code{TRUE}, convergence message is suppressed (default is set to \code{FALSE}).}
+\item{silent}{: if \code{TRUE}, the convergence message (which tells the user if the model has converged and reports the number of iterations required) is suppressed (default is set to \code{FALSE}).}
 
 \item{theta.est}{: an initial value for the dispersion parameter (this is required for fitting negative binomial models).}
 
