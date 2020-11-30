@@ -109,7 +109,7 @@ suppressWarnings(suppressMessages(library(refitME)))
 set.seed(2020)
 
 epsilon <- 0.00001  # A set convergence threshold.
-B <- 3  # The number of Monte Carlo replication values.
+B <- 50  # The number of Monte Carlo replication values.
 
 data(milan.mort)
 dat.air <- milan.mort
@@ -251,14 +251,14 @@ PPM_naiv1 <- glm(Y/p.wt ~ X1 + X2 + Z1 + Z2 + Z3 + Z4, family = "poisson",
 ### Fit the MCEM PPM.
 
 ```{r, echo=TRUE}
-B <- 5
+B <- 50
 
 sigma.sq.u <- 0.25
 
 PPM_MCEM1 <- refitME(PPM_naiv1, sigma.sq.u, W, B)
 ```
 
-```{r fig2, fig.height=5.5, fig.pos='H', echo=FALSE, fig.cap="\\label{fig:fig1} *Plots of predicted presences of _Corymbia eximia_ using presence-only data and the max temperature covariate.*"}
+```{r fig2, fig.height=5.5, fig.pos='H', echo=FALSE, fig.cap="\\label{fig:fig1} *Plot of predicted presences of Corymbia eximia using presence-only data when fitting the MCEM model. Here the max temperature covariate is assumed to be error-contaminated.*"}
 coord.dat <- cbind(Corymbiaeximiadata$X, Corymbiaeximiadata$Y)
 
 colnames(coord.dat) <- c("Longitude", "Latitude")
