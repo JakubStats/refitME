@@ -27,7 +27,7 @@ This tutorial documents fitting an MCEM algorithm via the `refitME` `R`-package.
 
 ## Example 1: A simple GLM example taken from Carroll _et al._ (2006). 
 
-The Framingham heart study data set. We also fit `simex` models and compare them with MCEM. Computational times for both models are also reported.
+We use the Framingham heart study data set. In addition to the naive model, we also fit a `simex` model and compare it with MCEM. Computational times for both models are also reported.
 
 ### Load data and `R`-packages.
 
@@ -105,12 +105,11 @@ The Milan mortality air pollution data set. Here, we fit GAM models via the `mgc
 
 ```{r, echo=TRUE}
 suppressWarnings(suppressMessages(library(refitME)))
-suppressWarnings(suppressMessages(library(SemiPar)))
 
 set.seed(2020)
 
 epsilon <- 0.00001  # A set convergence threshold.
-B <- 50  # The number of Monte Carlo replication values.
+B <- 3  # The number of Monte Carlo replication values.
 
 data(milan.mort)
 dat.air <- milan.mort
@@ -153,7 +152,7 @@ Note this will take a fair while to run (consider reducing `B` if you just want 
 gam_MCEM1 <- refitME(gam_naiv1, sigma.sq.u, W, B)
 ```
 
-```{r fig1, fig.height=6, fig.pos='H', echo=FALSE, fig.cap="\\label{fig:fig1} *Plots of smooths against covariate. TSP (top left is the error contaminated variable).*"}
+```{r fig1, fig.height=5.5, fig.pos='H', echo=FALSE, fig.cap="\\label{fig:fig1} *Plots of smooths against covariate. TSP (top left is the error contaminated variable).*"}
 xlab.names <- c("log(TSP)", "Day", "Temp", "Humidity")
 
 op <- par(mfrow = c(2, 2), las = 1)
@@ -204,4 +203,73 @@ for(i in 1:4) {
 
 title(main = "MCEM (Poisson GAM) fitted to the air pollution data.", outer = T, line = -2)
 par(op)
+```
+
+## Example 3: A point-process model using presence-only data
+
+We use the _Corymbia eximia_ presence-only data set from Renner and Warton (2013). Here, we fit a naive models point-process model (PPM) and an MCEM PPM.
+
+### Load data and `R`-packages.
+
+```{r, echo=TRUE}
+suppressWarnings(suppressMessages(library(refitME)))
+
+data(Corymbiaeximiadata)
+
+suppressMessages(attach(Corymbiaeximiadata))
+``` 
+
+### Setup all variables.
+
+```{r, echo=TRUE}
+Y <- Corymbiaeximiadata$Y.obs
+
+W <- Corymbiaeximiadata$MNT
+
+p.wt <- rep(1.e-6, length(Corymbiaeximiadata$Y.obs))
+p.wt[Corymbiaeximiadata$Y.obs == 0] <- 1
+
+X <- cbind(rep(1, length(Y)), poly(W, degree = 2, raw = TRUE),
+          poly(Rain, degree = 2, raw = TRUE),
+            poly(sqrt(D.Main), degree = 2, raw = TRUE))
+
+colnames(X) <- c("(Intercept)", "X1", "X2", "Z1", "Z2", "Z3", "Z4")
+
+dat <- data.frame(cbind(Y, p.wt, X))
+colnames(dat)[1:2] <- c("Y", "p.wt")
+```
+
+### Fit the naive (PPM) model.
+
+```{r, echo=TRUE}
+PPM_naiv1 <- glm(Y/p.wt ~ X1 + X2 + Z1 + Z2 + Z3 + Z4, family = "poisson",
+ weights = p.wt, data = dat)
+```
+
+\clearpage
+
+### Fit the MCEM PPM.
+
+```{r, echo=TRUE}
+B <- 5
+
+sigma.sq.u <- 0.25
+
+PPM_MCEM1 <- refitME(PPM_naiv1, sigma.sq.u, W, B)
+```
+
+```{r fig2, fig.height=5.5, fig.pos='H', echo=FALSE, fig.cap="\\label{fig:fig1} *Plots of predicted presences of _Corymbia eximia_ using presence-only data and the max temperature covariate.*"}
+coord.dat <- cbind(Corymbiaeximiadata$X, Corymbiaeximiadata$Y)
+
+colnames(coord.dat) <- c("Longitude", "Latitude")
+
+pred.dats <- as.data.frame(cbind(coord.dat[, 1], coord.dat[, 2], PPM_MCEM1$fitted.values))
+
+colnames(pred.dats) <- c("x", "y", "preds")
+
+levelplot(preds ~ x + y, data = pred.dats, asp = "iso", ylab = "Latitude", 
+ xlab = "Longitude", col.regions = heat.colors(1024)[900:1], cuts = 900, 
+ main = list("", cex = 5), scales = list(y = list(draw = FALSE), 
+ x = list(draw = FALSE), relation = "free"), 
+ colorkey = list(labels = list(cex = 0.8)))
 ```
