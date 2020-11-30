@@ -64,7 +64,7 @@ round(est.beta.se, digits = 3)
 names(comp.time) <- c("SIMEX", "MCEM")
 round(comp.time, digits = 3)
 
-# ANOVA.
+# Check ANOVA functions.
 
 anova(glm_naiv1)
 anova(glm_MCEM1)
