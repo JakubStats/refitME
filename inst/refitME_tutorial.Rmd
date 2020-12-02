@@ -109,11 +109,8 @@ suppressWarnings(suppressMessages(library(refitME)))
 set.seed(2020)
 
 epsilon <- 0.00001  # A set convergence threshold.
-<<<<<<< HEAD
+
 B <- 5  # The number of Monte Carlo replication values.
-=======
-B <- 50  # The number of Monte Carlo replication values.
->>>>>>> 34030050893d22e288450b90d7f51d42601201f1
 
 data(milan.mort)
 dat.air <- milan.mort
