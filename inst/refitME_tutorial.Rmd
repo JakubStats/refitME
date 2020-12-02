@@ -110,7 +110,7 @@ set.seed(2020)
 
 epsilon <- 0.00001  # A set convergence threshold.
 
-B <- 5  # The number of Monte Carlo replication values.
+B <- 50  # The number of Monte Carlo replication values.
 
 data(milan.mort)
 dat.air <- milan.mort
@@ -147,7 +147,7 @@ plot_gam_naiv <- plot(gam_naiv1, select = 1)
 
 ### Fit the MCEM model.
 
-Note this will take a fair while to run if `B` is large (consider increasing `B` if you want a more accurate answer).
+Note this will take a fair while to run if `B` is large (consider decreasing `B` if you want a rough answer).
 
 ```{r, echo=TRUE}
 gam_MCEM1 <- refitME(gam_naiv1, sigma.sq.u, W, B)
