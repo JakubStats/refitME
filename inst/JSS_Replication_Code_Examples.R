@@ -64,7 +64,7 @@ round(est.beta.se, digits = 3)
 names(comp.time) <- c("SIMEX", "MCEM")
 round(comp.time, digits = 3)
 
-# Check ANOVA functions.
+# Check a generic function, e.g. the ANOVA function.
 
 anova(glm_naiv1)
 anova(glm_MCEM1)
@@ -303,6 +303,8 @@ comp.time
 rm(list = ls())
 
 source(".../MCEM_prog.r")
+
+library(VGAM)
 
 set.seed(2020)
 

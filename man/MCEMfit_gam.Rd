@@ -92,5 +92,5 @@ Stoklosa, J., Hwang, W-H., and Warton, D.I. \pkg{refitME}: Measurement Error Mod
 \code{\link{MCEMfit_glm}}
 }
 \author{
-Jakub Stoklosa and David I. Warton.
+Jakub Stoklosa, Wen-Han Hwang and David I. Warton.
 }

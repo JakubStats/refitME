@@ -64,7 +64,7 @@ suppressMessages(library(sandwich))
 #' @param silent : 	if \code{TRUE}, the convergence message (which tells the user if the model has converged and reports the number of iterations required) is suppressed (default is set to \code{FALSE}).
 #' @param ... : further arguments passed through to \code{glm} or \code{gam}.
 #' @return \code{refitME} returns the naive fitted model object where coefficient estimates, the covariance matrix, fitted values, the log-likelihood, and residuals have been replaced with the final MCEM model fit. Standard errors and the effective sample size (which diagnose how closely the proposal distribution matches the posterior, see equation (2) of Stoklosa, Hwang and Warton) have also been included as outputs.
-#' @author Jakub Stoklosa and David I. Warton.
+#' @author Jakub Stoklosa, Wen-Han Hwang and David I. Warton.
 #' @references Carroll, R. J., Ruppert, D., Stefanski, L. A., and Crainiceanu, C. M. (2006). \emph{Measurement Error in Nonlinear Models: A Modern Perspective.} 2nd Ed. London: Chapman \& Hall/CRC.
 #' @references Stoklosa, J., Hwang, W-H., and Warton, D.I. \pkg{refitME}: Measurement Error Modelling using Monte Carlo Expectation Maximization in \proglang{R}.
 #' @import mvtnorm MASS mgcv sandwich VGAM expm caret
@@ -236,7 +236,7 @@ refitME <- function(mod, sigma.sq.u, W = NULL, B = 50, epsilon = 0.00001, silent
 #' @param shape.est : an initial value for the shape parameter (this is required for fitting gamma models).
 #' @param ... : further arguments passed to \code{glm}.
 #' @return \code{MCEMfit_glm} returns the naive fitted model object where coefficient estimates, the covariance matrix, fitted values, the log-likelihood, and residuals have been replaced with the final MCEM model fit. Standard errors and the effective sample size (which diagnose how closely the proposal distribution matches the posterior, see equation (2) of Stoklosa, Hwang and Warton) have also been included as outputs.
-#' @author Jakub Stoklosa and David I. Warton.
+#' @author Jakub Stoklosa, Wen-Han Hwang and David I. Warton.
 #' @references Carroll, R. J., Ruppert, D., Stefanski, L. A., and Crainiceanu, C. M. (2006). \emph{Measurement Error in Nonlinear Models: A Modern Perspective.} 2nd Ed. London: Chapman \& Hall/CRC.
 #' @references Stoklosa, J., Hwang, W-H., and Warton, D.I. \pkg{refitME}: Measurement Error Modelling using Monte Carlo Expectation Maximization in \proglang{R}.
 #' @import mvtnorm MASS mgcv sandwich expm caret
@@ -683,11 +683,13 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
   mod_n$effects <- mod$effects[1:n]
   names(mod_n$effects) <- effects_names
 
-  if (family != "gaussian") class(mod_n) <- c("MCEMfit_glm", class(mod_n)[1])
-  if (family == "gaussian") {
-    if(length(class(mod_n)) == 2) class(mod_n) <- c("MCEMfit_lm", class(mod_n)[2])
-    if(length(class(mod_n)) == 1) class(mod_n) <- c("MCEMfit_lm", class(mod_n))
-  }
+  #if (family != "gaussian") class(mod_n) <- c("MCEMfit_glm", class(mod_n)[1])
+  #if (family == "gaussian") {
+    #if(length(class(mod_n)) == 2) class(mod_n) <- c("MCEMfit_lm", class(mod_n)[2])
+    #if(length(class(mod_n)) == 1) class(mod_n) <- c("MCEMfit_lm", class(mod_n))
+  #}
+
+  class(mod_n) <- c("refitME", class(mod_n))
 
   mod_n$call <- match.call()
 
@@ -710,7 +712,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
 #' @param shape.est : an initial value for the shape parameter (this is required for fitting gamma models).
 #' @param ... : further arguments passed to \code{gam}.
 #' @return \code{MCEMfit_gam} returns the naive fitted model object where coefficient estimates and the covariance matrix have been replaced with the final MCEM model fit. Standard errors and the effective sample size (which diagnose how closely the proposal distribution matches the posterior, see equation (2) of Stoklosa, Hwang and Warton) have also been included as outputs.
-#' @author Jakub Stoklosa and David I. Warton.
+#' @author Jakub Stoklosa, Wen-Han Hwang and David I. Warton.
 #' @references Ganguli, B, Staudenmayer, J., and Wand, M. P. (2005). Additive models with predictors subject to measurement error. \emph{Australian & New Zealand Journal of Statistics}, \strong{47}, 193–202.
 #' @references Wand, M. P. (2018). \pkg{SemiPar}: Semiparametic Regression. \proglang{R} package version 1.0-4.2., URL \url{https: //CRAN.R-project.org/package=SemiPar}.
 #' @references Stoklosa, J., Hwang, W-H., and Warton, D.I. \pkg{refitME}: Measurement Error Modelling using Monte Carlo Expectation Maximization in \proglang{R}.
@@ -1076,7 +1078,7 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
 #' @param epsilon : a set convergence threshold (default is set to 0.00001).
 #' @param silent : if \code{TRUE}, the convergence message (which tells the user if the model has converged and reports the number of iterations required) is suppressed (default is set to \code{FALSE}).
 #' @return \code{MCEMfit_CR} returns model coefficient and population size estimates with standard errors and the effective sample size.
-#' @author Jakub Stoklosa and David I. Warton.
+#' @author Jakub Stoklosa, Wen-Han Hwang and David I. Warton.
 #' @references Stoklosa, J., Hwang, W-H., and Warton, D.I. \pkg{refitME}: Measurement Error Modelling using Monte Carlo Expectation Maximization in \proglang{R}.
 #' @import MASS VGAM VGAMdata
 #' @importFrom stats logLik
@@ -1297,21 +1299,61 @@ wt.var <- function(x, w) {
   return(sum(wt*(x - xbar)^2)*(sum(wt)/(sum(wt)^2 - sum(wt^2)))) # Return the variance.
 }
 
+#' An ANOVA function for fitted \code{refitME} objects
+#'
+#' An ANOVA function for fitted \code{refitME} objects.
+#' @name anova.refitME
+#' @param object : fitted model objects of class \code{refitME}.
+#' @param ... : further arguments passed through to \code{lm} or \code{glm}.
+#' @param dispersion : the dispersion parameter for the fitting family. By default it is obtained from the object(s).
+#' @param test : a character string, (partially) matching one of "\code{Chisq}", "\code{LRT}", "\code{Rao}", "\code{F}" or "\code{Cp}". See \code{\link{stat.anova}}.
+#' @return \code{anova.refitME} produces output identical to \code{anova.lm}, \code{anova.glm} or \code{anova.gam}.
+#' @author Jakub Stoklosa, Wen-Han Hwang and David I. Warton.
+#' @importFrom stats anova
+#' @export
+#' @seealso \code{\link{anova.lm}}, \code{\link{anova.glm}}
+#'
+anova.refitME <- function(object, ..., dispersion = NULL, test = NULL) {
+  classObject <- class(object)[2]
+  anovaFn <- switch(classObject, "lm" = stats:::anova.lm, "glm" = anova_MCEMfit_glm, ...)
+
+  return(anovaFn(object))
+}
+
+#' Extract log-Likelihoods for \code{refitME} model objects
+#'
+#' Extract log-Likelihoods for \code{efitME} model objects. This function subtracts the entropy term from the observed likelihood.
+#' @name logLik_MCEMfit_lm
+#' @param object : fitted model objects of class \code{refitME}.
+#' @param ... : further arguments passed through to \code{lm} or \code{glm}.
+#' @param REML : an optional logical value. If \code{TRUE} the restricted log-likelihood is returned, else, if \code{FALSE}, the log-likelihood is returned. Defaults to \code{FALSE}.
+#' @return \code{logLik.refitME} produces output identical to \code{logLik}.
+#' @author Jakub Stoklosa, Wen-Han Hwang and David I. Warton.
+#' @importFrom stats logLik
+#' @export
+#' @seealso \code{\link{logLik}}
+#'
+logLik.refitME <- function(object, ...) {
+  classObject <- class(object)[2]
+  logLikFn <- switch(classObject, "lm" = logLik_MCEMfit_lm, "glm" = stats:::logLik.glm, ...)
+
+  return(logLikFn(object))
+}
+
 #' An ANOVA function for fitted \code{MCEMfit_glm} objects
 #'
 #' An ANOVA function for fitted \code{MCEMfit_glm} objects.
-#' @name anova.MCEMfit_glm
+#' @name anova_MCEMfit_glm
 #' @param object : fitted model objects of class \code{MCEMfit_glm}.
 #' @param ... : further arguments passed through to \code{glm}.
 #' @param dispersion : the dispersion parameter for the fitting family. By default it is obtained from the object(s).
-#' @param test : a character string, (partially) matching one of "\code{Chisq}", "\code{LRT}", "\code{Rao}", "\code{F}" or "\code{Cp}". See \code{\link{stat.anova}}.
-#' @return \code{anova.MCEMfit_glm} produces output identical to \code{anova.glm}.
-#' @author Jakub Stoklosa and David I. Warton.
-#' @importFrom stats stat.anova
+#' @param test : a character string, (partially) matching one of "\code{Chisq}", "\code{LRT}", "\code{Rao}", "\code{F}" or "\code{Cp}".
+#' @return \code{anova_MCEMfit_glm} produces output identical to \code{anova.glm}.
+#' @author Jakub Stoklosa, Wen-Han Hwang and David I. Warton.
 #' @export
 #' @seealso \code{\link{anova.glm}}
 #'
-anova.MCEMfit_glm <- function(object, ..., dispersion = NULL, test = NULL) {
+anova_MCEMfit_glm <- function(object, ..., dispersion = NULL, test = NULL) {
   B <- object$B
   sigma.sq.e <- object$sigma.sq.e
   dotargs <- list(...)
@@ -1418,39 +1460,38 @@ anova.MCEMfit_glm <- function(object, ..., dispersion = NULL, test = NULL) {
 #' Extract log-Likelihoods for \code{MCEMfit_lm} model objects
 #'
 #' Extract log-Likelihoods for \code{MCEMfit_lm} model objects. This function subtracts the entropy term from the observed likelihood.
-#' @name logLik.MCEMfit_lm
+#' @name logLik_MCEMfit_lm
 #' @param object : fitted model objects of class \code{MCEMfit_lm}.
 #' @param ... : further arguments passed through to \code{lm}.
 #' @param REML : an optional logical value. If \code{TRUE} the restricted log-likelihood is returned, else, if \code{FALSE}, the log-likelihood is returned. Defaults to \code{FALSE}.
-#' @return \code{logLik.MCEMfit_lm} produces output identical to \code{logLik}.
+#' @return \code{logLik_MCEMfit_lm} produces output identical to \code{logLik}.
 #' @importFrom stats logLik
-#' @author Jakub Stoklosa and David I. Warton.
-#' @export logLik.MCEMfit_lm
-#' @rawNamespace S3method(logLik, MCEMfit_lm)
+#' @author Jakub Stoklosa, Wen-Han Hwang and David I. Warton.
+#' @export
 #' @seealso \code{\link{logLik}}
 #'
-logLik.MCEMfit_lm <- function (object, REML = FALSE, ...) {
-    if (inherits(object, "mlm")) stop("'logLik.MCEMfit_lm' does not support multiple responses")
-    res <- object$residuals
-    p <- object$rank
-    N <- length(res)
-    if (is.null(w <- object$weights)) w <- rep.int(1, N)
-    else {
-      excl <- w == 0
-      if (any(excl)) {
-        res <- res[!excl]
-        N <- length(res)
-        w <- w[!excl]
-      }
+logLik_MCEMfit_lm <- function (object, REML = FALSE, ...) {
+  if (inherits(object, "mlm")) stop("'logLik_MCEMfit_lm' does not support multiple responses")
+  res <- object$residuals
+  p <- object$rank
+  N <- length(res)
+  if (is.null(w <- object$weights)) w <- rep.int(1, N)
+  else {
+    excl <- w == 0
+    if (any(excl)) {
+      res <- res[!excl]
+      N <- length(res)
+      w <- w[!excl]
     }
+  }
 
-    N0 <- N
-    if (REML) N <- N - p
-    val <- 0.5*(sum(log(w)) - N*(log(2*pi) + 1 - log(N) + log(sum(w*res^2)))) - object$entropy
-    if (REML) val <- val - sum(log(abs(diag(object$qr$qr)[1L:p])))
-    attr(val, "nall") <- N0
-    attr(val, "nobs") <- N
-    attr(val, "df") <- p + 1
-    class(val) <- "logLik"
-    val
+  N0 <- N
+  if (REML) N <- N - p
+  val <- 0.5*(sum(log(w)) - N*(log(2*pi) + 1 - log(N) + log(sum(w*res^2)))) - object$entropy
+  if (REML) val <- val - sum(log(abs(diag(object$qr$qr)[1L:p])))
+  attr(val, "nall") <- N0
+  attr(val, "nobs") <- N
+  attr(val, "df") <- p + 1
+  class(val) <- "logLik"
+  val
 }
