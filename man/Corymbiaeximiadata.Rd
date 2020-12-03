@@ -3,7 +3,7 @@
 \docType{data}
 \name{Corymbiaeximiadata}
 \alias{Corymbiaeximiadata}
-\title{The Corymbia eximia presence-only data set.}
+\title{The Corymbia eximia presence-only data set}
 \format{
 A data set that contains: 8 columns with 86,316 observations (or sites). The columns are defined as follows:
 \describe{

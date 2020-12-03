@@ -2,7 +2,7 @@
 % Please edit documentation in R/refitME_package.R
 \name{refitME}
 \alias{refitME}
-\title{A wrapper function for correcting measurement error via the MCEM algorithm.}
+\title{A wrapper function for correcting measurement error via the MCEM algorithm}
 \source{
 See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
 }
@@ -18,7 +18,7 @@ refitME(
 )
 }
 \arguments{
-\item{mod}{: a glm/gam object (this is the naive fitted model). Make sure the first input predictor variables are the selected error-contaminated variable (i.e., the \code{W}'s).}
+\item{mod}{: a \code{lm/glm/gam} object (this is the naive fitted model). Make sure the first \eqn{p} input predictor variables in the naive model are the selected error-contaminated variable (i.e., the first \eqn{p} predictors should correspond to the entries in \code{W}'s, as below).}
 
 \item{sigma.sq.u}{: measurement error variance. A scalar if there is only one error-contaminated variable, otherwise this must be stored as a covariance matrix}
 
@@ -30,7 +30,7 @@ refitME(
 
 \item{silent}{:     if \code{TRUE}, the convergence message (which tells the user if the model has converged and reports the number of iterations required) is suppressed (default is set to \code{FALSE}).}
 
-\item{...}{: further arguments passed through to \code{glm} or \code{gam}.}
+\item{...}{: further arguments passed through to \code{lm}, \code{glm} or \code{gam}.}
 }
 \value{
 \code{refitME} returns the naive fitted model object where coefficient estimates, the covariance matrix, fitted values, the log-likelihood, and residuals have been replaced with the final MCEM model fit. Standard errors and the effective sample size (which diagnose how closely the proposal distribution matches the posterior, see equation (2) of Stoklosa, Hwang and Warton) have also been included as outputs.
@@ -141,7 +141,7 @@ gam_MCEM1 <- refitME(gam_naiv1, sigma.sq.u, W, B)
 
 }
 \references{
-Carroll, R. J., Ruppert, D., Stefanski, L. A., and Crainiceanu, C. M. (2006). \emph{Measurement Error in Nonlinear Models: A Modern Perspective.} 2nd Ed. London: Chapman \& Hall/CRC.
+Carroll, R. J., Ruppert, D., Stefanski, L. A., and Crainiceanu, C. M. (2006). \emph{Measurement Error in Nonlinear Models: A Modern Perspective.} 2nd Ed. London: Chapman & Hall/CRC.
 
 Stoklosa, J., Hwang, W-H., and Warton, D.I. \pkg{refitME}: Measurement Error Modelling using Monte Carlo Expectation Maximization in \proglang{R}.
 }

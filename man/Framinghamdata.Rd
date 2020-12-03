@@ -3,7 +3,7 @@
 \docType{data}
 \name{Framinghamdata}
 \alias{Framinghamdata}
-\title{The Framingham heart study data set.}
+\title{The Framingham heart study data set}
 \format{
 A data set that contains: 5 columns with 1,615 observations. The columns are defined as follows:
 \describe{
@@ -29,6 +29,6 @@ Data set consisting of records of male patients with coronary heart disease coll
 data(Framinghamdata)
 }
 \references{
-Carroll, R. J., Ruppert, D., Stefanski, L. A., and Crainiceanu, C. M. (2006). \emph{Measurement Error in Nonlinear Models: A Modern Perspective.} 2nd Ed. London: Chapman \& Hall/CRC.
+Carroll, R. J., Ruppert, D., Stefanski, L. A., and Crainiceanu, C. M. (2006). \emph{Measurement Error in Nonlinear Models: A Modern Perspective.} 2nd Ed. London: Chapman & Hall/CRC.
 }
 \keyword{datasets}

@@ -2,7 +2,7 @@
 % Please edit documentation in R/refitME_package.R
 \name{MCEMfit_glm}
 \alias{MCEMfit_glm}
-\title{Function for wrapping the MCEM algorithm on GLMs objects.}
+\title{Function for wrapping the MCEM algorithm on \code{lm} or \code{glm} objects}
 \source{
 See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
 }
@@ -22,7 +22,7 @@ MCEMfit_glm(
 )
 }
 \arguments{
-\item{mod}{: a glm object (this is the naive fitted model). Make sure the first input predictor variables are the selected error-contaminated variable (i.e., the \code{W}'s).}
+\item{mod}{: a \code{lm/glm} object (this is the naive fitted model). Make sure the first \eqn{p} input predictor variables in the naive model are the selected error-contaminated variable (i.e., the first \eqn{p} predictors should correspond to the entries in \code{W}'s, as below).}
 
 \item{family}{: a specified family/distribution.}
 
@@ -30,7 +30,7 @@ MCEMfit_glm(
 
 \item{W}{: a matrix of error-contaminated covariates (if not specified, the default assumes all covariates in the naive fitted model are error-contaminated).}
 
-\item{sigma.sq.e}{: variance of the true covariate (X).}
+\item{sigma.sq.e}{: variance of the true covariate (\eqn{X}).}
 
 \item{B}{: the number of Monte Carlo replication values (default is set to 50).}
 
@@ -42,7 +42,7 @@ MCEMfit_glm(
 
 \item{shape.est}{: an initial value for the shape parameter (this is required for fitting gamma models).}
 
-\item{...}{: further arguments passed to \code{glm}.}
+\item{...}{: further arguments passed to \code{lm} or \code{glm}.}
 }
 \value{
 \code{MCEMfit_glm} returns the naive fitted model object where coefficient estimates, the covariance matrix, fitted values, the log-likelihood, and residuals have been replaced with the final MCEM model fit. Standard errors and the effective sample size (which diagnose how closely the proposal distribution matches the posterior, see equation (2) of Stoklosa, Hwang and Warton) have also been included as outputs.
@@ -122,7 +122,7 @@ levelplot(preds ~ x + y, data = pred.dats, asp = "iso", ylab = "Latitude",
 
 }
 \references{
-Carroll, R. J., Ruppert, D., Stefanski, L. A., and Crainiceanu, C. M. (2006). \emph{Measurement Error in Nonlinear Models: A Modern Perspective.} 2nd Ed. London: Chapman \& Hall/CRC.
+Carroll, R. J., Ruppert, D., Stefanski, L. A., and Crainiceanu, C. M. (2006). \emph{Measurement Error in Nonlinear Models: A Modern Perspective.} 2nd Ed. London: Chapman & Hall/CRC.
 
 Stoklosa, J., Hwang, W-H., and Warton, D.I. \pkg{refitME}: Measurement Error Modelling using Monte Carlo Expectation Maximization in \proglang{R}.
 }

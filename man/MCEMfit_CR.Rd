@@ -17,11 +17,11 @@ MCEMfit_CR(
 )
 }
 \arguments{
-\item{mod}{: a vglm/vgam object (this is the naive fitted CR model). Make sure the first input predictor variables are the selected error-contaminated variable (i.e., the \code{W}'s).}
+\item{mod}{: a \code{vglm/vgam} object (this is the naive CR model). Make sure the first \eqn{p} input predictor variables in the naive model are the selected error-contaminated variables.}
 
 \item{sigma.sq.u}{: measurement error variance. A scalar if there is only one error-contaminated variable, otherwise this must be stored as a covariance matrix.}
 
-\item{sigma.sq.e}{: variance of the true covariate (X).}
+\item{sigma.sq.e}{: variance of the true covariate (\eqn{X}).}
 
 \item{B}{: the number of Monte Carlo replication values (default is set to 50).}
 

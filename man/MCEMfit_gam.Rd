@@ -2,7 +2,7 @@
 % Please edit documentation in R/refitME_package.R
 \name{MCEMfit_gam}
 \alias{MCEMfit_gam}
-\title{Function for wrapping the MCEM algorithm on GAM objects.}
+\title{Function for wrapping the MCEM algorithm on \code{gam} objects}
 \source{
 See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
 }
@@ -22,7 +22,7 @@ MCEMfit_gam(
 )
 }
 \arguments{
-\item{mod}{: a gam object (this is the naive fitted model). Make sure the first input predictor variables are the selected error-contaminated variable (i.e., the \code{W}'s).}
+\item{mod}{: a \code{gam} object (this is the naive fitted model). Make sure the first \eqn{p} input predictor variables in the naive model are the selected error-contaminated variable (i.e., the first \eqn{p} predictors should correspond to the entries in \code{W}'s, as below).}
 
 \item{family}{: a specified family/distribution.}
 
@@ -30,7 +30,7 @@ MCEMfit_gam(
 
 \item{W}{: a matrix of error-contaminated covariates (if not specified, the default assumes all covariates in the naive fitted model are error-contaminated).}
 
-\item{sigma.sq.e}{: variance of the true covariate (X).}
+\item{sigma.sq.e}{: variance of the true covariate (\eqn{X}).}
 
 \item{B}{: the number of Monte Carlo replication values (default is set to 50).}
 

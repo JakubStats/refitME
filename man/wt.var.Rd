@@ -2,7 +2,7 @@
 % Please edit documentation in R/refitME_package.R
 \name{wt.var}
 \alias{wt.var}
-\title{Function that calculates a weighted variance.}
+\title{Function that calculates a weighted variance}
 \source{
 See \url{https://rdrr.io/cran/SDMTools/src/R/wt.mean.R}
 }

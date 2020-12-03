@@ -109,20 +109,12 @@ B <- 5
 
 # Naive GAM.
 
-start <- Sys.time()
 gam_naiv <- gam(Y ~ s(w1) + s(z1, k = 25) + s(z2) + s(z3),
                   family = "poisson", data = dat)
 
-end <- Sys.time()
-difftime(end, start, units = "secs")
-
 # MCEM GAM.
 
-start <- Sys.time()
 gam_MCEM <- refitME(gam_naiv, sigma.sq.u, W, B)
-mean(gam_MCEM$eff.samp.size)/B
-end <- Sys.time()
-difftime(end, start, units = "secs")
 
 # Plots (examine all smooth terms against covariates).
 
@@ -308,6 +300,8 @@ library(VGAM)
 
 set.seed(2020)
 
+B <- 100
+
 Bird <- read.csv("HK1993.csv", blank.lines.skip = TRUE, colClasses = NA)
 tau <- 17
 
@@ -352,10 +346,6 @@ var.ests1 <- var.CS(CS_beta.est, y, w1, tau, sigma.sq.u)
 CS_beta.est.se <- sqrt(var.ests1)[1:2]
 
 # MCEM model.
-
-B <- 100
-
-sigma.sq.e <- var(w1) - sigma.sq.u
 
 CR_naiv2 <- vgam(cbind(cap, noncap) ~ s(w1, df = 2), VGAM::posbinomial(omit.constant = TRUE, parallel = TRUE ~ s(w1, df = 2)), data = CR_dat1, trace = F)
 
