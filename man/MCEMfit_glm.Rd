@@ -55,16 +55,17 @@ Function for wrapping the MCEM algorithm on GLMs where covariates are subject to
 
 library(refitME)
 
-B <- 100  # The number of Monte Carlo replication values.
-
 data(Framinghamdata)
 
-W <- as.matrix(Framinghamdata$w1) # Matrix of error-contaminated covariate.
+glm_naiv <- glm(Y ~ w1 + z1 + z2 + z3, x = TRUE, family = binomial, data = Framinghamdata)
+
 sigma.sq.u <- 0.01259/2 # ME variance, obtained from Carroll et al. (2006) monograph.
 
-glm_naiv1 <- glm(Y ~ w1 + z1 + z2 + z3, x = TRUE, family = binomial, data = Framinghamdata)
+W <- as.matrix(Framinghamdata$w1) # Matrix of error-contaminated covariate.
 
-glm_MCEM1 <- refitME(glm_naiv1, sigma.sq.u, W, B)
+B <- 100  # The number of Monte Carlo replication values.
+
+glm_MCEM <- refitME(glm_naiv, sigma.sq.u, W, B)
 
 
 
@@ -73,17 +74,18 @@ glm_MCEM1 <- refitME(glm_naiv1, sigma.sq.u, W, B)
 library(caret)
 
 data(Corymbiaeximiadata)
+dat <- Corymbiaeximiadata
 
-attach(Corymbiaeximiadata)
+Y <- dat$Y.obs
 
-Y <- Corymbiaeximiadata$Y.obs
-
-W <- Corymbiaeximiadata$MNT
+Rain <- dat$Rain
+D.Main <- dat$D.Main
+MNT <- W <- dat$MNT # Measured with error.
 
 # PPM - using a Poisson GLM.
 
-p.wt <- rep(1.e-6, length(Corymbiaeximiadata$Y.obs))
-p.wt[Corymbiaeximiadata$Y.obs == 0] <- 1
+p.wt <- rep(1.e-6, length(Y))
+p.wt[Y == 0] <- 1
 
 X <- cbind(rep(1, length(Y)), poly(W, degree = 2, raw = TRUE),
           poly(Rain, degree = 2, raw = TRUE),
@@ -91,26 +93,26 @@ X <- cbind(rep(1, length(Y)), poly(W, degree = 2, raw = TRUE),
 
 colnames(X) <- c("(Intercept)", "X1", "X2", "Z1", "Z2", "Z3", "Z4")
 
-dat <- data.frame(cbind(Y, p.wt, X))
-colnames(dat)[1:2] <- c("Y", "p.wt")
+dat1 <- data.frame(cbind(Y, p.wt, X))
+colnames(dat1)[1:2] <- c("Y", "p.wt")
 
-PPM_naiv1 <- glm(Y/p.wt ~ X1 + X2 + Z1 + Z2 + Z3 + Z4, family = "poisson",
- weights = p.wt, data = dat)
+PPM_naiv <- glm(Y/p.wt ~ X1 + X2 + Z1 + Z2 + Z3 + Z4, family = "poisson",
+ weights = p.wt, data = dat1)
 
 # PPM - using MCEM model.
 
-B <- 50
-
 sigma.sq.u <- 0.25
 
-PPM_MCEM1 <- refitME(PPM_naiv1, sigma.sq.u, W, B)
+B <- 50
 
-coord.dat <- cbind(Corymbiaeximiadata$X, Corymbiaeximiadata$Y)
+PPM_MCEM <- refitME(PPM_naiv, sigma.sq.u, W, B)
+
+coord.dat <- cbind(dat$X, dat$Y)
 
 colnames(coord.dat) <- c("Longitude", "Latitude")
 
 pred.dats <- as.data.frame(cbind(coord.dat[, 1], coord.dat[, 2],
-  PPM_MCEM1$fitted.values))
+  PPM_MCEM$fitted.values))
 
 colnames(pred.dats) <- c("x", "y", "preds")
 

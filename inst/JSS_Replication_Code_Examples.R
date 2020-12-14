@@ -15,6 +15,8 @@ set.seed(2020)
 
 data(Framinghamdata)
 
+glm_naiv <- glm(Y ~ w1 + z1 + z2 + z3, x = TRUE, family = binomial, data = Framinghamdata)
+
 W <- as.matrix(Framinghamdata$w1) # Matrix of error-contaminated covariate.
 
 sigma.sq.u <- 0.01259/2 # Measurement error variance, obtained from Carroll et al. (2006) monograph.
@@ -23,13 +25,11 @@ rel.rat <- (1 - sigma.sq.u/var(W))*100
 
 rel.rat
 
-glm_naiv1 <- glm(Y ~ w1 + z1 + z2 + z3, x = TRUE, family = binomial, data = Framinghamdata)
-
 B <- 100 # No. Monte Carlo replication values/SIMEX simulations.
 
 start <- Sys.time()
 
-glm_simex1 <- simex(glm_naiv1, SIMEXvariable = c("w1"), measurement.error = cbind(sqrt(sigma.sq.u)), B = B) # SIMEX.
+glm_simex <- simex(glm_naiv, SIMEXvariable = c("w1"), measurement.error = cbind(sqrt(sigma.sq.u)), B = B) # SIMEX.
 
 end <- Sys.time()
 t1 <- difftime(end, start, units = "secs")
@@ -37,16 +37,16 @@ comp.time <- c(t1)
 
 start <- Sys.time()
 
-glm_MCEM1 <- refitME(glm_naiv1, sigma.sq.u, W, B)
+glm_MCEM <- refitME(glm_naiv, sigma.sq.u, W, B)
 
 end <- Sys.time()
 t2 <- difftime(end, start, units = "secs")
 comp.time <- c(comp.time, t2)
 
-est.beta <- rbind(coef(glm_naiv1), coef(glm_simex1), coef(glm_MCEM1))
-est.beta.se <- rbind(sqrt(diag(vcov(glm_naiv1))),
-                     sqrt(diag(glm_simex1$variance.jackknife)),
-                     glm_MCEM1$se)
+est.beta <- rbind(coef(glm_naiv), coef(glm_simex), coef(glm_MCEM))
+est.beta.se <- rbind(sqrt(diag(vcov(glm_naiv))),
+                     sqrt(diag(glm_simex$variance.jackknife)),
+                     glm_MCEM$se)
 
 # Parameter estimates.
 
@@ -64,10 +64,13 @@ round(est.beta.se, digits = 3)
 names(comp.time) <- c("SIMEX", "MCEM")
 round(comp.time, digits = 3)
 
-# Check a generic function, e.g. the ANOVA function.
+# Check a generic functions, e.g. summary, ANOVA, etc.
 
-anova(glm_naiv1)
-anova(glm_MCEM1)
+summary(glm_naiv)
+summary(glm_naiv)
+
+anova(glm_naiv)
+anova(glm_MCEM)
 
 #----------------------------------------------------------------------------------------
 
@@ -90,20 +93,11 @@ n <- length(Y)
 
 w1 <- log(dat.air[, 9])
 
-W <- as.matrix(w1)
-
 z1 <- (dat.air[, 1])
 z2 <- (dat.air[, 4])
 z3 <- (dat.air[, 5])
 
 dat <- data.frame(cbind(Y, z1, z2, z3, w1))
-
-sigma.sq.u <- 0.09154219 # Rel. ratio of 70%.
-
-rel.rat <- (1 - sigma.sq.u/var(dat$w1))*100
-rel.rat
-
-B <- 5
 
 # Poisson models (we fitted negative binomial models but found no over-dispersion).
 
@@ -113,6 +107,15 @@ gam_naiv <- gam(Y ~ s(w1) + s(z1, k = 25) + s(z2) + s(z3),
                   family = "poisson", data = dat)
 
 # MCEM GAM.
+
+sigma.sq.u <- 0.09154219 # Rel. ratio of 70%.
+
+rel.rat <- (1 - sigma.sq.u/var(dat$w1))*100
+rel.rat
+
+W <- as.matrix(w1)
+
+B <- 50
 
 gam_MCEM <- refitME(gam_naiv, sigma.sq.u, W, B)
 
@@ -175,6 +178,7 @@ par(op)
 
 rm(list = ls())
 
+library(refitME)
 library(caret)
 
 set.seed(2020)
@@ -182,8 +186,6 @@ set.seed(2020)
 data(Corymbiaeximiadata)
 
 dat <- Corymbiaeximiadata
-
-attach(dat)
 
 coord.dat <- cbind(dat$X, dat$Y)
 colnames(coord.dat) <- c("Longitude", "Latitude")
@@ -194,12 +196,14 @@ Y <- dat$Y.obs
 
 n <- length(Y)
 
-W <- dat$MNT
+Rain <- dat$Rain
+D.Main <- dat$D.Main
+MNT <- W <- dat$MNT # Max. temp (measured with error).
 
 # PPM - using a Poisson GLM.
 
-p.wt <- rep(1.e-6, length(dat$Y.obs))
-p.wt[dat$Y.obs == 0] <- 1
+p.wt <- rep(1.e-6, length(Y))
+p.wt[Y == 0] <- 1
 
 X <- cbind(rep(1, length(Y)),
            poly(W, degree = 2, raw = TRUE),
@@ -217,17 +221,15 @@ test <- (1:n)
 data.tr <- data.frame(cbind(Y[train], p.wt[train], X[train, ]))
 colnames(data.tr)[1:2] <- c("Y", "p.wt")
 
-PPM_naiv1 <- glm(Y/p.wt ~ X1 + X2 + Z1 + Z2 + Z3 + Z4, family = "poisson", weights = p.wt, data = data.tr)
+PPM_naiv <- glm(Y/p.wt ~ X1 + X2 + Z1 + Z2 + Z3 + Z4, family = "poisson", weights = p.wt, data = data.tr)
 
 # PPM - using MCEM model.
 
-B <- 50
-
 # Set the measurement error variance here (we considered three values in this example).
 
-sigma.sq.u <- 0.25
+#sigma.sq.u <- 0.25
 #sigma.sq.u <- 0.5
-#sigma.sq.u <- 1
+sigma.sq.u <- 1
 
 W.train <- W[train]
 W.test <- W[test]
@@ -235,9 +237,11 @@ W.test <- W[test]
 rel.rat <- (1 - sigma.sq.u/var(W.train))*100
 print(rel.rat)  # Express as a relative percentage (%).
 
+B <- 50
+
 start <- Sys.time()
 
-PPM_MCEM1 <- refitME(PPM_naiv1, sigma.sq.u, W, B)
+PPM_MCEM <- refitME(PPM_naiv, sigma.sq.u, W.train, B)
 
 # Prediction on test and training data.
 
@@ -248,11 +252,11 @@ X.s <- cbind(rep(1, length(MNT)), poly(W.s, degree = 2, raw = TRUE), poly(Rain, 
 X.f.test <- X.f[test, ]
 X.s.test <- X.s[test, ]
 
-preds1 <- exp(X.f.test%*%coef(PPM_naiv1))
-preds2 <- exp(X.s.test%*%coef(PPM_naiv1))
+preds1 <- exp(X.f.test%*%coef(PPM_naiv))
+preds2 <- exp(X.s.test%*%coef(PPM_naiv))
 
-preds3 <- exp(X.f.test%*%coef(PPM_MCEM1))
-preds4 <- exp(X.s.test%*%coef(PPM_MCEM1))
+preds3 <- exp(X.f.test%*%coef(PPM_MCEM))
+preds4 <- exp(X.s.test%*%coef(PPM_MCEM))
 
 coord.dat1 <- coord.dat[test, ]
 
@@ -296,48 +300,28 @@ rm(list = ls())
 
 source(".../MCEM_prog.r")
 
+library(refitME)
 library(VGAM)
 
 set.seed(2020)
 
-B <- 100
+load("Priniadata.RData")
 
-Bird <- read.csv("HK1993.csv", blank.lines.skip = TRUE, colClasses = NA)
 tau <- 17
 
-# Remove the individual with no covariate observation.
+w1 <- Priniadata$w1
 
-Bird <- Bird[-29, ]
-
-Bird.weight <- Bird[, 5:21]
-Bird.weight[is.na(Bird.weight)] <- 0  # Replace with 0.
-
-y <- Bird$Y
-D <- length(y)
-
-w.obs <- apply(Bird.weight, 1, pick1st)
-
-W <- cbind(rep(1, D), scale(w.obs))
-
-cap.hist <- (!is.na(Bird[, 5:21])) + 0
-
-w1 <- W[, 2]
-
-par.int <- "spline"
-
-CR_dat1 <- data.frame(cbind(w1, y, tau - y))
-
-colnames(CR_dat1) <- c("w1", "cap", "noncap")
+y <- Priniadata$cap
 
 # Start fitting all models here (model M_h).
 
 # Naive model.
 
-CR_naiv1 <- vglm(cbind(cap, noncap) ~ w1, posbinomial(omit.constant = TRUE, parallel = TRUE ~ w1), data = CR_dat1, trace = F)
-
-sigma.sq.u <- 0.37/var(w.obs)
+CR_naiv1 <- vglm(cbind(cap, noncap) ~ w1, posbinomial(omit.constant = TRUE, parallel = TRUE ~ w1), data = Priniadata, trace = FALSE)
 
 # Conditional score (CS) model.
+
+sigma.sq.u <- 0.37/var(w1) # ME variance.
 
 CS_beta.est <- nleqslv(coef(CR_naiv1), est.cs, y = y, w1 = w1, tau = tau, sigma.sq.u = sigma.sq.u, method = c("Newton"))$x
 CS_N.est <- N.CS.est(CS_beta.est, y, w1, tau, sigma.sq.u)
@@ -347,9 +331,11 @@ CS_beta.est.se <- sqrt(var.ests1)[1:2]
 
 # MCEM model.
 
-CR_naiv2 <- vgam(cbind(cap, noncap) ~ s(w1, df = 2), VGAM::posbinomial(omit.constant = TRUE, parallel = TRUE ~ s(w1, df = 2)), data = CR_dat1, trace = F)
+CR_naiv2 <- vgam(cbind(cap, noncap) ~ s(w1, df = 2), VGAM::posbinomial(omit.constant = TRUE, parallel = TRUE ~ s(w1, df = 2)), data = Priniadata, trace = FALSE)
 
-CR_MCEM <- refitME(CR_naiv2, sigma.sq.u, W, B)
+B <- 100
+
+CR_MCEM <- refitME(CR_naiv2, sigma.sq.u, B)
 
 N.hat_MCEM <- CR_MCEM$N.est
 

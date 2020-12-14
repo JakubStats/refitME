@@ -28,7 +28,7 @@ refitME(
 
 \item{epsilon}{: convergence threshold (default is set to 0.00001).}
 
-\item{silent}{:     if \code{TRUE}, the convergence message (which tells the user if the model has converged and reports the number of iterations required) is suppressed (default is set to \code{FALSE}).}
+\item{silent}{: if \code{TRUE}, the convergence message (which tells the user if the model has converged and reports the number of iterations required) is suppressed (default is set to \code{FALSE}).}
 
 \item{...}{: further arguments passed through to \code{lm}, \code{glm} or \code{gam}.}
 }
@@ -43,16 +43,17 @@ Function that extracts the fitted (naive) model object and wraps the MCEM algori
 
 library(refitME)
 
-B <- 100  # The number of Monte Carlo replication values/SIMEX simulations.
-
 data(Framinghamdata)
 
-W <- as.matrix(Framinghamdata$w1) # Matrix of error-contaminated covariate.
+glm_naiv <- glm(Y ~ w1 + z1 + z2 + z3, x = TRUE, family = binomial, data = Framinghamdata)
+
 sigma.sq.u <- 0.01259/2 # ME variance, obtained from Carroll et al. (2006) monograph.
 
-glm_naiv1 <- glm(Y ~ w1 + z1 + z2 + z3, x = TRUE, family = binomial, data = Framinghamdata)
+W <- as.matrix(Framinghamdata$w1) # Matrix of error-contaminated covariate.
 
-glm_MCEM1 <- refitME(glm_naiv1, sigma.sq.u, W, B)
+B <- 100  # The number of Monte Carlo replication values/SIMEX simulations.
+
+glm_MCEM <- refitME(glm_naiv, sigma.sq.u, W, B)
 
 
 
@@ -61,17 +62,18 @@ glm_MCEM1 <- refitME(glm_naiv1, sigma.sq.u, W, B)
 library(caret)
 
 data(Corymbiaeximiadata)
+dat <- Corymbiaeximiadata
 
-attach(Corymbiaeximiadata)
+Y <- dat$Y.obs
 
-Y <- Corymbiaeximiadata$Y.obs
-
-W <- Corymbiaeximiadata$MNT
+Rain <- dat$Rain
+D.Main <- dat$D.Main
+MNT <- W <- dat$MNT # Measured with error.
 
 # PPM - using a Poisson GLM.
 
-p.wt <- rep(1.e-6, length(Corymbiaeximiadata$Y.obs))
-p.wt[Corymbiaeximiadata$Y.obs == 0] <- 1
+p.wt <- rep(1.e-6, length(Y))
+p.wt[Y == 0] <- 1
 
 X <- cbind(rep(1, length(Y)), poly(W, degree = 2, raw = TRUE),
           poly(Rain, degree = 2, raw = TRUE),
@@ -79,26 +81,26 @@ X <- cbind(rep(1, length(Y)), poly(W, degree = 2, raw = TRUE),
 
 colnames(X) <- c("(Intercept)", "X1", "X2", "Z1", "Z2", "Z3", "Z4")
 
-dat <- data.frame(cbind(Y, p.wt, X))
-colnames(dat)[1:2] <- c("Y", "p.wt")
+dat1 <- data.frame(cbind(Y, p.wt, X))
+colnames(dat1)[1:2] <- c("Y", "p.wt")
 
-PPM_naiv1 <- glm(Y/p.wt ~ X1 + X2 + Z1 + Z2 + Z3 + Z4, family = "poisson",
- weights = p.wt, data = dat)
+PPM_naiv <- glm(Y/p.wt ~ X1 + X2 + Z1 + Z2 + Z3 + Z4, family = "poisson",
+ weights = p.wt, data = dat1)
 
 # PPM - using MCEM model.
 
-B <- 50
-
 sigma.sq.u <- 0.25
 
-PPM_MCEM1 <- refitME(PPM_naiv1, sigma.sq.u, W, B)
+B <- 50
 
-coord.dat <- cbind(Corymbiaeximiadata$X, Corymbiaeximiadata$Y)
+PPM_MCEM <- refitME(PPM_naiv, sigma.sq.u, W, B)
+
+coord.dat <- cbind(dat$X, dat$Y)
 
 colnames(coord.dat) <- c("Longitude", "Latitude")
 
 pred.dats <- as.data.frame(cbind(coord.dat[, 1], coord.dat[, 2],
-  PPM_MCEM1$fitted.values))
+  PPM_MCEM$fitted.values))
 
 colnames(pred.dats) <- c("x", "y", "preds")
 
@@ -115,8 +117,6 @@ levelplot(preds ~ x + y, data = pred.dats, asp = "iso", ylab = "Latitude",
 library(refitME)
 library(SemiPar)
 
-B <- 5  # Consider increasing this if you want a more accurate answer.
-
 data(milan.mort)
 
 dat.air <- milan.mort
@@ -129,16 +129,46 @@ z1 <- (dat.air[, 1])
 z2 <- (dat.air[, 4])
 z3 <- (dat.air[, 5])
 w1 <- log(dat.air[, 9])
-W <- as.matrix(w1)
 
 dat <- data.frame(cbind(Y, z1, z2, z3, w1))
 
+gam_naiv <- gam(Y ~ s(w1) + s(z1, k = 25) + s(z2) + s(z3),
+   family = "poisson", data = dat)
+
 sigma.sq.u <- 0.0915
 
-gam_naiv1 <- gam(Y ~ s(w1) + s(z1, k = 25) + s(z2) + s(z3), family = "poisson", data = dat)
+W <- as.matrix(w1)
 
-gam_MCEM1 <- refitME(gam_naiv1, sigma.sq.u, W, B)
+B <- 5  # Consider increasing this if you want a more accurate answer.
 
+gam_MCEM <- refitME(gam_naiv, sigma.sq.u, W, B)
+plot(gam_MCEM)
+
+
+
+# A VGAM example using the Prinia flaviventris capture-recapture data.
+
+library(refitME)
+library(VGAM)
+
+data(Priniadata)
+
+tau <- 17   # No. of capture occasions.
+w1 <- Priniadata$w1
+
+CR_naiv1 <- vglm(cbind(cap, noncap) ~ w1,
+   VGAM::posbinomial(omit.constant = TRUE, parallel = TRUE ~ w1),
+   data = Priniadata, trace = FALSE)
+
+CR_naiv2 <- vgam(cbind(cap, noncap) ~ s(w1, df = 2),
+   VGAM::posbinomial(omit.constant = TRUE, parallel = TRUE ~ s(w1, df = 2)),
+   data = Priniadata, trace = FALSE)
+
+sigma.sq.u <- 0.37/var(w1) # ME variance.
+
+B <- 100
+
+CR_MCEM <- refitME(CR_naiv2, sigma.sq.u, B)
 }
 \references{
 Carroll, R. J., Ruppert, D., Stefanski, L. A., and Crainiceanu, C. M. (2006). \emph{Measurement Error in Nonlinear Models: A Modern Perspective.} 2nd Ed. London: Chapman & Hall/CRC.

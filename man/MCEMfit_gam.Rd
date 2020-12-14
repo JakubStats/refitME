@@ -56,8 +56,6 @@ Function for wrapping the MCEM algorithm on GAMs where covariates are subject to
 library(refitME)
 library(SemiPar)
 
-B <- 5  # Consider increasing this if you want a more accurate answer.
-
 data(milan.mort)
 
 dat.air <- milan.mort
@@ -70,15 +68,18 @@ z1 <- (dat.air[, 1])
 z2 <- (dat.air[, 4])
 z3 <- (dat.air[, 5])
 w1 <- log(dat.air[, 9])
-W <- as.matrix(w1)
 
 dat <- data.frame(cbind(Y, z1, z2, z3, w1))
 
+gam_naiv <- gam(Y ~ s(w1) + s(z1, k = 25) + s(z2) + s(z3), family = "poisson", data = dat)
+
 sigma.sq.u <- 0.0915
 
-gam_naiv1 <- gam(Y ~ s(w1) + s(z1, k = 25) + s(z2) + s(z3), family = "poisson", data = dat)
+W <- as.matrix(w1)
 
-gam_MCEM1 <- refitME(gam_naiv1, sigma.sq.u, W, B)
+B <- 5  # Consider increasing this if you want a more accurate answer.
+
+gam_MCEM <- refitME(gam_naiv, sigma.sq.u, W, B)
 
 }
 \references{

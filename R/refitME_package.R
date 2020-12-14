@@ -25,7 +25,7 @@ suppressMessages(library(sandwich))
 #' \item{\code{z3}}{Smoking indicator - whether the patient smokes.}
 #' \item{\code{w1}}{Systolic blood pressure (SBP) of patient - this is the error contaminated variable, calculated from mean scores. The measurement error is 0.00630, see pp. 112 of Carroll \emph{et al.} (2006).}
 #' }
-#' @source See Carroll \emph{et al.} (2006) for full details of the data and study. Also, see \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial of an example that uses the data.
+#' @source See Carroll \emph{et al.} (2006) for full details on the data and study. Also, see \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial of an example that uses the data.
 #' @references Carroll, R. J., Ruppert, D., Stefanski, L. A., and Crainiceanu, C. M. (2006). \emph{Measurement Error in Nonlinear Models: A Modern Perspective.} 2nd Ed. London: Chapman & Hall/CRC.
 #' @examples # Load the data.
 #'
@@ -40,17 +40,32 @@ suppressMessages(library(sandwich))
 #' \item{\code{Y}}{Latitude coordinate.}
 #' \item{\code{FC}}{Recorded number of fire counts for each site.}
 #' \item{\code{MNT}}{Recorded minimum temperatures for each site.}
-#' \item{\code{MXT}}{Recorded maximum temperature for each site. }
+#' \item{\code{MXT}}{Recorded maximum temperature for each site.}
 #' \item{\code{Rain}}{Recorded rainfall for each site.}
 #' \item{\code{D.Main}}{Recorded distance from nearest major road.}
 #' \item{\code{Y.obs}}{Presences for the plant species \emph{Corymbia eximia} for each site.}
 #' }
-#' @source See Renner and Warton (2013) for full details of the data and study.
+#' @source See Renner and Warton (2013) for full details on the data and study.
 #' @references Renner, I. W. and Warton, D. I. (2013). Equivalence of MAXENT and Poisson point process models for species distribution modeling in ecology. \emph{Biometrics}, \strong{69}, 274–281.
 #' @examples # Load the data.
 #'
 #' data(Corymbiaeximiadata)
 "Corymbiaeximiadata"
+
+#' @title The yellow-bellied Prinia \emph{Prinia flaviventris} capture-recapture data
+#' @description Data set consisting of capture-recapture histories 164 uniquely captured birds across 17 weekly capture occasions. Bird wing lengths were also measured in the study.
+#' @format A data set that contains: 3 columns with 164 observations. The columns are defined as follows:
+#' \describe{
+#' \item{\code{w1}}{Bird wing lengths.}
+#' \item{\code{cap}}{Number of times the individual was captured.}
+#' \item{\code{noncap}}{Number of times the individual was not captured.}
+#' }
+#' @source See Hwang, Huang and Wang (2007) for full details on the data and study.
+#' @references Hwang, W. H., Huang, S. Y. H., and Wang, C. (2007). Effects of measurement error and conditional score estimation in capture--recapture models. \emph{Statistica Sinica}, \strong{17}, 301-316.
+#' @examples # Load the data.
+#'
+#' data(Priniadata)
+"Priniadata"
 
 #' A wrapper function for correcting measurement error via the MCEM algorithm
 #'
@@ -61,7 +76,7 @@ suppressMessages(library(sandwich))
 #' @param W : a matrix of error-contaminated covariates (if not specified, the default assumes all covariates in the naive fitted model are error-contaminated).
 #' @param B : the number of Monte Carlo replication values (default is set 50).
 #' @param epsilon : convergence threshold (default is set to 0.00001).
-#' @param silent : 	if \code{TRUE}, the convergence message (which tells the user if the model has converged and reports the number of iterations required) is suppressed (default is set to \code{FALSE}).
+#' @param silent : if \code{TRUE}, the convergence message (which tells the user if the model has converged and reports the number of iterations required) is suppressed (default is set to \code{FALSE}).
 #' @param ... : further arguments passed through to \code{lm}, \code{glm} or \code{gam}.
 #' @return \code{refitME} returns the naive fitted model object where coefficient estimates, the covariance matrix, fitted values, the log-likelihood, and residuals have been replaced with the final MCEM model fit. Standard errors and the effective sample size (which diagnose how closely the proposal distribution matches the posterior, see equation (2) of Stoklosa, Hwang and Warton) have also been included as outputs.
 #' @author Jakub Stoklosa, Wen-Han Hwang and David I. Warton.
@@ -76,16 +91,17 @@ suppressMessages(library(sandwich))
 #'
 #' library(refitME)
 #'
-#' B <- 100  # The number of Monte Carlo replication values/SIMEX simulations.
-#'
 #' data(Framinghamdata)
 #'
-#' W <- as.matrix(Framinghamdata$w1) # Matrix of error-contaminated covariate.
+#' glm_naiv <- glm(Y ~ w1 + z1 + z2 + z3, x = TRUE, family = binomial, data = Framinghamdata)
+#'
 #' sigma.sq.u <- 0.01259/2 # ME variance, obtained from Carroll et al. (2006) monograph.
 #'
-#' glm_naiv1 <- glm(Y ~ w1 + z1 + z2 + z3, x = TRUE, family = binomial, data = Framinghamdata)
+#' W <- as.matrix(Framinghamdata$w1) # Matrix of error-contaminated covariate.
 #'
-#' glm_MCEM1 <- refitME(glm_naiv1, sigma.sq.u, W, B)
+#' B <- 100  # The number of Monte Carlo replication values/SIMEX simulations.
+#'
+#' glm_MCEM <- refitME(glm_naiv, sigma.sq.u, W, B)
 #'
 #'
 #'
@@ -94,17 +110,18 @@ suppressMessages(library(sandwich))
 #' library(caret)
 #'
 #' data(Corymbiaeximiadata)
+#' dat <- Corymbiaeximiadata
 #'
-#' attach(Corymbiaeximiadata)
+#' Y <- dat$Y.obs
 #'
-#' Y <- Corymbiaeximiadata$Y.obs
-#'
-#' W <- Corymbiaeximiadata$MNT
+#' Rain <- dat$Rain
+#' D.Main <- dat$D.Main
+#' MNT <- W <- dat$MNT # Measured with error.
 #'
 #' # PPM - using a Poisson GLM.
 #'
-#' p.wt <- rep(1.e-6, length(Corymbiaeximiadata$Y.obs))
-#' p.wt[Corymbiaeximiadata$Y.obs == 0] <- 1
+#' p.wt <- rep(1.e-6, length(Y))
+#' p.wt[Y == 0] <- 1
 #'
 #' X <- cbind(rep(1, length(Y)), poly(W, degree = 2, raw = TRUE),
 #'           poly(Rain, degree = 2, raw = TRUE),
@@ -112,26 +129,26 @@ suppressMessages(library(sandwich))
 #'
 #' colnames(X) <- c("(Intercept)", "X1", "X2", "Z1", "Z2", "Z3", "Z4")
 #'
-#' dat <- data.frame(cbind(Y, p.wt, X))
-#' colnames(dat)[1:2] <- c("Y", "p.wt")
+#' dat1 <- data.frame(cbind(Y, p.wt, X))
+#' colnames(dat1)[1:2] <- c("Y", "p.wt")
 #'
-#' PPM_naiv1 <- glm(Y/p.wt ~ X1 + X2 + Z1 + Z2 + Z3 + Z4, family = "poisson",
-#'  weights = p.wt, data = dat)
+#' PPM_naiv <- glm(Y/p.wt ~ X1 + X2 + Z1 + Z2 + Z3 + Z4, family = "poisson",
+#'  weights = p.wt, data = dat1)
 #'
 #' # PPM - using MCEM model.
 #'
-#' B <- 50
-#'
 #' sigma.sq.u <- 0.25
 #'
-#' PPM_MCEM1 <- refitME(PPM_naiv1, sigma.sq.u, W, B)
+#' B <- 50
 #'
-#' coord.dat <- cbind(Corymbiaeximiadata$X, Corymbiaeximiadata$Y)
+#' PPM_MCEM <- refitME(PPM_naiv, sigma.sq.u, W, B)
+#'
+#' coord.dat <- cbind(dat$X, dat$Y)
 #'
 #' colnames(coord.dat) <- c("Longitude", "Latitude")
 #'
 #' pred.dats <- as.data.frame(cbind(coord.dat[, 1], coord.dat[, 2],
-#'   PPM_MCEM1$fitted.values))
+#'   PPM_MCEM$fitted.values))
 #'
 #' colnames(pred.dats) <- c("x", "y", "preds")
 #'
@@ -148,8 +165,6 @@ suppressMessages(library(sandwich))
 #' library(refitME)
 #' library(SemiPar)
 #'
-#' B <- 5  # Consider increasing this if you want a more accurate answer.
-#'
 #' data(milan.mort)
 #'
 #' dat.air <- milan.mort
@@ -162,16 +177,46 @@ suppressMessages(library(sandwich))
 #' z2 <- (dat.air[, 4])
 #' z3 <- (dat.air[, 5])
 #' w1 <- log(dat.air[, 9])
-#' W <- as.matrix(w1)
 #'
 #' dat <- data.frame(cbind(Y, z1, z2, z3, w1))
 #'
+#' gam_naiv <- gam(Y ~ s(w1) + s(z1, k = 25) + s(z2) + s(z3),
+#'    family = "poisson", data = dat)
+#'
 #' sigma.sq.u <- 0.0915
 #'
-#' gam_naiv1 <- gam(Y ~ s(w1) + s(z1, k = 25) + s(z2) + s(z3), family = "poisson", data = dat)
+#' W <- as.matrix(w1)
 #'
-#' gam_MCEM1 <- refitME(gam_naiv1, sigma.sq.u, W, B)
+#' B <- 5  # Consider increasing this if you want a more accurate answer.
 #'
+#' gam_MCEM <- refitME(gam_naiv, sigma.sq.u, W, B)
+#' plot(gam_MCEM)
+#'
+#'
+#'
+#' # A VGAM example using the Prinia flaviventris capture-recapture data.
+#'
+#' library(refitME)
+#' library(VGAM)
+#'
+#' data(Priniadata)
+#'
+#' tau <- 17   # No. of capture occasions.
+#' w1 <- Priniadata$w1
+#'
+#' CR_naiv1 <- vglm(cbind(cap, noncap) ~ w1,
+#'    VGAM::posbinomial(omit.constant = TRUE, parallel = TRUE ~ w1),
+#'    data = Priniadata, trace = FALSE)
+#'
+#' CR_naiv2 <- vgam(cbind(cap, noncap) ~ s(w1, df = 2),
+#'    VGAM::posbinomial(omit.constant = TRUE, parallel = TRUE ~ s(w1, df = 2)),
+#'    data = Priniadata, trace = FALSE)
+#'
+#' sigma.sq.u <- 0.37/var(w1) # ME variance.
+#'
+#' B <- 100
+#'
+#' CR_MCEM <- refitME(CR_naiv2, sigma.sq.u, B)
 refitME <- function(mod, sigma.sq.u, W = NULL, B = 50, epsilon = 0.00001, silent = FALSE, ...) {
   if (!isS4(mod)) {
     if (formula(mod$model)[-2] == ~1) {
@@ -248,16 +293,17 @@ refitME <- function(mod, sigma.sq.u, W = NULL, B = 50, epsilon = 0.00001, silent
 #'
 #' library(refitME)
 #'
-#' B <- 100  # The number of Monte Carlo replication values.
-#'
 #' data(Framinghamdata)
 #'
-#' W <- as.matrix(Framinghamdata$w1) # Matrix of error-contaminated covariate.
+#' glm_naiv <- glm(Y ~ w1 + z1 + z2 + z3, x = TRUE, family = binomial, data = Framinghamdata)
+#'
 #' sigma.sq.u <- 0.01259/2 # ME variance, obtained from Carroll et al. (2006) monograph.
 #'
-#' glm_naiv1 <- glm(Y ~ w1 + z1 + z2 + z3, x = TRUE, family = binomial, data = Framinghamdata)
+#' W <- as.matrix(Framinghamdata$w1) # Matrix of error-contaminated covariate.
 #'
-#' glm_MCEM1 <- refitME(glm_naiv1, sigma.sq.u, W, B)
+#' B <- 100  # The number of Monte Carlo replication values.
+#'
+#' glm_MCEM <- refitME(glm_naiv, sigma.sq.u, W, B)
 #'
 #'
 #'
@@ -266,17 +312,18 @@ refitME <- function(mod, sigma.sq.u, W = NULL, B = 50, epsilon = 0.00001, silent
 #' library(caret)
 #'
 #' data(Corymbiaeximiadata)
+#' dat <- Corymbiaeximiadata
 #'
-#' attach(Corymbiaeximiadata)
+#' Y <- dat$Y.obs
 #'
-#' Y <- Corymbiaeximiadata$Y.obs
-#'
-#' W <- Corymbiaeximiadata$MNT
+#' Rain <- dat$Rain
+#' D.Main <- dat$D.Main
+#' MNT <- W <- dat$MNT # Measured with error.
 #'
 #' # PPM - using a Poisson GLM.
 #'
-#' p.wt <- rep(1.e-6, length(Corymbiaeximiadata$Y.obs))
-#' p.wt[Corymbiaeximiadata$Y.obs == 0] <- 1
+#' p.wt <- rep(1.e-6, length(Y))
+#' p.wt[Y == 0] <- 1
 #'
 #' X <- cbind(rep(1, length(Y)), poly(W, degree = 2, raw = TRUE),
 #'           poly(Rain, degree = 2, raw = TRUE),
@@ -284,26 +331,26 @@ refitME <- function(mod, sigma.sq.u, W = NULL, B = 50, epsilon = 0.00001, silent
 #'
 #' colnames(X) <- c("(Intercept)", "X1", "X2", "Z1", "Z2", "Z3", "Z4")
 #'
-#' dat <- data.frame(cbind(Y, p.wt, X))
-#' colnames(dat)[1:2] <- c("Y", "p.wt")
+#' dat1 <- data.frame(cbind(Y, p.wt, X))
+#' colnames(dat1)[1:2] <- c("Y", "p.wt")
 #'
-#' PPM_naiv1 <- glm(Y/p.wt ~ X1 + X2 + Z1 + Z2 + Z3 + Z4, family = "poisson",
-#'  weights = p.wt, data = dat)
+#' PPM_naiv <- glm(Y/p.wt ~ X1 + X2 + Z1 + Z2 + Z3 + Z4, family = "poisson",
+#'  weights = p.wt, data = dat1)
 #'
 #' # PPM - using MCEM model.
 #'
-#' B <- 50
-#'
 #' sigma.sq.u <- 0.25
 #'
-#' PPM_MCEM1 <- refitME(PPM_naiv1, sigma.sq.u, W, B)
+#' B <- 50
 #'
-#' coord.dat <- cbind(Corymbiaeximiadata$X, Corymbiaeximiadata$Y)
+#' PPM_MCEM <- refitME(PPM_naiv, sigma.sq.u, W, B)
+#'
+#' coord.dat <- cbind(dat$X, dat$Y)
 #'
 #' colnames(coord.dat) <- c("Longitude", "Latitude")
 #'
 #' pred.dats <- as.data.frame(cbind(coord.dat[, 1], coord.dat[, 2],
-#'   PPM_MCEM1$fitted.values))
+#'   PPM_MCEM$fitted.values))
 #'
 #' colnames(pred.dats) <- c("x", "y", "preds")
 #'
@@ -734,8 +781,6 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
 #' library(refitME)
 #' library(SemiPar)
 #'
-#' B <- 5  # Consider increasing this if you want a more accurate answer.
-#'
 #' data(milan.mort)
 #'
 #' dat.air <- milan.mort
@@ -748,15 +793,18 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
 #' z2 <- (dat.air[, 4])
 #' z3 <- (dat.air[, 5])
 #' w1 <- log(dat.air[, 9])
-#' W <- as.matrix(w1)
 #'
 #' dat <- data.frame(cbind(Y, z1, z2, z3, w1))
 #'
+#' gam_naiv <- gam(Y ~ s(w1) + s(z1, k = 25) + s(z2) + s(z3), family = "poisson", data = dat)
+#'
 #' sigma.sq.u <- 0.0915
 #'
-#' gam_naiv1 <- gam(Y ~ s(w1) + s(z1, k = 25) + s(z2) + s(z3), family = "poisson", data = dat)
+#' W <- as.matrix(w1)
 #'
-#' gam_MCEM1 <- refitME(gam_naiv1, sigma.sq.u, W, B)
+#' B <- 5  # Consider increasing this if you want a more accurate answer.
+#'
+#' gam_MCEM <- refitME(gam_naiv, sigma.sq.u, W, B)
 #'
 MCEMfit_gam <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 50, epsilon = 0.00001, silent = FALSE, theta.est = 1, shape.est = 10, ...) {
 
@@ -1107,6 +1155,29 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, W = NULL, sigma.sq.e = 1, B = 5
 #' @export
 #' @seealso \code{\link{MCEMfit_glm}}
 #' @source See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
+#' @examples # A VGAM example using the Prinia flaviventris capture-recapture data.
+#'
+#' library(refitME)
+#' library(VGAM)
+#'
+#' data(Priniadata)
+#'
+#' tau <- 17   # No. of capture occasions.
+#' w1 <- Priniadata$w1
+#'
+#' CR_naiv1 <- vglm(cbind(cap, noncap) ~ w1,
+#'    VGAM::posbinomial(omit.constant = TRUE, parallel = TRUE ~ w1),
+#'    data = Priniadata, trace = FALSE)
+#'
+#' CR_naiv2 <- vgam(cbind(cap, noncap) ~ s(w1, df = 2),
+#'    VGAM::posbinomial(omit.constant = TRUE, parallel = TRUE ~ s(w1, df = 2)),
+#'    data = Priniadata, trace = FALSE)
+#'
+#' sigma.sq.u <- 0.37/var(w1) # ME variance.
+#'
+#' B <- 100
+#'
+#' CR_MCEM <- refitME(CR_naiv2, sigma.sq.u, B)
 MCEMfit_CR <- function(mod, sigma.sq.u, sigma.sq.e = 1, B = 100, epsilon = 0.00001, silent = FALSE) {
 
   options(warn = -1)

@@ -40,6 +40,31 @@ Function for fitting \code{VGAM} capture-recapture (CR) model using the MCEM alg
 This function is still under development. Currently the function can only fit the CR model used in the manuscript. IT DOES NOT SUPPORT ALL \code{VGAM} families.
 }
 
+\examples{
+# A VGAM example using the Prinia flaviventris capture-recapture data.
+
+library(refitME)
+library(VGAM)
+
+data(Priniadata)
+
+tau <- 17   # No. of capture occasions.
+w1 <- Priniadata$w1
+
+CR_naiv1 <- vglm(cbind(cap, noncap) ~ w1,
+   VGAM::posbinomial(omit.constant = TRUE, parallel = TRUE ~ w1),
+   data = Priniadata, trace = FALSE)
+
+CR_naiv2 <- vgam(cbind(cap, noncap) ~ s(w1, df = 2),
+   VGAM::posbinomial(omit.constant = TRUE, parallel = TRUE ~ s(w1, df = 2)),
+   data = Priniadata, trace = FALSE)
+
+sigma.sq.u <- 0.37/var(w1) # ME variance.
+
+B <- 100
+
+CR_MCEM <- refitME(CR_naiv2, sigma.sq.u, B)
+}
 \references{
 Stoklosa, J., Hwang, W-H., and Warton, D.I. \pkg{refitME}: Measurement Error Modelling using Monte Carlo Expectation Maximization in \proglang{R}.
 }

@@ -37,16 +37,7 @@ suppressWarnings(suppressMessages(library(simex)))
 
 set.seed(2020)
 
-B <- 100  # The number of Monte Carlo replication values/SIMEX simulations.
-
 data(Framinghamdata)
-```
-
-### Setup all variables (the construction below follows the Carroll et al. (2006) monograph).
-
-```{r, echo=TRUE}
-W <- as.matrix(Framinghamdata$w1) # Matrix of error-contaminated covariate.
-sigma.sq.u <- 0.01259/2 # ME variance, obtained from Carroll et al. (2006) monograph.
 ```
 
 ### Fit the naive model.
@@ -54,8 +45,16 @@ sigma.sq.u <- 0.01259/2 # ME variance, obtained from Carroll et al. (2006) monog
 The first stored variable `w1` is the error contaminated variable used in the analysis.
 
 ```{r, echo=TRUE}
-glm_naiv1 <- glm(Y ~ w1 + z1 + z2 + z3, x = TRUE, family = binomial, 
+glm_naiv <- glm(Y ~ w1 + z1 + z2 + z3, x = TRUE, family = binomial, 
                  data = Framinghamdata)
+```
+
+### Setup all tuning parameters and variables.
+
+```{r, echo=TRUE}
+W <- as.matrix(Framinghamdata$w1) # Matrix of error-contaminated covariate.
+sigma.sq.u <- 0.01259/2 # ME variance, obtained from Carroll et al. (2006) monograph.
+B <- 100  # The number of Monte Carlo replication values/SIMEX simulations.
 ```
 
 \clearpage
@@ -64,7 +63,7 @@ glm_naiv1 <- glm(Y ~ w1 + z1 + z2 + z3, x = TRUE, family = binomial,
 
 ```{r, echo=TRUE}
 start <- Sys.time()
-glm_simex1 <- simex(glm_naiv1, SIMEXvariable = c("w1"),
+glm_simex <- simex(glm_naiv, SIMEXvariable = c("w1"),
                   measurement.error = cbind(sqrt(sigma.sq.u)), B = B) # SIMEX.
 end <- Sys.time()
 t1 <- difftime(end, start, units = "secs")
@@ -75,7 +74,7 @@ comp.time <- c(t1)
 
 ```{r, echo=TRUE}
 start <- Sys.time()
-glm_MCEM1 <- refitME(glm_naiv1, sigma.sq.u, W, B)
+glm_MCEM <- refitME(glm_naiv, sigma.sq.u, W, B)
 end <- Sys.time()
 t2 <- difftime(end, start, units = "secs")
 comp.time <- c(comp.time, t2)
@@ -84,9 +83,9 @@ comp.time <- c(comp.time, t2)
 ### Report model estimates and compare computational times.
 
 ```{r, echo=TRUE}
-est.beta <- rbind(coef(glm_naiv1), coef(glm_simex1), coef(glm_MCEM1))
-est.beta.se <- rbind(sqrt(diag(vcov(glm_naiv1))),
-                   sqrt(diag(glm_simex1$variance.jackknife)), sqrt(diag(vcov(glm_MCEM1))))
+est.beta <- rbind(coef(glm_naiv), coef(glm_simex), coef(glm_MCEM))
+est.beta.se <- rbind(sqrt(diag(vcov(glm_naiv))),
+                   sqrt(diag(glm_simex$variance.jackknife)), sqrt(diag(vcov(glm_MCEM))))
 row.names(est.beta) = row.names(est.beta.se) <- c("Naive GLM", "SIMEX", "MCEM")
 colnames(est.beta) = colnames(est.beta.se) <- c("(Intercept)", "SBP", "chol. level", 
                                                 "age", "smoke")
@@ -99,7 +98,7 @@ comp.time  # SIMEX and MCEM.
 
 ## Example 2: A GAM example taken from Ganguli _et al._ (2005).
 
-The Milan mortality air pollution data set. Here, we fit GAM models via the `mgcv` package where one covariate is error-contaminated.
+The Milan mortality air pollution data set. Here, we fit GAM models via the `mgcv` package where one covariate (daily total suspended particles measurements) is error-contaminated.
 
 ### Load data and `R`-packages.
 
@@ -107,10 +106,6 @@ The Milan mortality air pollution data set. Here, we fit GAM models via the `mgc
 suppressWarnings(suppressMessages(library(refitME)))
 
 set.seed(2020)
-
-epsilon <- 0.00001  # A set convergence threshold.
-
-B <- 50  # The number of Monte Carlo replication values.
 
 data(milan.mort)
 dat.air <- milan.mort
@@ -126,23 +121,17 @@ z1 <- (dat.air[, 1])
 z2 <- (dat.air[, 4])
 z3 <- (dat.air[, 5])
 w1 <- log(dat.air[, 9])
-W <- as.matrix(w1)
 dat <- data.frame(cbind(Y, z1, z2, z3, w1))
-
-sigma.sq.u <- 0.0915 # This gives a reliability ratio of 0.7.
-rel.rat <- round((1 - sigma.sq.u/var(dat$w1))*100, digits = 0)
 ```
-
-\clearpage
 
 ### Fit the naive model.
 
 ```{r, echo=TRUE}
-gam_naiv1 <- gam(Y ~ s(w1) + s(z1, k = 25) + s(z2) + s(z3), family = "poisson", data = dat)
+gam_naiv <- gam(Y ~ s(w1) + s(z1, k = 25) + s(z2) + s(z3), family = "poisson", data = dat)
 ```
 
 ```{r, echo=FALSE, fig.show='hide'}
-plot_gam_naiv <- plot(gam_naiv1, select = 1)
+plot_gam_naiv <- plot(gam_naiv, select = 1)
 ```
 
 ### Fit the MCEM model.
@@ -150,7 +139,14 @@ plot_gam_naiv <- plot(gam_naiv1, select = 1)
 Note this will take a fair while to run if `B` is large (consider decreasing `B` if you want a rough answer).
 
 ```{r, echo=TRUE}
-gam_MCEM1 <- refitME(gam_naiv1, sigma.sq.u, W, B)
+sigma.sq.u <- 0.0915 # This gives a reliability ratio of 0.7.
+rel.rat <- round((1 - sigma.sq.u/var(dat$w1))*100, digits = 0)
+
+W <- as.matrix(w1)
+
+B <- 5  # The number of Monte Carlo replication values.
+
+gam_MCEM1 <- refitME(gam_naiv, sigma.sq.u, W, B)
 ```
 
 ```{r fig1, fig.height=5.5, fig.pos='H', echo=FALSE, fig.cap="\\label{fig:fig1} *Plots of smooths against covariate. TSP (top left is the error contaminated variable).*"}
@@ -217,18 +213,20 @@ suppressWarnings(suppressMessages(library(refitME)))
 
 data(Corymbiaeximiadata)
 
-suppressMessages(attach(Corymbiaeximiadata))
+dat <- Corymbiaeximiadata
 ``` 
 
 ### Setup all variables.
 
 ```{r, echo=TRUE}
-Y <- Corymbiaeximiadata$Y.obs
+Y <- dat$Y.obs
 
-W <- Corymbiaeximiadata$MNT
+Rain <- dat$Rain
+D.Main <- dat$D.Main
+MNT <- W <- dat$MNT # Max. temp (measured with error).
 
-p.wt <- rep(1.e-6, length(Corymbiaeximiadata$Y.obs))
-p.wt[Corymbiaeximiadata$Y.obs == 0] <- 1
+p.wt <- rep(1.e-6, length(Y))
+p.wt[Y == 0] <- 1
 
 X <- cbind(rep(1, length(Y)), poly(W, degree = 2, raw = TRUE),
           poly(Rain, degree = 2, raw = TRUE),
@@ -236,15 +234,15 @@ X <- cbind(rep(1, length(Y)), poly(W, degree = 2, raw = TRUE),
 
 colnames(X) <- c("(Intercept)", "X1", "X2", "Z1", "Z2", "Z3", "Z4")
 
-dat <- data.frame(cbind(Y, p.wt, X))
-colnames(dat)[1:2] <- c("Y", "p.wt")
+dat1 <- data.frame(cbind(Y, p.wt, X))
+colnames(dat1)[1:2] <- c("Y", "p.wt")
 ```
 
 ### Fit the naive (PPM) model.
 
 ```{r, echo=TRUE}
 PPM_naiv1 <- glm(Y/p.wt ~ X1 + X2 + Z1 + Z2 + Z3 + Z4, family = "poisson",
- weights = p.wt, data = dat)
+ weights = p.wt, data = dat1)
 ```
 
 \clearpage
@@ -273,4 +271,42 @@ levelplot(preds ~ x + y, data = pred.dats, asp = "iso", ylab = "Latitude",
  main = list("", cex = 5), scales = list(y = list(draw = FALSE), 
  x = list(draw = FALSE), relation = "free"), 
  colorkey = list(labels = list(cex = 0.8)))
+```
+
+## Example 4: A `VGAM` example using the Prinia flaviventris capture-recapture data.
+
+We use the _Prinia flaviventris_ capture-recapture data set from Hwang, Huang and Wang (2007). Here, we fit na\"ive `vglm` and `vgam` capture-recapture models, and the MCEM capture-recapture model. For all models we used the `posbinomial()` family provided in `VGAM`.
+
+### Load data and `R`-packages.
+
+```{r, echo=TRUE}
+suppressWarnings(suppressMessages(library(refitME)))
+suppressMessages(library(VGAM))
+data(Priniadata)
+```
+
+### Setup all variables.
+
+```{r, echo=TRUE}
+tau <- 17   # No. of capture occasions.
+w1 <- Priniadata$w1
+```
+
+### Fit the na\"ive `vglm` and `vgam` capture-recapture models.
+
+```{r, echo=TRUE}
+CR_naiv1 <- vglm(cbind(cap, noncap) ~ w1,
+                 VGAM::posbinomial(omit.constant = TRUE, parallel = TRUE ~ w1),
+                 data = Priniadata, trace = FALSE)
+CR_naiv2 <- vgam(cbind(cap, noncap) ~ s(w1, df = 2),
+                 VGAM::posbinomial(omit.constant = TRUE, parallel = TRUE ~ s(w1, df = 2)),
+                 data = Priniadata, trace = FALSE)
+```
+
+### Fit the MCEM capture-recapture model.
+
+```{r, echo=TRUE}
+sigma.sq.u <- 0.37/var(w1) # ME variance.
+B <- 100
+CR_MCEM <- refitME(CR_naiv2, sigma.sq.u, B)
 ```

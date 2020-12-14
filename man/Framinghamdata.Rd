@@ -15,7 +15,7 @@ A data set that contains: 5 columns with 1,615 observations. The columns are def
 }
 }
 \source{
-See Carroll \emph{et al.} (2006) for full details of the data and study. Also, see \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial of an example that uses the data.
+See Carroll \emph{et al.} (2006) for full details on the data and study. Also, see \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial of an example that uses the data.
 }
 \usage{
 Framinghamdata
