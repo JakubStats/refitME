@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.21 (TeX Live 2020/W32TeX) (preloaded format=pdflatex 2020.12.2)  2 DEC 2020 11:45
+This is pdfTeX, Version 3.14159265-2.6-1.40.21 (TeX Live 2020/W32TeX) (preloaded format=pdflatex 2020.12.2)  14 DEC 2020 16:01
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -599,52 +599,52 @@ LaTeX Font Info:    Font shape `T1/lmtt/bx/n' in size <10> not available
 ftex.map}] [2
 
 ] [3]
-<refitME_tutorial_files/figure-latex/fig1-1.pdf, id=106, 469.755pt x 397.485pt>
+<refitME_tutorial_files/figure-latex/fig1-1.pdf, id=128, 469.755pt x 397.485pt>
 
 File: refitME_tutorial_files/figure-latex/fig1-1.pdf Graphic file (type pdf)
 <use refitME_tutorial_files/figure-latex/fig1-1.pdf>
 Package pdftex.def Info: refitME_tutorial_files/figure-latex/fig1-1.pdf  used o
-n input line 339.
+n input line 336.
 (pdftex.def)             Requested size: 443.57677pt x 375.33418pt.
-[4
-
-pdfTeX warning (ext4): destination with the same identifier (name{figure.1}) ha
-s been already used, duplicate ignored
+[4pdfTeX warning (ext4): destination with the same identifier (name{figure.1}) 
+has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   
-l.354 ...es.}}\label{load-data-and-r-packages.-2}}
+l.351 ...es.}}\label{load-data-and-r-packages.-2}}
                                                    <./refitME_tutorial_files/fi
 gure-latex/fig1-1.pdf>] [5]
-<refitME_tutorial_files/figure-latex/fig2-1.pdf, id=129, 469.755pt x 397.485pt>
+<refitME_tutorial_files/figure-latex/fig2-1.pdf, id=149, 469.755pt x 397.485pt>
 
 File: refitME_tutorial_files/figure-latex/fig2-1.pdf Graphic file (type pdf)
 <use refitME_tutorial_files/figure-latex/fig2-1.pdf>
 Package pdftex.def Info: refitME_tutorial_files/figure-latex/fig2-1.pdf  used o
-n input line 423.
+n input line 422.
 (pdftex.def)             Requested size: 443.57677pt x 375.33418pt.
+LaTeX Font Info:    Font shape `T1/lmtt/bx/n' in size <12> not available
+(Font)              Font shape `T1/lmtt/b/n' tried instead on input line 431.
 [6
 
 pdfTeX warning (ext4): destination with the same identifier (name{figure.2}) ha
 s been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   
-l.429 \end{document}
-                     <./refitME_tutorial_files/figure-latex/fig2-1.pdf>] (./ref
-itME_tutorial.aux)
+l.438 
+       <./refitME_tutorial_files/figure-latex/fig2-1.pdf>] [7] (./refitME_tutor
+ial.aux)
 Package rerunfilecheck Info: File `refitME_tutorial.out' has not changed.
-(rerunfilecheck)             Checksum: 72B95AED50B645D7388AA796BD1D02B6;4081.
+(rerunfilecheck)             Checksum: AA21C7A3417D485DF0D550358FDB0B56;5240.
 
 LaTeX Warning: There were multiply-defined labels.
 
  ) 
 Here is how much of TeX's memory you used:
- 11053 strings out of 481466
- 162171 string characters out of 5919921
- 451804 words of memory out of 5000000
- 27551 multiletter control sequences out of 15000+600000
- 572153 words of font info for 56 fonts, out of 8000000 for 9000
+ 11076 strings out of 481466
+ 162684 string characters out of 5919921
+ 452278 words of memory out of 5000000
+ 27563 multiletter control sequences out of 15000+600000
+ 572471 words of font info for 57 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
- 66i,6n,72p,599b,351s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 66i,6n,72p,524b,364s stack positions out of 5000i,500n,10000p,200000b,80000s
 {c:/Users/z3409479/AppData/Roaming/TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-e
 c.enc}<c:/Users/z3409479/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/
 lm/lmbx10.pfb><c:/Users/z3409479/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1
@@ -659,10 +659,10 @@ AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmtk10.pfb><c:/Users/z
 /Users/z3409479/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmtt12
 .pfb><c:/Users/z3409479/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/l
 m/lmtti10.pfb>
-Output written on refitME_tutorial.pdf (6 pages, 635347 bytes).
+Output written on refitME_tutorial.pdf (7 pages, 639554 bytes).
 PDF statistics:
- 191 PDF objects out of 1000 (max. 8388607)
- 166 compressed objects within 2 object streams
- 43 named destinations out of 1000 (max. 500000)
- 147 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 223 PDF objects out of 1000 (max. 8388607)
+ 197 compressed objects within 2 object streams
+ 54 named destinations out of 1000 (max. 500000)
+ 187 words of extra memory for PDF output out of 10000 (max. 10000000)
 
