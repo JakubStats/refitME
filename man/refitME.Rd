@@ -68,14 +68,14 @@ Y <- dat$Y.obs
 
 Rain <- dat$Rain
 D.Main <- dat$D.Main
-MNT <- W <- dat$MNT # Measured with error.
+MNT <- dat$MNT
 
 # PPM - using a Poisson GLM.
 
 p.wt <- rep(1.e-6, length(Y))
 p.wt[Y == 0] <- 1
 
-X <- cbind(rep(1, length(Y)), poly(W, degree = 2, raw = TRUE),
+X <- cbind(rep(1, length(Y)), poly(MNT, degree = 2, raw = TRUE),
           poly(Rain, degree = 2, raw = TRUE),
             poly(sqrt(D.Main), degree = 2, raw = TRUE))
 
@@ -91,9 +91,9 @@ PPM_naiv <- glm(Y/p.wt ~ X1 + X2 + Z1 + Z2 + Z3 + Z4, family = "poisson",
 
 sigma.sq.u <- 0.25
 
-B <- 50
+W <- MNT # Measured with error.
 
-PPM_MCEM <- refitME(PPM_naiv, sigma.sq.u, W, B)
+PPM_MCEM <- refitME(PPM_naiv, sigma.sq.u, W)
 
 coord.dat <- cbind(dat$X, dat$Y)
 

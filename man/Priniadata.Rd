@@ -3,7 +3,7 @@
 \docType{data}
 \name{Priniadata}
 \alias{Priniadata}
-\title{The yellow-bellied Prinia \emph{Prinia flaviventris} capture-recapture data.}
+\title{The yellow-bellied Prinia \emph{Prinia flaviventris} capture-recapture data}
 \format{
 A data set that contains: 3 columns with 164 observations. The columns are defined as follows:
 \describe{
@@ -13,7 +13,7 @@ A data set that contains: 3 columns with 164 observations. The columns are defin
 }
 }
 \source{
-See Huggins and Hwang (2010) for full details on the data and study.
+See Hwang, Huang and Wang (2007) for full details on the data and study.
 }
 \usage{
 Priniadata
@@ -27,6 +27,6 @@ Data set consisting of capture-recapture histories 164 uniquely captured birds a
 data(Priniadata)
 }
 \references{
-Huggins, R. M. and Hwang, W. H. (2010). A measurement error model for heterogeneous capture probabilities in mark-recapture experiments: An estimating equation approach. \emph{Journal of Agricultural, Biological, and Environmental Statistic}, \strong{15}, 198-208.
+Hwang, W. H., Huang, S. Y. H., and Wang, C. (2007). Effects of measurement error and conditional score estimation in capture--recapture models. \emph{Statistica Sinica}, \strong{17}, 301-316.
 }
 \keyword{datasets}

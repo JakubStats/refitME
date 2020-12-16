@@ -144,9 +144,7 @@ rel.rat <- round((1 - sigma.sq.u/var(dat$w1))*100, digits = 0)
 
 W <- as.matrix(w1)
 
-B <- 5  # The number of Monte Carlo replication values.
-
-gam_MCEM1 <- refitME(gam_naiv, sigma.sq.u, W, B)
+gam_MCEM1 <- refitME(gam_naiv, sigma.sq.u, W)
 ```
 
 ```{r fig1, fig.height=5.5, fig.pos='H', echo=FALSE, fig.cap="\\label{fig:fig1} *Plots of smooths against covariate. TSP (top left is the error contaminated variable).*"}
@@ -223,12 +221,12 @@ Y <- dat$Y.obs
 
 Rain <- dat$Rain
 D.Main <- dat$D.Main
-MNT <- W <- dat$MNT # Max. temp (measured with error).
+MNT <- dat$MNT
 
 p.wt <- rep(1.e-6, length(Y))
 p.wt[Y == 0] <- 1
 
-X <- cbind(rep(1, length(Y)), poly(W, degree = 2, raw = TRUE),
+X <- cbind(rep(1, length(Y)), poly(MNT, degree = 2, raw = TRUE),
           poly(Rain, degree = 2, raw = TRUE),
             poly(sqrt(D.Main), degree = 2, raw = TRUE))
 
@@ -250,11 +248,11 @@ PPM_naiv1 <- glm(Y/p.wt ~ X1 + X2 + Z1 + Z2 + Z3 + Z4, family = "poisson",
 ### Fit the MCEM PPM.
 
 ```{r, echo=TRUE}
-B <- 50
-
 sigma.sq.u <- 0.25
 
-PPM_MCEM1 <- refitME(PPM_naiv1, sigma.sq.u, W, B)
+W <- dat$MNT # Measured with error.
+
+PPM_MCEM1 <- refitME(PPM_naiv1, sigma.sq.u, W)
 ```
 
 ```{r fig2, fig.height=5.5, fig.pos='H', echo=FALSE, fig.cap="\\label{fig:fig1} *Plot of predicted presences of Corymbia eximia using presence-only data when fitting the MCEM model. Here the max temperature covariate is assumed to be error-contaminated.*"}

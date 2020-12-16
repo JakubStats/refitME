@@ -17,11 +17,9 @@ data(Framinghamdata)
 
 glm_naiv <- glm(Y ~ w1 + z1 + z2 + z3, x = TRUE, family = binomial, data = Framinghamdata)
 
-W <- as.matrix(Framinghamdata$w1) # Matrix of error-contaminated covariate.
-
 sigma.sq.u <- 0.01259/2 # Measurement error variance, obtained from Carroll et al. (2006) monograph.
 
-rel.rat <- (1 - sigma.sq.u/var(W))*100
+rel.rat <- (1 - sigma.sq.u/var(Framinghamdata$w1))*100
 
 rel.rat
 
@@ -36,6 +34,8 @@ t1 <- difftime(end, start, units = "secs")
 comp.time <- c(t1)
 
 start <- Sys.time()
+
+W <- as.matrix(Framinghamdata$w1) # Matrix of error-contaminated covariate.
 
 glm_MCEM <- refitME(glm_naiv, sigma.sq.u, W, B)
 
@@ -115,9 +115,7 @@ rel.rat
 
 W <- as.matrix(w1)
 
-B <- 50
-
-gam_MCEM <- refitME(gam_naiv, sigma.sq.u, W, B)
+gam_MCEM <- refitME(gam_naiv, sigma.sq.u, W)
 
 # Plots (examine all smooth terms against covariates).
 
@@ -190,7 +188,7 @@ dat <- Corymbiaeximiadata
 coord.dat <- cbind(dat$X, dat$Y)
 colnames(coord.dat) <- c("Longitude", "Latitude")
 
-scen_par <- 1.5
+scen_par <- 1
 
 Y <- dat$Y.obs
 
@@ -198,7 +196,7 @@ n <- length(Y)
 
 Rain <- dat$Rain
 D.Main <- dat$D.Main
-MNT <- W <- dat$MNT # Max. temp (measured with error).
+MNT <- dat$MNT
 
 # PPM - using a Poisson GLM.
 
@@ -206,7 +204,7 @@ p.wt <- rep(1.e-6, length(Y))
 p.wt[Y == 0] <- 1
 
 X <- cbind(rep(1, length(Y)),
-           poly(W, degree = 2, raw = TRUE),
+           poly(MNT, degree = 2, raw = TRUE),
            poly(Rain, degree = 2, raw = TRUE),
            poly(sqrt(D.Main), degree = 2, raw = TRUE))
 
@@ -231,17 +229,14 @@ PPM_naiv <- glm(Y/p.wt ~ X1 + X2 + Z1 + Z2 + Z3 + Z4, family = "poisson", weight
 #sigma.sq.u <- 0.5
 sigma.sq.u <- 1
 
+W <- MNT # Max. temp (measured with error).
 W.train <- W[train]
 W.test <- W[test]
 
 rel.rat <- (1 - sigma.sq.u/var(W.train))*100
 print(rel.rat)  # Express as a relative percentage (%).
 
-B <- 50
-
-start <- Sys.time()
-
-PPM_MCEM <- refitME(PPM_naiv, sigma.sq.u, W.train, B)
+PPM_MCEM <- refitME(PPM_naiv, sigma.sq.u, W.train)
 
 # Prediction on test and training data.
 
@@ -284,13 +279,6 @@ weighted.mean(coord.dat1[, 2], w = preds1)
 weighted.mean(coord.dat1[, 2], w = preds2)
 weighted.mean(coord.dat1[, 2], w = preds3)
 weighted.mean(coord.dat1[, 2], w = preds4)
-
-end <- Sys.time()
-
-t1 <- difftime(end, start, units = "mins")
-
-comp.time <- c(t1)
-comp.time
 
 #-----------------------------------------------------------------------------
 
