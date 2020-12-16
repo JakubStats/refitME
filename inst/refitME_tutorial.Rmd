@@ -273,7 +273,7 @@ levelplot(preds ~ x + y, data = pred.dats, asp = "iso", ylab = "Latitude",
 
 ## Example 4: A `VGAM` example using the Prinia flaviventris capture-recapture data.
 
-We use the _Prinia flaviventris_ capture-recapture data set from Hwang, Huang and Wang (2007). Here, we fit na\"ive `vglm` and `vgam` capture-recapture models, and the MCEM capture-recapture model. For all models we used the `posbinomial()` family provided in `VGAM`.
+We use the _Prinia flaviventris_ capture-recapture data set from Hwang, Huang and Wang (2007). Here, we fit naive `vglm` and `vgam` capture-recapture models, and the MCEM capture-recapture model. For all models we used the `posbinomial()` family provided in `VGAM`.
 
 ### Load data and `R`-packages.
 
@@ -290,7 +290,7 @@ tau <- 17   # No. of capture occasions.
 w1 <- Priniadata$w1
 ```
 
-### Fit the na\"ive `vglm` and `vgam` capture-recapture models.
+### Fit the naive `vglm` and `vgam` capture-recapture models.
 
 ```{r, echo=TRUE}
 CR_naiv1 <- vglm(cbind(cap, noncap) ~ w1,
