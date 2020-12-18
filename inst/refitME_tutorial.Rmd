@@ -134,6 +134,8 @@ gam_naiv <- gam(Y ~ s(w1) + s(z1, k = 25) + s(z2) + s(z3), family = "poisson", d
 plot_gam_naiv <- plot(gam_naiv, select = 1)
 ```
 
+\clearpage
+
 ### Fit the MCEM model.
 
 Note this will take a fair while to run if `B` is large (consider decreasing `B` if you want a rough answer).
@@ -199,6 +201,8 @@ for(i in 1:4) {
 title(main = "MCEM (Poisson GAM) fitted to the air pollution data.", outer = T, line = -2)
 par(op)
 ```
+
+\clearpage
 
 ## Example 3: A point-process model using presence-only data
 
