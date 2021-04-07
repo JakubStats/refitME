@@ -1,10 +1,10 @@
 Package: refitME
 Title: Monte Carlo Expectation Maximization - Measurement error modelling wrapper function
-Version: 0.1.0
+Version: 2.0.0
 Author: Jakub Stoklosa and David I. Warton
 Maintainer: Jakub Stoklosa <jakub.stoklosa@gmail.com>
 Description: Fits measurement error models using MCEM.
-Depends: R (>= 3.4.0), mvtnorm, MASS, sandwich, mgcv, VGAM, VGAMdata, expm, SemiPar, caret
+Depends: R (>= 4.0.0), MASS, SemiPar, VGAM, VGAMdata, caret, expm, mgcv, mvtnorm, sandwich
 License: GPL-2
 Encoding: UTF-8
 LazyData: true

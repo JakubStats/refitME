@@ -37,7 +37,7 @@ start <- Sys.time()
 
 W <- as.matrix(Framinghamdata$w1) # Matrix of error-contaminated covariate.
 
-glm_MCEM <- refitME(glm_naiv, sigma.sq.u, W, B)
+glm_MCEM <- refitME(glm_naiv, sigma.sq.u, B)
 
 end <- Sys.time()
 t2 <- difftime(end, start, units = "secs")
@@ -113,9 +113,9 @@ sigma.sq.u <- 0.09154219 # Rel. ratio of 70%.
 rel.rat <- (1 - sigma.sq.u/var(dat$w1))*100
 rel.rat
 
-W <- as.matrix(w1)
+B <- 3
 
-gam_MCEM <- refitME(gam_naiv, sigma.sq.u, W)
+gam_MCEM <- refitME(gam_naiv, sigma.sq.u, B)
 
 # Plots (examine all smooth terms against covariates).
 
@@ -170,7 +170,7 @@ title(main = "MCEM (Poisson GAM) fitted to the air pollution data.", outer = T, 
 
 par(op)
 
-#------------------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------
 
 # Example 3: A Point Process model (PPM) example using Corymbia eximia presence-only data.
 
@@ -190,9 +190,9 @@ colnames(coord.dat) <- c("Longitude", "Latitude")
 
 scen_par <- 1
 
-Y <- dat$Y.obs
+Y1 <- dat$Y.obs
 
-n <- length(Y)
+n <- length(Y1)
 
 Rain <- dat$Rain
 D.Main <- dat$D.Main
@@ -200,15 +200,13 @@ MNT <- dat$MNT
 
 # PPM - using a Poisson GLM.
 
-p.wt <- rep(1.e-6, length(Y))
-p.wt[Y == 0] <- 1
+p.wt <- rep(1.e-6, length(Y1))
+p.wt[Y1 == 0] <- 1
 
-X <- cbind(rep(1, length(Y)),
-           poly(MNT, degree = 2, raw = TRUE),
-           poly(Rain, degree = 2, raw = TRUE),
-           poly(sqrt(D.Main), degree = 2, raw = TRUE))
+Y <- Y1/p.wt
 
-colnames(X) <- c("(Intercept)", "X1", "X2", "Z1", "Z2", "Z3", "Z4")
+X <- cbind(MNT,Rain,sqrt(D.Main))
+colnames(X) <- c("w1", "z1", "z2")
 
 # Training/test data.
 
@@ -219,7 +217,7 @@ test <- (1:n)
 data.tr <- data.frame(cbind(Y[train], p.wt[train], X[train, ]))
 colnames(data.tr)[1:2] <- c("Y", "p.wt")
 
-PPM_naiv <- glm(Y/p.wt ~ X1 + X2 + Z1 + Z2 + Z3 + Z4, family = "poisson", weights = p.wt, data = data.tr)
+PPM_naiv <- glm(Y ~ poly(w1, degree = 2, raw = TRUE) + poly(z1, degree = 2, raw = TRUE) + poly(z2, degree = 2, raw = TRUE), family = "poisson", weights = p.wt, data = data.tr)
 
 # PPM - using MCEM model.
 
@@ -236,7 +234,7 @@ W.test <- W[test]
 rel.rat <- (1 - sigma.sq.u/var(W.train))*100
 print(rel.rat)  # Express as a relative percentage (%).
 
-PPM_MCEM <- refitME(PPM_naiv, sigma.sq.u, W.train)
+PPM_MCEM <- refitME(PPM_naiv, sigma.sq.u, B = 5)
 
 # Prediction on test and training data.
 
@@ -286,7 +284,7 @@ weighted.mean(coord.dat1[, 2], w = preds4)
 
 rm(list = ls())
 
-source(".../MCEM_prog.r")
+source("/Users/z3409479/Desktop/Post Doc/Algorithms and R-programs/MCEM Wrapper/MCEM_prog.r")
 
 library(refitME)
 library(VGAM)
@@ -305,7 +303,7 @@ y <- Priniadata$cap
 
 # Naive model.
 
-CR_naiv1 <- vglm(cbind(cap, noncap) ~ w1, posbinomial(omit.constant = TRUE, parallel = TRUE ~ w1), data = Priniadata, trace = FALSE)
+CR_naiv1 <- vglm(cbind(cap, noncap) ~ w1, VGAM::posbinomial(omit.constant = TRUE, parallel = TRUE ~ w1), data = Priniadata, trace = FALSE)
 
 # Conditional score (CS) model.
 
@@ -319,7 +317,7 @@ CS_beta.est.se <- sqrt(var.ests1)[1:2]
 
 # MCEM model.
 
-CR_naiv2 <- vgam(cbind(cap, noncap) ~ s(w1, df = 2), VGAM::posbinomial(omit.constant = TRUE, parallel = TRUE ~ s(w1, df = 2)), data = Priniadata, trace = FALSE)
+CR_naiv2 <- vgam(cbind(cap, noncap) ~ VGAM::s(w1, df = 2), VGAM::posbinomial(omit.constant = TRUE, parallel = TRUE ~ VGAM::s(w1, df = 2)), data = Priniadata, trace = FALSE)
 
 B <- 100
 

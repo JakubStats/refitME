@@ -11,7 +11,6 @@ MCEMfit_gam(
   mod,
   family,
   sigma.sq.u,
-  W = NULL,
   sigma.sq.e = 1,
   B = 50,
   epsilon = 1e-05,
@@ -22,15 +21,13 @@ MCEMfit_gam(
 )
 }
 \arguments{
-\item{mod}{: a \code{gam} object (this is the naive fitted model). Make sure the first \eqn{p} input predictor variables in the naive model are the selected error-contaminated variable (i.e., the first \eqn{p} predictors should correspond to the entries in \code{W}'s, as below).}
+\item{mod}{: a \code{gam} object (this is the naive fitted model). Make sure the first \eqn{p} input predictor variables entered in the naive model are the specified error-contaminated variables. These \eqn{p} predictors also need the measurement error variance to be specified in \code{sigma.sq.u}, see below.}
 
 \item{family}{: a specified family/distribution.}
 
-\item{sigma.sq.u}{: measurement error variance. A scalar if there is only one error-contaminated variable, otherwise this must be stored as a covariance matrix.}
+\item{sigma.sq.u}{: measurement error variance. A scalar if there is only one error-contaminated predictor variable, otherwise this must be stored as a covariance matrix.}
 
-\item{W}{: a matrix of error-contaminated covariates (if not specified, the default assumes all covariates in the naive fitted model are error-contaminated).}
-
-\item{sigma.sq.e}{: variance of the true covariate (\eqn{X}).}
+\item{sigma.sq.e}{: variance of the true predictor (\eqn{X}).}
 
 \item{B}{: the number of Monte Carlo replication values (default is set to 50).}
 
@@ -45,10 +42,10 @@ MCEMfit_gam(
 \item{...}{: further arguments passed to \code{gam}.}
 }
 \value{
-\code{MCEMfit_gam} returns the naive fitted model object where coefficient estimates and the covariance matrix have been replaced with the final MCEM model fit. Standard errors and the effective sample size (which diagnose how closely the proposal distribution matches the posterior, see equation (2) of Stoklosa, Hwang and Warton) have also been included as outputs.
+\code{MCEMfit_gam} returns the original naive fitted model object but coefficient estimates and the covariance matrix have been replaced with the final MCEM model fit. Standard errors and the effective sample size (which diagnose how closely the proposal distribution matches the posterior, see equation (2) of Stoklosa, Hwang and Warton) have also been included as outputs.
 }
 \description{
-Function for wrapping the MCEM algorithm on GAMs where covariates are subject to measurement error/error-in-variables.
+Function for wrapping the MCEM algorithm on GAMs where predictors are subject to measurement error/error-in-variables.
 }
 \examples{
 # A GAM example using the air pollution data set from the SemiPar package.
@@ -67,19 +64,17 @@ n <- length(Y)
 z1 <- (dat.air[, 1])
 z2 <- (dat.air[, 4])
 z3 <- (dat.air[, 5])
-w1 <- log(dat.air[, 9])
+w1 <- log(dat.air[, 9])  # The error-contaminated predictor (total suspended particles).
 
-dat <- data.frame(cbind(Y, z1, z2, z3, w1))
+dat <- data.frame(cbind(Y, w1, z1, z2, z3))
 
 gam_naiv <- gam(Y ~ s(w1) + s(z1, k = 25) + s(z2) + s(z3), family = "poisson", data = dat)
 
-sigma.sq.u <- 0.0915
-
-W <- as.matrix(w1)
+sigma.sq.u <- 0.0915 # Measurement error variance.
 
 B <- 5  # Consider increasing this if you want a more accurate answer.
 
-gam_MCEM <- refitME(gam_naiv, sigma.sq.u, W, B)
+gam_MCEM <- refitME(gam_naiv, sigma.sq.u, B)
 
 }
 \references{

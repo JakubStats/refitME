@@ -21,7 +21,7 @@ MCEMfit_CR(
 
 \item{sigma.sq.u}{: measurement error variance. A scalar if there is only one error-contaminated variable, otherwise this must be stored as a covariance matrix.}
 
-\item{sigma.sq.e}{: variance of the true covariate (\eqn{X}).}
+\item{sigma.sq.e}{: variance of the true predictor (\eqn{X}).}
 
 \item{B}{: the number of Monte Carlo replication values (default is set to 50).}
 
@@ -55,8 +55,8 @@ CR_naiv1 <- vglm(cbind(cap, noncap) ~ w1,
    VGAM::posbinomial(omit.constant = TRUE, parallel = TRUE ~ w1),
    data = Priniadata, trace = FALSE)
 
-CR_naiv2 <- vgam(cbind(cap, noncap) ~ s(w1, df = 2),
-   VGAM::posbinomial(omit.constant = TRUE, parallel = TRUE ~ s(w1, df = 2)),
+CR_naiv2 <- vgam(cbind(cap, noncap) ~ VGAM::s(w1, df = 2),
+   VGAM::posbinomial(omit.constant = TRUE, parallel = TRUE ~ VGAM::s(w1, df = 2)),
    data = Priniadata, trace = FALSE)
 
 sigma.sq.u <- 0.37/var(w1) # ME variance.

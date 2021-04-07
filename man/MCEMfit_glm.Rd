@@ -11,7 +11,6 @@ MCEMfit_glm(
   mod,
   family,
   sigma.sq.u,
-  W = NULL,
   sigma.sq.e = 1,
   B = 50,
   epsilon = 1e-05,
@@ -22,15 +21,13 @@ MCEMfit_glm(
 )
 }
 \arguments{
-\item{mod}{: a \code{lm/glm} object (this is the naive fitted model). Make sure the first \eqn{p} input predictor variables in the naive model are the selected error-contaminated variable (i.e., the first \eqn{p} predictors should correspond to the entries in \code{W}'s, as below).}
+\item{mod}{: a \code{lm/glm} object (this is the naive fitted model). Make sure the first \eqn{p} input predictor variables entered in the naive model are the specified error-contaminated variables. These \eqn{p} predictors also need the measurement error variance to be specified in \code{sigma.sq.u}, see below.}
 
 \item{family}{: a specified family/distribution.}
 
-\item{sigma.sq.u}{: measurement error variance. A scalar if there is only one error-contaminated variable, otherwise this must be stored as a covariance matrix.}
+\item{sigma.sq.u}{: measurement error (ME) variance. A scalar if there is only one error-contaminated predictor variable, otherwise this must be stored as a covariance matrix.}
 
-\item{W}{: a matrix of error-contaminated covariates (if not specified, the default assumes all covariates in the naive fitted model are error-contaminated).}
-
-\item{sigma.sq.e}{: variance of the true covariate (\eqn{X}).}
+\item{sigma.sq.e}{: variance of the true predictor (\eqn{X}).}
 
 \item{B}{: the number of Monte Carlo replication values (default is set to 50).}
 
@@ -48,7 +45,7 @@ MCEMfit_glm(
 \code{MCEMfit_glm} returns the naive fitted model object where coefficient estimates, the covariance matrix, fitted values, the log-likelihood, and residuals have been replaced with the final MCEM model fit. Standard errors and the effective sample size (which diagnose how closely the proposal distribution matches the posterior, see equation (2) of Stoklosa, Hwang and Warton) have also been included as outputs.
 }
 \description{
-Function for wrapping the MCEM algorithm on GLMs where covariates are subject to measurement error/error-in-variables.
+Function for wrapping the MCEM algorithm on GLMs where predictors are subject to measurement error/error-in-variables.
 }
 \examples{
 # A GLM example I - binary response data.
@@ -59,13 +56,13 @@ data(Framinghamdata)
 
 glm_naiv <- glm(Y ~ w1 + z1 + z2 + z3, x = TRUE, family = binomial, data = Framinghamdata)
 
-sigma.sq.u <- 0.01259/2 # ME variance, obtained from Carroll et al. (2006) monograph.
+# The error-contaminated predictor in this example is systolic blood pressure (w1).
 
-W <- as.matrix(Framinghamdata$w1) # Matrix of error-contaminated covariate.
+sigma.sq.u <- 0.01259/2 # ME variance, as obtained from Carroll et al. (2006) monograph.
 
 B <- 100  # The number of Monte Carlo replication values.
 
-glm_MCEM <- refitME(glm_naiv, sigma.sq.u, W, B)
+glm_MCEM <- refitME(glm_naiv, sigma.sq.u, B)
 
 
 
@@ -76,36 +73,36 @@ library(caret)
 data(Corymbiaeximiadata)
 dat <- Corymbiaeximiadata
 
-Y <- dat$Y.obs
+Y1 <- dat$Y.obs
 
 Rain <- dat$Rain
 D.Main <- dat$D.Main
-MNT <- dat$MNT
+MNT <- dat$MNT    # The error-contaminated predictor (max temperature).
 
 # PPM - using a Poisson GLM.
 
-p.wt <- rep(1.e-6, length(Y))
-p.wt[Y == 0] <- 1
+p.wt <- rep(1.e-6, length(Y1))
+p.wt[Y1 == 0] <- 1
 
-X <- cbind(rep(1, length(Y)), poly(MNT, degree = 2, raw = TRUE),
-          poly(Rain, degree = 2, raw = TRUE),
-            poly(sqrt(D.Main), degree = 2, raw = TRUE))
+Y <- Y1/p.wt
 
-colnames(X) <- c("(Intercept)", "X1", "X2", "Z1", "Z2", "Z3", "Z4")
+X <- cbind(MNT, Rain, sqrt(D.Main))
+
+colnames(X) <- c("w1", "z1", "z2")
 
 dat1 <- data.frame(cbind(Y, p.wt, X))
 colnames(dat1)[1:2] <- c("Y", "p.wt")
 
-PPM_naiv <- glm(Y/p.wt ~ X1 + X2 + Z1 + Z2 + Z3 + Z4, family = "poisson",
- weights = p.wt, data = dat1)
+PPM_naiv <- glm(Y ~ poly(w1, degree = 2, raw = TRUE) +
+                    poly(z1, degree = 2, raw = TRUE) +
+                    poly(z2, degree = 2, raw = TRUE),
+                    family = "poisson", weights = p.wt, data = dat1)
 
 # PPM - using MCEM model.
 
-sigma.sq.u <- 0.25
+sigma.sq.u <- 0.25  # Measurement error variance.
 
-W <- dat$MNT # Measured with error.
-
-PPM_MCEM <- refitME(PPM_naiv, sigma.sq.u, W)
+PPM_MCEM <- refitME(PPM_naiv, sigma.sq.u)
 
 coord.dat <- cbind(dat$X, dat$Y)
 
