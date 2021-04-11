@@ -234,7 +234,7 @@ W.test <- W[test]
 rel.rat <- (1 - sigma.sq.u/var(W.train))*100
 print(rel.rat)  # Express as a relative percentage (%).
 
-PPM_MCEM <- refitME(PPM_naiv, sigma.sq.u, B = 5)
+PPM_MCEM <- refitME(PPM_naiv, sigma.sq.u)
 
 # Prediction on test and training data.
 

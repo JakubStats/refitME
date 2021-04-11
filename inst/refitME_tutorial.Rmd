@@ -42,18 +42,17 @@ data(Framinghamdata)
 
 ### Fit the naive model.
 
-The first stored variable `w1` is the error contaminated variable used in the analysis.
+The first stored variable `w1` is the error contaminated predictor as used in the original Carroll _et al._ (2006) analysis.
 
 ```{r, echo=TRUE}
 glm_naiv <- glm(Y ~ w1 + z1 + z2 + z3, x = TRUE, family = binomial, 
                  data = Framinghamdata)
 ```
 
-### Setup all tuning parameters and variables.
+### Setup measurement error (ME) variance and all tuning parameters.
 
 ```{r, echo=TRUE}
-W <- as.matrix(Framinghamdata$w1) # Matrix of error-contaminated covariate.
-sigma.sq.u <- 0.01259/2 # ME variance, obtained from Carroll et al. (2006) monograph.
+sigma.sq.u <- 0.01259/2 # ME variance, as obtained from Carroll et al. (2006).
 B <- 100  # The number of Monte Carlo replication values/SIMEX simulations.
 ```
 
@@ -74,7 +73,7 @@ comp.time <- c(t1)
 
 ```{r, echo=TRUE}
 start <- Sys.time()
-glm_MCEM <- refitME(glm_naiv, sigma.sq.u, W, B)
+glm_MCEM <- refitME(glm_naiv, sigma.sq.u, B)
 end <- Sys.time()
 t2 <- difftime(end, start, units = "secs")
 comp.time <- c(comp.time, t2)
@@ -98,7 +97,7 @@ comp.time  # SIMEX and MCEM.
 
 ## Example 2: A GAM example taken from Ganguli _et al._ (2005).
 
-The Milan mortality air pollution data set. Here, we fit GAM models via the `mgcv` package where one covariate (daily total suspended particles measurements) is error-contaminated.
+The Milan mortality air pollution data set. Here, we fit GAM models via the `mgcv` package where one predictor (daily total suspended particles measurements) is error-contaminated.
 
 ### Load data and `R`-packages.
 
@@ -120,8 +119,8 @@ n <- length(Y)
 z1 <- (dat.air[, 1])
 z2 <- (dat.air[, 4])
 z3 <- (dat.air[, 5])
-w1 <- log(dat.air[, 9])
-dat <- data.frame(cbind(Y, z1, z2, z3, w1))
+w1 <- log(dat.air[, 9]) # The error-contaminated predictor (total suspended particles).
+dat <- data.frame(cbind(Y, w1, z1, z2, z3))
 ```
 
 ### Fit the naive model.
@@ -144,12 +143,10 @@ Note this will take a fair while to run if `B` is large (consider decreasing `B`
 sigma.sq.u <- 0.0915 # This gives a reliability ratio of 0.7.
 rel.rat <- round((1 - sigma.sq.u/var(dat$w1))*100, digits = 0)
 
-W <- as.matrix(w1)
-
-gam_MCEM1 <- refitME(gam_naiv, sigma.sq.u, W)
+gam_MCEM1 <- refitME(gam_naiv, sigma.sq.u)
 ```
 
-```{r fig1, fig.height=5.5, fig.pos='H', echo=FALSE, fig.cap="\\label{fig:fig1} *Plots of smooths against covariate. TSP (top left is the error contaminated variable).*"}
+```{r fig1, fig.height=5.5, fig.pos='H', echo=FALSE, fig.cap="\\label{fig:fig1} *Plots of smooths against each predictor. TSP (top left is the error contaminated variable).*"}
 xlab.names <- c("log(TSP)", "Day", "Temp", "Humidity")
 
 op <- par(mfrow = c(2, 2), las = 1)
@@ -221,14 +218,16 @@ dat <- Corymbiaeximiadata
 ### Setup all variables.
 
 ```{r, echo=TRUE}
-Y <- dat$Y.obs
+Y1 <- dat$Y.obs
 
 Rain <- dat$Rain
 D.Main <- dat$D.Main
 MNT <- dat$MNT
 
-p.wt <- rep(1.e-6, length(Y))
-p.wt[Y == 0] <- 1
+p.wt <- rep(1.e-6, length(Y1))
+p.wt[Y1 == 0] <- 1
+
+Y <- Y1/p.wt
 
 X <- cbind(rep(1, length(Y)), poly(MNT, degree = 2, raw = TRUE),
           poly(Rain, degree = 2, raw = TRUE),
@@ -243,7 +242,7 @@ colnames(dat1)[1:2] <- c("Y", "p.wt")
 ### Fit the naive (PPM) model.
 
 ```{r, echo=TRUE}
-PPM_naiv1 <- glm(Y/p.wt ~ X1 + X2 + Z1 + Z2 + Z3 + Z4, family = "poisson",
+PPM_naiv1 <- glm(Y ~ X1 + X2 + Z1 + Z2 + Z3 + Z4, family = "poisson",
  weights = p.wt, data = dat1)
 ```
 
@@ -254,12 +253,10 @@ PPM_naiv1 <- glm(Y/p.wt ~ X1 + X2 + Z1 + Z2 + Z3 + Z4, family = "poisson",
 ```{r, echo=TRUE}
 sigma.sq.u <- 0.25
 
-W <- dat$MNT # Measured with error.
-
-PPM_MCEM1 <- refitME(PPM_naiv1, sigma.sq.u, W)
+PPM_MCEM1 <- refitME(PPM_naiv1, sigma.sq.u)
 ```
 
-```{r fig2, fig.height=5.5, fig.pos='H', echo=FALSE, fig.cap="\\label{fig:fig1} *Plot of predicted presences of Corymbia eximia using presence-only data when fitting the MCEM model. Here the max temperature covariate is assumed to be error-contaminated.*"}
+```{r fig2, fig.height=5.5, fig.pos='H', echo=FALSE, fig.cap="\\label{fig:fig1} *Plot of predicted presences of Corymbia eximia using presence-only data when fitting the MCEM model. Here the max temperature predictor is assumed to be error-contaminated.*"}
 coord.dat <- cbind(Corymbiaeximiadata$X, Corymbiaeximiadata$Y)
 
 colnames(coord.dat) <- c("Longitude", "Latitude")
@@ -298,17 +295,19 @@ w1 <- Priniadata$w1
 
 ```{r, echo=TRUE}
 CR_naiv1 <- vglm(cbind(cap, noncap) ~ w1,
-                 VGAM::posbinomial(omit.constant = TRUE, parallel = TRUE ~ w1),
+                 VGAM::posbinomial(omit.constant = TRUE, 
+                                   parallel = TRUE ~ w1),
                  data = Priniadata, trace = FALSE)
-CR_naiv2 <- vgam(cbind(cap, noncap) ~ s(w1, df = 2),
-                 VGAM::posbinomial(omit.constant = TRUE, parallel = TRUE ~ s(w1, df = 2)),
+CR_naiv2 <- vgam(cbind(cap, noncap) ~ VGAM::s(w1, df = 2),
+                 VGAM::posbinomial(omit.constant = TRUE, 
+                                   parallel = TRUE ~ VGAM::s(w1, df = 2)),
                  data = Priniadata, trace = FALSE)
 ```
 
 ### Fit the MCEM capture-recapture model.
 
 ```{r, echo=TRUE}
-sigma.sq.u <- 0.37/var(w1) # ME variance.
+sigma.sq.u <- 0.37/var(w1) # Measurement error variance.
 B <- 100
 CR_MCEM <- refitME(CR_naiv2, sigma.sq.u, B)
 ```

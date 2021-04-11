@@ -809,7 +809,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
     sand1[is.nan(sand1)] <- 1
     SS_1 <- t(sandwich::estfun(mod)*B)%*%sand1
     u.bar <- solve(stats::vcov(mod)*B)
-    beta.est.se2 <- sqrt(diag(solve(u.bar - SS_1/B^2 + S_1/B^2)))
+    beta.est.se2 <- sqrt.na(diag(solve(u.bar - SS_1/B^2 + S_1/B^2)))
     AA <- expm::sqrtm((u.bar - SS_1/B^2 + S_1/B^2)*(stats::summary.lm(mod_n)$sigma)^2)
   }
 
@@ -818,7 +818,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
     sand1[is.nan(sand1)] <- 1
     SS_1 <- t(sandwich::estfun(mod))%*%sand1
     u.bar <- solve(stats::vcov(mod))
-    beta.est.se2 <- sqrt(diag(solve(u.bar - SS_1 + S_1)))
+    beta.est.se2 <- sqrt.na(diag(solve(u.bar - SS_1 + S_1)))
     AA <- expm::sqrtm((u.bar - SS_1 + S_1)*stats::summary.glm(mod_n)$dispersion)
   }
 
@@ -1198,7 +1198,7 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
     mod$Vp <- solve(u.bar - SS_1 + S_1)
   }
 
-  beta.est.se2 <- sqrt(diag(mod$Vp))
+  beta.est.se2 <- sqrt.na(diag(mod$Vp))
 
   if (length(which(is.nan(beta.est.se2))) > 0) beta.est.se2 <- c(rep(NA, K1))
 
@@ -1643,7 +1643,7 @@ MCEMfit_gen <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
       sand1[is.nan(sand1)] <- 1
       SS_1 <- t(sandwich::estfun(mod)*B)%*%sand1
       u.bar <- solve(stats::vcov(mod)*B)
-      beta.est.se2 <- sqrt(diag(solve(u.bar - SS_1/B^2 + S_1/B^2)))
+      beta.est.se2 <- sqrt.na(diag(solve(u.bar - SS_1/B^2 + S_1/B^2)))
     }
 
     if (family != "gaussian") {
@@ -1651,7 +1651,7 @@ MCEMfit_gen <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
       sand1[is.nan(sand1)] <- 1
       SS_1 <- t(sandwich::estfun(mod))%*%sand1
       u.bar <- solve(stats::vcov(mod))
-      beta.est.se2 <- sqrt(diag(solve(u.bar - SS_1 + S_1)))
+      beta.est.se2 <- sqrt.na(diag(solve(u.bar - SS_1 + S_1)))
     }
 
     if (length(which(is.nan(beta.est.se2))) > 0) beta.est.se2 <- c(rep(NA, K1))
@@ -1795,10 +1795,10 @@ MCEMfit_CR <- function(mod, sigma.sq.u, sigma.sq.e = 1, B = 100, epsilon = 0.000
 
     weights1 <- as.vector(bigW)/sumW
 
-    if (p1 == 1) mod <- VGAM::vglm(cbind(cap, noncap) ~ x1, VGAM::posbinomial(omit.constant = TRUE, parallel = TRUE ~ x1), data = CR_dat, trace = F, weights = weights1)
-    if (p1 == 2) mod <- VGAM::vglm(cbind(cap, noncap) ~ x1 + I(x1^2), VGAM::posbinomial(omit.constant = TRUE, parallel = TRUE ~ x1 + I(x1^2)), data = CR_dat, trace = F, weights = as.vector(bigW)/sumW)
-    if (p1 == 3) mod <- VGAM::vglm(cbind(cap, noncap) ~ x1 + I(x1^2) + I(x1^3), VGAM::posbinomial(omit.constant = TRUE, parallel = TRUE ~ x1 + I(x1^2)), data = CR_dat, trace = F, weights = as.vector(bigW)/sumW)
-    if (p1 == "spline") mod <- VGAM::vgam(cbind(cap, noncap) ~ VGAM::s(x1, df = 2), VGAM::posbinomial(omit.constant = TRUE, parallel = TRUE ~ VGAM::s(x1, df = 2)), data = CR_dat, trace = F, weights = as.vector(bigW)/sumW)
+    if (p1 == 1) mod <- suppressWarnings(VGAM::vglm(cbind(cap, noncap) ~ x1, VGAM::posbinomial(omit.constant = TRUE, parallel = TRUE ~ x1), data = CR_dat, trace = F, weights = weights1))
+    if (p1 == 2) mod <- suppressWarnings(VGAM::vglm(cbind(cap, noncap) ~ x1 + I(x1^2), VGAM::posbinomial(omit.constant = TRUE, parallel = TRUE ~ x1 + I(x1^2)), data = CR_dat, trace = F, weights = as.vector(bigW)/sumW))
+    if (p1 == 3) mod <- suppressWarnings(VGAM::vglm(cbind(cap, noncap) ~ x1 + I(x1^2) + I(x1^3), VGAM::posbinomial(omit.constant = TRUE, parallel = TRUE ~ x1 + I(x1^2)), data = CR_dat, trace = F, weights = as.vector(bigW)/sumW))
+    if (p1 == "spline") mod <- suppressWarnings(VGAM::vgam(cbind(cap, noncap) ~ VGAM::s(x1, df = 2), VGAM::posbinomial(omit.constant = TRUE, parallel = TRUE ~ VGAM::s(x1, df = 2)), data = CR_dat, trace = F, weights = as.vector(bigW)/sumW))
 
     beta.update <- VGAM::coef(mod)
     if (p1 == 1 | p1 == 2 | p1 == 3) muPred <- 1/(1 + exp(-VGAM::predictvglm(mod, type = "link")))
@@ -1832,7 +1832,7 @@ MCEMfit_CR <- function(mod, sigma.sq.u, sigma.sq.e = 1, B = 100, epsilon = 0.000
     mu.e1 <- mu.e1.update
   }
 
-  beta.est.se1 <- sqrt(diag(VGAM::vcov(mod))) # Naive SE estimator.
+  beta.est.se1 <- sqrt.na(diag(VGAM::vcov(mod))) # Naive SE estimator.
 
   sumW <- apply(bigW, 1, sum, na.rm = T)
   weights1 <- as.vector(bigW)/sumW
@@ -1884,7 +1884,7 @@ MCEMfit_CR <- function(mod, sigma.sq.u, sigma.sq.e = 1, B = 100, epsilon = 0.000
   }
 
   u.bar <- solve(VGAM::vcov(mod))
-  beta.est.se <- sqrt(diag(solve(u.bar - SS_1 + S_1)))
+  beta.est.se <- sqrt.na(diag(solve(u.bar - SS_1 + S_1)))
 
   if (length(which(is.nan(beta.est.se))) > 0) beta.est.se2 <- c(rep(NA, K1))
 
@@ -1925,6 +1925,22 @@ wt.var <- function(x, w) {
   xbar <- stats::weighted.mean(x, w = wt) # Get the weighted mean.
 
   return(sum(wt*(x - xbar)^2)*(sum(wt)/(sum(wt)^2 - sum(wt^2)))) # Return the variance.
+}
+
+#' Function that replaces NA with zero for a matrix
+#'
+#' This function replaces NA with zero for a matrix.
+#' @name sqrt.na
+#' @param x : a matrix
+#' @return \code{sqrt.na} returns a matrix.
+#' @author Jakub Stoklosa
+#'
+sqrt.na <- function(x) {
+  id <- (x > 0) & (is.na(x) == F)
+  sx <- rep(0, length(x))
+  if (length(dim(x)) == 2) sx <- matrix(sx, dim(x))
+  sx[id] <- sqrt(x[id])
+  sx
 }
 
 #' An ANOVA function for fitted \code{refitME} objects
