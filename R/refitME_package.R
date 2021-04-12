@@ -152,6 +152,7 @@
 #'
 #' library(refitME)
 #' library(SemiPar)
+#' library(mgcv)
 #'
 #' data(milan.mort)
 #'
@@ -868,6 +869,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
 #'
 #' library(refitME)
 #' library(SemiPar)
+#' library(mgcv)
 #'
 #' data(milan.mort)
 #'

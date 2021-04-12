@@ -52,6 +52,7 @@ Function for wrapping the MCEM algorithm on GAMs where predictors are subject to
 
 library(refitME)
 library(SemiPar)
+library(mgcv)
 
 data(milan.mort)
 

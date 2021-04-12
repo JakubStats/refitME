@@ -106,6 +106,7 @@ levelplot(preds ~ x + y, data = pred.dats, asp = "iso", ylab = "Latitude",
 
 library(refitME)
 library(SemiPar)
+library(mgcv)
 
 data(milan.mort)
 
