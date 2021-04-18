@@ -53,10 +53,11 @@ Function for wrapping the MCEM algorithm on GAMs where predictors are subject to
 library(refitME)
 library(SemiPar)
 library(mgcv)
+library(dplyr)
 
 data(milan.mort)
 
-dat.air <- milan.mort
+dat.air <- sample_n(milan.mort, 100) # Takes a random sample of size 100.
 
 Y <- dat.air[, 6]  # Mortality counts.
 
@@ -69,11 +70,11 @@ w1 <- log(dat.air[, 9])  # The error-contaminated predictor (total suspended par
 
 dat <- data.frame(cbind(Y, w1, z1, z2, z3))
 
-gam_naiv <- gam(Y ~ s(w1) + s(z1, k = 25) + s(z2) + s(z3), family = "poisson", data = dat)
+gam_naiv <- gam(Y ~ s(w1), family = "poisson", data = dat)
 
 sigma.sq.u <- 0.0915 # Measurement error variance.
 
-B <- 5  # Consider increasing this if you want a more accurate answer.
+B <- 10  # Consider increasing this if you want a more accurate answer.
 
 gam_MCEM <- refitME(gam_naiv, sigma.sq.u, B)
 
@@ -81,7 +82,7 @@ gam_MCEM <- refitME(gam_naiv, sigma.sq.u, B)
 \references{
 Ganguli, B, Staudenmayer, J., and Wand, M. P. (2005). Additive models with predictors subject to measurement error. \emph{Australian & New Zealand Journal of Statistics}, \strong{47}, 193–202.
 
-Wand, M. P. (2018). \pkg{SemiPar}: Semiparametic Regression. \proglang{R} package version 1.0-4.2., URL \url{https: //CRAN.R-project.org/package=SemiPar}.
+Wand, M. P. (2018). \pkg{SemiPar}: Semiparametic Regression. \proglang{R} package version 1.0-4.2., URL \url{https://CRAN.R-project.org/package=SemiPar}.
 
 Stoklosa, J., Hwang, W-H., and Warton, D.I. \pkg{refitME}: Measurement Error Modelling using Monte Carlo Expectation Maximization in \proglang{R}.
 }

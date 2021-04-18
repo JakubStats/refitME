@@ -97,12 +97,14 @@ comp.time  # SIMEX and MCEM.
 
 ## Example 2: A GAM example taken from Ganguli _et al._ (2005).
 
-The Milan mortality air pollution data set. Here, we fit GAM models via the `mgcv` package where one predictor (daily total suspended particles measurements) is error-contaminated.
+The Milan mortality air pollution data set is part of the `SemiPar` package. Here, we fit GAM models via the `mgcv` package where one predictor (daily total suspended particles measurements) is error-contaminated.
 
 ### Load data and `R`-packages.
 
 ```{r, echo=TRUE}
 suppressWarnings(suppressMessages(library(refitME)))
+suppressWarnings(suppressMessages(library(SemiPar)))
+suppressWarnings(suppressMessages(library(mgcv)))
 
 set.seed(2020)
 
@@ -209,6 +211,7 @@ We use the _Corymbia eximia_ presence-only data set from Renner and Warton (2013
 
 ```{r, echo=TRUE}
 suppressWarnings(suppressMessages(library(refitME)))
+suppressWarnings(suppressMessages(library(caret)))
 
 data(Corymbiaeximiadata)
 

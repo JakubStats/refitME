@@ -35,7 +35,7 @@ comp.time <- c(t1)
 
 start <- Sys.time()
 
-W <- as.matrix(Framinghamdata$w1) # Matrix of error-contaminated covariate.
+W <- as.matrix(Framinghamdata$w1) # Matrix of error-contaminated covariates.
 
 glm_MCEM <- refitME(glm_naiv, sigma.sq.u, B)
 

@@ -70,8 +70,8 @@
 #' @author Jakub Stoklosa, Wen-Han Hwang and David I. Warton.
 #' @references Carroll, R. J., Ruppert, D., Stefanski, L. A., and Crainiceanu, C. M. (2006). \emph{Measurement Error in Nonlinear Models: A Modern Perspective.} 2nd Ed. London: Chapman & Hall/CRC.
 #' @references Stoklosa, J., Hwang, W-H., and Warton, D.I. \pkg{refitME}: Measurement Error Modelling using Monte Carlo Expectation Maximization in \proglang{R}.
-#' @import mvtnorm MASS mgcv sandwich VGAM expm caret
-#' @importFrom stats Gamma getCall
+#' @import mvtnorm MASS mgcv sandwich expm caret
+#' @importFrom stats Gamma
 #' @export
 #' @seealso \code{\link{MCEMfit_glm}} and \code{\link{MCEMfit_gam}}
 #' @source See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
@@ -87,136 +87,23 @@
 #'
 #' sigma.sq.u <- 0.01259/2 # ME variance, as obtained from Carroll et al. (2006) monograph.
 #'
-#' B <- 100  # The number of Monte Carlo replication values/SIMEX simulations.
+#' B <- 50  # The number of Monte Carlo replication values.
 #'
 #' glm_MCEM <- refitME(glm_naiv, sigma.sq.u, B)
 #'
-#'
-#'
-#' # A GLM example II - presence-only data using a point-process model.
-#'
-#' library(caret)
-#'
-#' data(Corymbiaeximiadata)
-#' dat <- Corymbiaeximiadata
-#'
-#' Y1 <- dat$Y.obs
-#'
-#' Rain <- dat$Rain
-#' D.Main <- dat$D.Main
-#' MNT <- dat$MNT  # The error-contaminated predictor (max temperature).
-#'
-#' # PPM - using a Poisson GLM.
-#'
-#' p.wt <- rep(1.e-6, length(Y1))
-#' p.wt[Y1 == 0] <- 1
-#'
-#'Y <- Y1/p.wt
-#'
-#' X <- cbind(MNT, Rain, sqrt(D.Main))
-#'
-#' colnames(X) <- c("w1", "z1", "z2")
-#'
-#' dat1 <- data.frame(cbind(Y, p.wt, X))
-#' colnames(dat1)[1:2] <- c("Y", "p.wt")
-#'
-#' PPM_naiv <- glm(Y ~ poly(w1, degree = 2, raw = TRUE) +
-#'                     poly(z1, degree = 2, raw = TRUE) +
-#'                     poly(z2, degree = 2, raw = TRUE),
-#'                     family = "poisson", weights = p.wt, data = dat1)
-#'
-#' # PPM - using MCEM model.
-#'
-#' sigma.sq.u <- 0.25  # Measurement error variance.
-#'
-#' PPM_MCEM <- refitME(PPM_naiv, sigma.sq.u)
-#'
-#' coord.dat <- cbind(dat$X, dat$Y)
-#'
-#' colnames(coord.dat) <- c("Longitude", "Latitude")
-#'
-#' pred.dats <- as.data.frame(cbind(coord.dat[, 1], coord.dat[, 2],
-#'   PPM_MCEM$fitted.values))
-#'
-#' colnames(pred.dats) <- c("x", "y", "preds")
-#'
-#' levelplot(preds ~ x + y, data = pred.dats, asp = "iso", ylab = "Latitude",
-#'   xlab = "Longitude", col.regions = heat.colors(1024)[900:1], cuts = 900,
-#'   main = list("", cex = 5), scales = list(y = list(draw = FALSE),
-#'   x = list(draw = FALSE), relation = "free"),
-#'   colorkey = list(labels = list(cex = 0.8)))
-#'
-#'
-#'
-#' # A GAM example using the air pollution data set from the SemiPar package.
-#'
-#' library(refitME)
-#' library(SemiPar)
-#' library(mgcv)
-#'
-#' data(milan.mort)
-#'
-#' dat.air <- milan.mort
-#'
-#' Y <- dat.air[, 6]  # Mortality counts.
-#'
-#' n <- length(Y)
-#'
-#' z1 <- (dat.air[, 1])
-#' z2 <- (dat.air[, 4])
-#' z3 <- (dat.air[, 5])
-#' w1 <- log(dat.air[, 9])  # The error-contaminated predictor (total suspended particles).
-#'
-#' dat <- data.frame(cbind(Y, w1, z1, z2, z3))
-#'
-#' gam_naiv <- gam(Y ~ s(w1) + s(z1, k = 25) + s(z2) + s(z3),
-#'    family = "poisson", data = dat)
-#'
-#' sigma.sq.u <- 0.0915 # Measurement error variance.
-#'
-#' B <- 5  # Consider increasing this if you want a more accurate answer.
-#'
-#' gam_MCEM <- refitME(gam_naiv, sigma.sq.u, B)
-#' plot(gam_MCEM)
-#'
-#'
-#'
-#' # A VGAM example using the Prinia flaviventris capture-recapture data.
-#'
-#' library(refitME)
-#' library(VGAM)
-#'
-#' data(Priniadata)
-#'
-#' tau <- 17   # No. of capture occasions.
-#' w1 <- Priniadata$w1
-#'
-#' CR_naiv1 <- vglm(cbind(cap, noncap) ~ w1,
-#'    VGAM::posbinomial(omit.constant = TRUE, parallel = TRUE ~ w1),
-#'    data = Priniadata, trace = FALSE)
-#'
-#' CR_naiv2 <- vgam(cbind(cap, noncap) ~ VGAM::s(w1, df = 2),
-#'    VGAM::posbinomial(omit.constant = TRUE, parallel = TRUE ~ VGAM::s(w1, df = 2)),
-#'    data = Priniadata, trace = FALSE)
-#'
-#' sigma.sq.u <- 0.37/var(w1) # Measurement error variance.
-#'
-#' B <- 100
-#'
-#' CR_MCEM <- refitME(CR_naiv2, sigma.sq.u, B)
 refitME <- function(mod, sigma.sq.u, B = 50, epsilon = 0.00001, silent = FALSE, ...) {
   if (!isS4(mod)) {
-    if (formula(mod$model)[-2] == ~1) stop("The fitted naive model is an intercept-only model. Please specify/include the error-contaminated predictor/covariate in your model fit.", call. = TRUE)
+    if (stats::formula(mod$model)[-2] == ~1) stop("The fitted naive model is an intercept-only model. Please specify/include the error-contaminated predictor/covariate in your model fit.", call. = TRUE)
 
-    if (formula(mod$model)[-2] != ~1) {
+    if (stats::formula(mod$model)[-2] != ~1) {
       if (is.matrix(sigma.sq.u) == FALSE) {
 
-        n <- dim(model.frame(mod))[1]
+        n <- dim(stats::model.frame(mod))[1]
 
-        W1 <- as.data.frame(model.frame(mod)[, -1])[1]
+        W1 <- as.data.frame(stats::model.frame(mod)[, -1])[1]
 
         if (dim(as.matrix(W1))[2] != 1) {
-          if (class(model.frame(mod)[, -1][, 1])[1] == "poly") W1 <- W1[, 1][, 1]
+          if (class(stats::model.frame(mod)[, -1][, 1])[1] == "poly") W1 <- W1[, 1][, 1]
         }
 
         message("One specified error-contaminated predictor/covariate.")
@@ -282,7 +169,7 @@ refitME <- function(mod, sigma.sq.u, B = 50, epsilon = 0.00001, silent = FALSE, 
 #' @references Carroll, R. J., Ruppert, D., Stefanski, L. A., and Crainiceanu, C. M. (2006). \emph{Measurement Error in Nonlinear Models: A Modern Perspective.} 2nd Ed. London: Chapman & Hall/CRC.
 #' @references Stoklosa, J., Hwang, W-H., and Warton, D.I. \pkg{refitME}: Measurement Error Modelling using Monte Carlo Expectation Maximization in \proglang{R}.
 #' @import mvtnorm MASS mgcv sandwich expm caret
-#' @importFrom stats Gamma getCall
+#' @importFrom stats Gamma
 #' @export
 #' @seealso \code{\link{MCEMfit_gam}}
 #' @source See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
@@ -296,66 +183,11 @@ refitME <- function(mod, sigma.sq.u, B = 50, epsilon = 0.00001, silent = FALSE, 
 #'
 #' # The error-contaminated predictor in this example is systolic blood pressure (w1).
 #'
-#' sigma.sq.u <- 0.01259/2 # ME variance, as obtained from Carroll et al. (2006) monograph.
+#' sigma.sq.u <- 0.01259/2  # ME variance, as obtained from Carroll et al. (2006) monograph.
 #'
-#' B <- 100  # The number of Monte Carlo replication values.
+#' B <- 50 # The number of Monte Carlo replication values.
 #'
 #' glm_MCEM <- refitME(glm_naiv, sigma.sq.u, B)
-#'
-#'
-#'
-#' # A GLM example II - presence-only data using a point-process model.
-#'
-#' library(caret)
-#'
-#' data(Corymbiaeximiadata)
-#' dat <- Corymbiaeximiadata
-#'
-#' Y1 <- dat$Y.obs
-#'
-#' Rain <- dat$Rain
-#' D.Main <- dat$D.Main
-#' MNT <- dat$MNT    # The error-contaminated predictor (max temperature).
-#'
-#' # PPM - using a Poisson GLM.
-#'
-#' p.wt <- rep(1.e-6, length(Y1))
-#' p.wt[Y1 == 0] <- 1
-#'
-#' Y <- Y1/p.wt
-#'
-#' X <- cbind(MNT, Rain, sqrt(D.Main))
-#'
-#' colnames(X) <- c("w1", "z1", "z2")
-#'
-#' dat1 <- data.frame(cbind(Y, p.wt, X))
-#' colnames(dat1)[1:2] <- c("Y", "p.wt")
-#'
-#' PPM_naiv <- glm(Y ~ poly(w1, degree = 2, raw = TRUE) +
-#'                     poly(z1, degree = 2, raw = TRUE) +
-#'                     poly(z2, degree = 2, raw = TRUE),
-#'                     family = "poisson", weights = p.wt, data = dat1)
-#'
-#' # PPM - using MCEM model.
-#'
-#' sigma.sq.u <- 0.25  # Measurement error variance.
-#'
-#' PPM_MCEM <- refitME(PPM_naiv, sigma.sq.u)
-#'
-#' coord.dat <- cbind(dat$X, dat$Y)
-#'
-#' colnames(coord.dat) <- c("Longitude", "Latitude")
-#'
-#' pred.dats <- as.data.frame(cbind(coord.dat[, 1], coord.dat[, 2],
-#'   PPM_MCEM$fitted.values))
-#'
-#' colnames(pred.dats) <- c("x", "y", "preds")
-#'
-#' levelplot(preds ~ x + y, data = pred.dats, asp = "iso", ylab = "Latitude",
-#'   xlab = "Longitude", col.regions = heat.colors(1024)[900:1], cuts = 900,
-#'   main = list("", cex = 5), scales = list(y = list(draw = FALSE),
-#'   x = list(draw = FALSE), relation = "free"),
-#'   colorkey = list(labels = list(cex = 0.8)))
 #'
 MCEMfit_glm <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon = 0.00001, silent = FALSE, theta.est = 1, shape.est = 1, ...) {
 
@@ -364,19 +196,19 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
   if (family == "gaussian") {
     if (length(class(mod)) == 2) mod_n <- stats::lm(mod$formula)
     if (length(class(mod)) == 1) mod_n <- mod
-    mod$data <- eval(stats::getCall(mod)$data, environment(formula(mod)))
+    mod$data <- eval(stats::getCall(mod)$data, environment(stats::formula(mod)))
   }
 
-  if (family == "negbin") mod$data <- eval(stats::getCall(mod)$data, environment(formula(mod)))
+  if (family == "negbin") mod$data <- eval(stats::getCall(mod)$data, environment(stats::formula(mod)))
 
   reps <- 0
   cond <- TRUE
 
-  Y <- model.frame(mod)[, 1]
+  Y <- stats::model.frame(mod)[, 1]
   bigY <- rep(Y, B)
   n <- length(Y)
 
-  form.name <- formula(mod)
+  form.name <- stats::formula(mod)
 
   if (family == "gaussian") {
     if (is.null(stats::weights(mod))) p.wt <- rep(1, n)
@@ -386,8 +218,8 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
 
   bigp.wt <- rep(p.wt, B)
 
-  W <- as.data.frame(model.frame(mod)[, -1])
-  names(W) <- names(model.frame(mod))[-1]
+  W <- as.data.frame(stats::model.frame(mod)[, -1])
+  names(W) <- names(stats::model.frame(mod))[-1]
 
   d <- ncol(W)
 
@@ -400,7 +232,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
     names.w <- names(W)[1]
 
     if (dim(as.matrix(W))[2] != 1) {
-      if (class(model.frame(mod)[, -1])[1] == "poly" | class(model.frame(mod)[, -1][, 1])[1] == "poly") {
+      if (class(stats::model.frame(mod)[, -1])[1] == "poly" | class(stats::model.frame(mod)[, -1][, 1])[1] == "poly") {
         names.w <- names(mod$data)[2]
         names(mod$data)[2] <- names.w
       }
@@ -451,7 +283,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
 
     poly.trig <- FALSE
 
-    if (class(model.frame(mod)[, -1][, 1])[1] == "poly") {
+    if (class(stats::model.frame(mod)[, -1][, 1])[1] == "poly") {
       names.w <- names(mod$data)[2]
       W1 <- W[, 1]
 
@@ -468,20 +300,20 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
 
     if (ncol(as.matrix(W1)) > 1) {
       if ((sum(W1[, 2] == w^2) == n)) {    # Check if quadratic.
-        if (class(model.frame(mod)[, -1][, 1])[1] != "poly") d <- d - 1
+        if (class(stats::model.frame(mod)[, -1][, 1])[1] != "poly") d <- d - 1
         d1 <- 1
       }
     }
 
     if (ncol(as.matrix(W1)) > 2) {    # Check if cubic.
       if (sum(W1[, 3] == w^3) == n) {
-        if (class(model.frame(mod)[, -1][, 1])[1] != "poly") d <- d - 1
+        if (class(stats::model.frame(mod)[, -1][, 1])[1] != "poly") d <- d - 1
         d1 <- 2
       }
     }
     if (ncol(as.matrix(W1)) > 3) {     # Check if quartic.
       if (sum(W1[, 4] == w^4) == n) {
-        if (class(model.frame(mod)[, -1][, 1])[1] != "poly") d <- d - 1
+        if (class(stats::model.frame(mod)[, -1][, 1])[1] != "poly") d <- d - 1
         d1 <- 3
       }
     }
@@ -499,7 +331,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
     for (kk in 2:q1) {
 
       if (poly.trig  == TRUE) {
-        W2 <- model.frame(mod)[, -c(1:kk)]
+        W2 <- stats::model.frame(mod)[, -c(1:kk)]
 
         if (ncol(as.matrix(W2)) == 1) {
           W1 <- w <- W[, ncol(W)]
@@ -530,7 +362,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
       }
 
       if (poly.trig  == FALSE) {
-        W2 <- model.frame(mod)[, -c(1:(kk + d1))]
+        W2 <- stats::model.frame(mod)[, -c(1:(kk + d1))]
 
         if (ncol(as.matrix(W2)) == 1) {
           W1 <- w1 <- W[, ncol(W)]
@@ -741,8 +573,8 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
   mod_n$coefficients <- beta.est
 
   if (class(W[, 1])[1] == "poly") {
-    mod_n$linear.predictors <- eta <- stats::predict(mod_n, newdata = eval(stats::getCall(mod_n)$data, environment(formula(mod_n))))
-    mod_n$fitted.values <- stats::predict(mod_n, type = "response", newdata = eval(stats::getCall(mod_n)$data, environment(formula(mod_n))))
+    mod_n$linear.predictors <- eta <- stats::predict(mod_n, newdata = eval(stats::getCall(mod_n)$data, environment(stats::formula(mod_n))))
+    mod_n$fitted.values <- stats::predict(mod_n, type = "response", newdata = eval(stats::getCall(mod_n)$data, environment(stats::formula(mod_n))))
   }
   if (class(W[, 1])[1] != "poly") {
     mod_n$linear.predictors <- eta <- stats::predict(mod_n, newdata = mod_n$model)
@@ -858,10 +690,10 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
 #' @return \code{MCEMfit_gam} returns the original naive fitted model object but coefficient estimates and the covariance matrix have been replaced with the final MCEM model fit. Standard errors and the effective sample size (which diagnose how closely the proposal distribution matches the posterior, see equation (2) of Stoklosa, Hwang and Warton) have also been included as outputs.
 #' @author Jakub Stoklosa, Wen-Han Hwang and David I. Warton.
 #' @references Ganguli, B, Staudenmayer, J., and Wand, M. P. (2005). Additive models with predictors subject to measurement error. \emph{Australian & New Zealand Journal of Statistics}, \strong{47}, 193–202.
-#' @references Wand, M. P. (2018). \pkg{SemiPar}: Semiparametic Regression. \proglang{R} package version 1.0-4.2., URL \url{https: //CRAN.R-project.org/package=SemiPar}.
+#' @references Wand, M. P. (2018). \pkg{SemiPar}: Semiparametic Regression. \proglang{R} package version 1.0-4.2., URL \url{https://CRAN.R-project.org/package=SemiPar}.
 #' @references Stoklosa, J., Hwang, W-H., and Warton, D.I. \pkg{refitME}: Measurement Error Modelling using Monte Carlo Expectation Maximization in \proglang{R}.
 #' @import mvtnorm MASS mgcv sandwich SemiPar
-#' @importFrom stats Gamma getCall
+#' @importFrom stats Gamma
 #' @export
 #' @seealso \code{\link{MCEMfit_glm}}
 #' @source See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
@@ -870,10 +702,11 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
 #' library(refitME)
 #' library(SemiPar)
 #' library(mgcv)
+#' library(dplyr)
 #'
 #' data(milan.mort)
 #'
-#' dat.air <- milan.mort
+#' dat.air <- sample_n(milan.mort, 100) # Takes a random sample of size 100.
 #'
 #' Y <- dat.air[, 6]  # Mortality counts.
 #'
@@ -886,11 +719,11 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
 #'
 #' dat <- data.frame(cbind(Y, w1, z1, z2, z3))
 #'
-#' gam_naiv <- gam(Y ~ s(w1) + s(z1, k = 25) + s(z2) + s(z3), family = "poisson", data = dat)
+#' gam_naiv <- gam(Y ~ s(w1), family = "poisson", data = dat)
 #'
 #' sigma.sq.u <- 0.0915 # Measurement error variance.
 #'
-#' B <- 5  # Consider increasing this if you want a more accurate answer.
+#' B <- 10  # Consider increasing this if you want a more accurate answer.
 #'
 #' gam_MCEM <- refitME(gam_naiv, sigma.sq.u, B)
 #'
@@ -901,9 +734,9 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
   reps <- 0
   cond <- TRUE
 
-  mod$data <- eval(stats::getCall(mod)$data, environment(formula(mod)))
+  mod$data <- eval(stats::getCall(mod)$data, environment(stats::formula(mod)))
 
-  Y <- model.frame(mod)[, 1]
+  Y <- stats::model.frame(mod)[, 1]
   bigY <- rep(Y, B)
   n <- length(Y)
 
@@ -915,8 +748,8 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
 
   bigp.wt <- rep(p.wt, B)
 
-  W <- as.data.frame(model.frame(mod)[, -1])
-  names(W) <- names(model.frame(mod))[-1]
+  W <- as.data.frame(stats::model.frame(mod)[, -1])
+  names(W) <- names(stats::model.frame(mod))[-1]
 
   d <- ncol(W)
 
@@ -1227,8 +1060,8 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
 #' @author Jakub Stoklosa, Wen-Han Hwang and David I. Warton.
 #' @references Carroll, R. J., Ruppert, D., Stefanski, L. A., and Crainiceanu, C. M. (2006). \emph{Measurement Error in Nonlinear Models: A Modern Perspective.} 2nd Ed. London: Chapman & Hall/CRC.
 #' @references Stoklosa, J., Hwang, W-H., and Warton, D.I. \pkg{refitME}: Measurement Error Modelling using Monte Carlo Expectation Maximization in \proglang{R}.
-#' @import mvtnorm MASS expm caret
-#' @importFrom stats Gamma getCall
+#' @import mvtnorm MASS
+#' @importFrom stats Gamma
 #' @export
 #' @seealso \code{\link{MCEMfit_glm}} and \code{\link{MCEMfit_gam}}
 #'
@@ -1236,14 +1069,14 @@ MCEMfit_gen <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
 
   mod_n <- mod
 
-  if (family == "gaussian" | family == "negbin") mod$data <- eval(stats::getCall(mod)$data, environment(formula(mod)))
+  if (family == "gaussian" | family == "negbin") mod$data <- eval(stats::getCall(mod)$data, environment(stats::formula(mod)))
 
-  if (is.null(mod$data)) mod$data <- eval(stats::getCall(mod)$data, environment(formula(mod)))
+  if (is.null(mod$data)) mod$data <- eval(stats::getCall(mod)$data, environment(stats::formula(mod)))
 
   reps <- 0
   cond <- TRUE
 
-  Y <- model.frame(mod)[, 1]
+  Y <- stats::model.frame(mod)[, 1]
   bigY <- rep(Y, B)
   n <- length(Y)
 
@@ -1255,8 +1088,8 @@ MCEMfit_gen <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
 
   bigp.wt <- rep(p.wt, B)
 
-  W <- as.data.frame(model.frame(mod)[, -1])
-  names(W) <- names(model.frame(mod))[-1]
+  W <- as.data.frame(stats::model.frame(mod)[, -1])
+  names(W) <- names(stats::model.frame(mod))[-1]
 
   d <- ncol(W)
 
@@ -1269,7 +1102,7 @@ MCEMfit_gen <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
     names.w <- names(W)[1]
 
     if (dim(as.matrix(W))[2] != 1) {
-      if (class(model.frame(mod)[, -1])[1] == "poly" | class(model.frame(mod)[, -1][, 1])[1] == "poly") {
+      if (class(stats::model.frame(mod)[, -1])[1] == "poly" | class(stats::model.frame(mod)[, -1][, 1])[1] == "poly") {
         names.w <- names(mod$data)[2]
         names(mod$data)[2] <- names.w
       }
@@ -1320,7 +1153,7 @@ MCEMfit_gen <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
 
     poly.trig <- FALSE
 
-    if (class(model.frame(mod)[, -1][, 1])[1] == "poly") {
+    if (class(stats::model.frame(mod)[, -1][, 1])[1] == "poly") {
       names.w <- names(mod$data)[2]
       W1 <- W[, 1]
 
@@ -1337,20 +1170,20 @@ MCEMfit_gen <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
 
     if (ncol(as.matrix(W1)) > 1) {
       if ((sum(W1[, 2] == w^2) == n)) {    # Check if quadratic.
-        if (class(model.frame(mod)[, -1][, 1])[1] != "poly") d <- d - 1
+        if (class(stats::model.frame(mod)[, -1][, 1])[1] != "poly") d <- d - 1
         d1 <- 1
       }
     }
 
     if (ncol(as.matrix(W1)) > 2) {    # Check if cubic.
       if (sum(W1[, 3] == w^3) == n) {
-        if (class(model.frame(mod)[, -1][, 1])[1] != "poly") d <- d - 1
+        if (class(stats::model.frame(mod)[, -1][, 1])[1] != "poly") d <- d - 1
         d1 <- 2
       }
     }
     if (ncol(as.matrix(W1)) > 3) {     # Check if quartic.
       if (sum(W1[, 4] == w^4) == n) {
-        if (class(model.frame(mod)[, -1][, 1])[1] != "poly") d <- d - 1
+        if (class(stats::model.frame(mod)[, -1][, 1])[1] != "poly") d <- d - 1
         d1 <- 3
       }
     }
@@ -1368,7 +1201,7 @@ MCEMfit_gen <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
     for (kk in 2:q1) {
 
       if (poly.trig  == TRUE) {
-        W2 <- model.frame(mod)[, -c(1:kk)]
+        W2 <- stats::model.frame(mod)[, -c(1:kk)]
 
         if (ncol(as.matrix(W2)) == 1) {
           W1 <- w <- W[, ncol(W)]
@@ -1399,7 +1232,7 @@ MCEMfit_gen <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
       }
 
       if (poly.trig  == FALSE) {
-        W2 <- model.frame(mod)[, -c(1:(kk + d1))]
+        W2 <- stats::model.frame(mod)[, -c(1:(kk + d1))]
 
         if (ncol(as.matrix(W2)) == 1) {
           W1 <- w1 <- W[, ncol(W)]
@@ -1601,8 +1434,8 @@ MCEMfit_gen <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
   mod_n$coefficients <- beta.est
 
   if (class(W[, 1])[1] == "poly") {
-    mod_n$linear.predictors <- eta <- stats::predict(mod_n, newdata = eval(stats::getCall(mod_n)$data, environment(formula(mod_n))))
-    mod_n$fitted.values <- stats::predict(mod_n, type = "response", newdata = eval(stats::getCall(mod_n)$data, environment(formula(mod_n))))
+    mod_n$linear.predictors <- eta <- stats::predict(mod_n, newdata = eval(stats::getCall(mod_n)$data, environment(stats::formula(mod_n))))
+    mod_n$fitted.values <- stats::predict(mod_n, type = "response", newdata = eval(stats::getCall(mod_n)$data, environment(stats::formula(mod_n))))
   }
 
   if (class(W[, 1])[1] != "poly") {
@@ -1683,9 +1516,8 @@ MCEMfit_gen <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
 #' @return \code{MCEMfit_CR} returns model coefficient and population size estimates with standard errors and the effective sample size.
 #' @author Jakub Stoklosa, Wen-Han Hwang and David I. Warton.
 #' @references Stoklosa, J., Hwang, W-H., and Warton, D.I. \pkg{refitME}: Measurement Error Modelling using Monte Carlo Expectation Maximization in \proglang{R}.
-#' @import MASS VGAM VGAMdata
-#' @importFrom stats logLik
-#' @importFrom VGAM s posbinomial
+#' @import MASS
+#' @importFrom VGAM posbinomial
 #' @importFrom VGAMdata dposbinom
 #' @export
 #' @seealso \code{\link{MCEMfit_glm}}
@@ -1710,10 +1542,9 @@ MCEMfit_gen <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
 #'
 #' sigma.sq.u <- 0.37/var(w1) # ME variance.
 #'
-#' B <- 100
+#' CR_MCEM <- refitME(CR_naiv2, sigma.sq.u)
 #'
-#' CR_MCEM <- refitME(CR_naiv2, sigma.sq.u, B)
-MCEMfit_CR <- function(mod, sigma.sq.u, sigma.sq.e = 1, B = 100, epsilon = 0.00001, silent = FALSE) {
+MCEMfit_CR <- function(mod, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon = 0.00001, silent = FALSE) {
 
   reps <- 0
   cond <- TRUE
@@ -1726,11 +1557,11 @@ MCEMfit_CR <- function(mod, sigma.sq.u, sigma.sq.e = 1, B = 100, epsilon = 0.000
 
   n <- mod@misc$n
 
-  beta.est <- coef(mod)
+  beta.est <- stats::coef(mod)
 
   w1 <- mod@x[, 2]
 
-  W1 <- model.matrix(mod)[, -1]
+  W1 <- stats::model.matrix(mod)[, -1]
 
   if (d == 1 & mod@misc$function.name == "vglm") p1 <- 1
 
@@ -1773,9 +1604,9 @@ MCEMfit_CR <- function(mod, sigma.sq.u, sigma.sq.e = 1, B = 100, epsilon = 0.000
     muPred <- rep(1/(1 + exp(-VGAM::predict.vgam(mod, type = "link"))), B)
   }
 
-  if (p1 == 1) colnames(X) <- c(names(coef(mod))[1], "x1")
-  if (p1 == 2) colnames(X) <- c(names(coef(mod))[1], "x1", "x2")
-  if (p1 == 3) colnames(X) <- c(names(coef(mod))[1], "x1", "x2", "x3")
+  if (p1 == 1) colnames(X) <- c(names(stats::coef(mod))[1], "x1")
+  if (p1 == 2) colnames(X) <- c(names(stats::coef(mod))[1], "x1", "x2")
+  if (p1 == 3) colnames(X) <- c(names(stats::coef(mod))[1], "x1", "x2", "x3")
 
   bigY <- rep(mod@y*tau, B)
 
@@ -1891,7 +1722,7 @@ MCEMfit_CR <- function(mod, sigma.sq.u, sigma.sq.e = 1, B = 100, epsilon = 0.000
   if (length(which(is.nan(beta.est.se))) > 0) beta.est.se2 <- c(rep(NA, K1))
 
   idG <- solve(u.bar - SS_1 + S_1)
-  X.s <- VGAM::model.matrix(mod)
+  X.s <- stats::model.matrix(mod)
 
   dpi <- w.est*tau*pr.est*(1 - pi.est)/pi.est/pi.est
   dNhat <- apply(X.s*c(dpi), 2, sum)
@@ -1936,6 +1767,7 @@ wt.var <- function(x, w) {
 #' @param x : a matrix
 #' @return \code{sqrt.na} returns a matrix.
 #' @author Jakub Stoklosa
+#' @export
 #'
 sqrt.na <- function(x) {
   id <- (x > 0) & (is.na(x) == F)
@@ -1955,33 +1787,132 @@ sqrt.na <- function(x) {
 #' @param test : a character string, (partially) matching one of "\code{Chisq}", "\code{LRT}", "\code{Rao}", "\code{F}" or "\code{Cp}". See \code{\link{stat.anova}}.
 #' @return \code{anova.refitME} produces output identical to \code{anova.lm}, \code{anova.glm} or \code{anova.gam}.
 #' @author Jakub Stoklosa, Wen-Han Hwang and David I. Warton.
-#' @importFrom stats anova
+#' @importFrom stats stat.anova pf
 #' @export
-#' @seealso \code{\link{anova.lm}}, \code{\link{anova.glm}}
+#' @seealso \code{\link{anova}}
 #'
 anova.refitME <- function(object, ..., dispersion = NULL, test = NULL) {
+  anova.lmlist <- function (object, ..., scale = 0, test = "F") {
+    objects <- list(object, ...)
+    responses <- as.character(lapply(objects, function(x) deparse(x$terms[[2L]])))
+    sameresp <- responses == responses[1L]
+    if (!all(sameresp)) {
+      objects <- objects[sameresp]
+      warning(gettextf("models with response %s removed because response differs from model 1",
+                       sQuote(deparse(responses[!sameresp]))), domain = NA)
+    }
+    ns <- sapply(objects, function(x) length(x$residuals))
+    if (any(ns != ns[1L]))
+      stop("models were not all fitted to the same size of dataset")
+    nmodels <- length(objects)
+    if (nmodels == 1)
+      return(anova.lm(object))
+    resdf <- as.numeric(lapply(objects, stats::df.residual))
+    resdev <- as.numeric(lapply(objects, stats::deviance))
+    table <- data.frame(resdf, resdev, c(NA, -diff(resdf)), c(NA,
+                                                              -diff(resdev)))
+    variables <- lapply(objects, function(x) paste(deparse(stats::formula(x)),
+                                                   collapse = "\n"))
+    dimnames(table) <- list(1L:nmodels, c("Res.Df", "RSS",
+                                          "Df", "Sum of Sq"))
+    title <- "Analysis of Variance Table\n"
+    topnote <- paste0("Model ", format(1L:nmodels), ": ",
+                      variables, collapse = "\n")
+    if (!is.null(test)) {
+      bigmodel <- order(resdf)[1L]
+      scale <- if (scale > 0)
+        scale
+      else resdev[bigmodel]/resdf[bigmodel]
+      table <- stats::stat.anova(table = table, test = test, scale = scale,
+                          df.scale = resdf[bigmodel], n = length(objects[[bigmodel]]$residuals))
+    }
+    structure(table, heading = c(title, topnote), class = c("anova",
+                                                            "data.frame"))
+  }
+
+  qr.lm <- function (x, ...) {
+    if (is.null(r <- x$qr))
+      stop("lm object does not have a proper 'qr' component.\n Rank zero or should not have used lm(.., qr=FALSE).")
+    r
+  }
+
+  anova.lm <- function (object, ...) {
+    if (length(list(object, ...)) > 1L)
+      return(anova.lmlist(object, ...))
+    if (!inherits(object, "lm"))
+      warning("calling anova.lm(<fake-lm-object>) ...")
+    w <- object$weights
+    ssr <- sum(if (is.null(w)) object$residuals^2 else w * object$residuals^2)
+    mss <- sum(if (is.null(w)) object$fitted.values^2 else w *
+                 object$fitted.values^2)
+    if (ssr < 1e-10 * mss)
+      warning("ANOVA F-tests on an essentially perfect fit are unreliable")
+    dfr <- stats::df.residual(object)
+    p <- object$rank
+    if (p > 0L) {
+      p1 <- 1L:p
+      comp <- object$effects[p1]
+      asgn <- object$assign[qr.lm(object)$pivot][p1]
+      nmeffects <- c("(Intercept)", attr(object$terms,
+                                         "term.labels"))
+      tlabels <- nmeffects[1 + unique(asgn)]
+      ss <- c(vapply(split(comp^2, asgn), sum, 1), ssr)
+      df <- c(lengths(split(asgn, asgn)), dfr)
+    }
+    else {
+      ss <- ssr
+      df <- dfr
+      tlabels <- character()
+    }
+    ms <- ss/df
+    f <- ms/(ssr/dfr)
+    P <- pf(f, df, dfr, lower.tail = FALSE)
+    table <- data.frame(df, ss, ms, f, P)
+    table[length(P), 4:5] <- NA
+    dimnames(table) <- list(c(tlabels, "Residuals"), c("Df",
+                                                       "Sum Sq", "Mean Sq", "F value", "Pr(>F)"))
+    if (attr(object$terms, "intercept"))
+      table <- table[-1, ]
+    structure(table, heading = c("Analysis of Variance Table\n",
+                                 paste("Response:", deparse(stats::formula(object)[[2L]]))),
+              class = c("anova", "data.frame"))
+  }
+
   classObject <- class(object)[2]
-  anovaFn <- switch(classObject, "lm" = stats:::anova.lm, "glm" = anova_MCEMfit_glm, ...)
+  anovaFn <- switch(classObject, "lm" = anova.lm, "glm" = anova_MCEMfit_glm, ...)
 
   return(anovaFn(object))
 }
 
 #' Extract log-Likelihoods for \code{refitME} model objects
 #'
-#' Extract log-Likelihoods for \code{efitME} model objects. This function subtracts the entropy term from the observed likelihood.
-#' @name logLik_MCEMfit_lm
+#' Extract log-Likelihoods for \code{refitME} model objects. This function subtracts the entropy term from the observed likelihood.
+#' @name logLik.refitME
 #' @param object : fitted model objects of class \code{refitME}.
 #' @param ... : further arguments passed through to \code{lm} or \code{glm}.
-#' @param REML : an optional logical value. If \code{TRUE} the restricted log-likelihood is returned, else, if \code{FALSE}, the log-likelihood is returned. Defaults to \code{FALSE}.
-#' @return \code{logLik.refitME} produces output identical to \code{logLik}.
+#' @return \code{logLik.refitME} produces identical output to \code{logLik} but for \code{refitME} model objects.
 #' @author Jakub Stoklosa, Wen-Han Hwang and David I. Warton.
-#' @importFrom stats logLik
+#' @importFrom stats family
 #' @export
 #' @seealso \code{\link{logLik}}
 #'
 logLik.refitME <- function(object, ...) {
+  logLik.glm <- function (object, ...) {
+    if (!missing(...))
+      warning("extra arguments discarded")
+    fam <- stats::family(object)$family
+    p <- object$rank
+    if (fam %in% c("gaussian", "Gamma", "inverse.gaussian"))
+      p <- p + 1
+    val <- p - object$aic/2
+    attr(val, "nobs") <- sum(!is.na(object$residuals))
+    attr(val, "df") <- p
+    class(val) <- "logLik"
+    val
+  }
+
   classObject <- class(object)[2]
-  logLikFn <- switch(classObject, "lm" = logLik_MCEMfit_lm, "glm" = stats:::logLik.glm, ...)
+  logLikFn <- switch(classObject, "lm" = logLik_MCEMfit_lm, "glm" = logLik.glm, ...)
 
   return(logLikFn(object))
 }
@@ -2019,7 +1950,7 @@ anova_MCEMfit_glm <- function(object, ..., dispersion = NULL, test = NULL) {
   varlist <- attr(object$terms, "variables")
 
   x <- if (n <- match("x", names(object), 0L)) object[[n]]
-  else model.matrix(object)
+  else stats::model.matrix(object)
 
   varseq <- attr(x, "assign")
   nvars <- max(0, varseq)

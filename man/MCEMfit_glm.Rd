@@ -58,66 +58,11 @@ glm_naiv <- glm(Y ~ w1 + z1 + z2 + z3, x = TRUE, family = binomial, data = Frami
 
 # The error-contaminated predictor in this example is systolic blood pressure (w1).
 
-sigma.sq.u <- 0.01259/2 # ME variance, as obtained from Carroll et al. (2006) monograph.
+sigma.sq.u <- 0.01259/2  # ME variance, as obtained from Carroll et al. (2006) monograph.
 
-B <- 100  # The number of Monte Carlo replication values.
+B <- 50 # The number of Monte Carlo replication values.
 
 glm_MCEM <- refitME(glm_naiv, sigma.sq.u, B)
-
-
-
-# A GLM example II - presence-only data using a point-process model.
-
-library(caret)
-
-data(Corymbiaeximiadata)
-dat <- Corymbiaeximiadata
-
-Y1 <- dat$Y.obs
-
-Rain <- dat$Rain
-D.Main <- dat$D.Main
-MNT <- dat$MNT    # The error-contaminated predictor (max temperature).
-
-# PPM - using a Poisson GLM.
-
-p.wt <- rep(1.e-6, length(Y1))
-p.wt[Y1 == 0] <- 1
-
-Y <- Y1/p.wt
-
-X <- cbind(MNT, Rain, sqrt(D.Main))
-
-colnames(X) <- c("w1", "z1", "z2")
-
-dat1 <- data.frame(cbind(Y, p.wt, X))
-colnames(dat1)[1:2] <- c("Y", "p.wt")
-
-PPM_naiv <- glm(Y ~ poly(w1, degree = 2, raw = TRUE) +
-                    poly(z1, degree = 2, raw = TRUE) +
-                    poly(z2, degree = 2, raw = TRUE),
-                    family = "poisson", weights = p.wt, data = dat1)
-
-# PPM - using MCEM model.
-
-sigma.sq.u <- 0.25  # Measurement error variance.
-
-PPM_MCEM <- refitME(PPM_naiv, sigma.sq.u)
-
-coord.dat <- cbind(dat$X, dat$Y)
-
-colnames(coord.dat) <- c("Longitude", "Latitude")
-
-pred.dats <- as.data.frame(cbind(coord.dat[, 1], coord.dat[, 2],
-  PPM_MCEM$fitted.values))
-
-colnames(pred.dats) <- c("x", "y", "preds")
-
-levelplot(preds ~ x + y, data = pred.dats, asp = "iso", ylab = "Latitude",
-  xlab = "Longitude", col.regions = heat.colors(1024)[900:1], cuts = 900,
-  main = list("", cex = 5), scales = list(y = list(draw = FALSE),
-  x = list(draw = FALSE), relation = "free"),
-  colorkey = list(labels = list(cex = 0.8)))
 
 }
 \references{

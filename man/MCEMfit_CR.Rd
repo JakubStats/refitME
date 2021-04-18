@@ -11,7 +11,7 @@ MCEMfit_CR(
   mod,
   sigma.sq.u,
   sigma.sq.e = 1,
-  B = 100,
+  B = 50,
   epsilon = 1e-05,
   silent = FALSE
 )
@@ -61,9 +61,8 @@ CR_naiv2 <- vgam(cbind(cap, noncap) ~ VGAM::s(w1, df = 2),
 
 sigma.sq.u <- 0.37/var(w1) # ME variance.
 
-B <- 100
+CR_MCEM <- refitME(CR_naiv2, sigma.sq.u)
 
-CR_MCEM <- refitME(CR_naiv2, sigma.sq.u, B)
 }
 \references{
 Stoklosa, J., Hwang, W-H., and Warton, D.I. \pkg{refitME}: Measurement Error Modelling using Monte Carlo Expectation Maximization in \proglang{R}.

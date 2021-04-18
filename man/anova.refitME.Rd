@@ -22,7 +22,7 @@
 An ANOVA function for fitted \code{refitME} objects.
 }
 \seealso{
-\code{\link{anova.lm}}, \code{\link{anova.glm}}
+\code{\link{anova}}
 }
 \author{
 Jakub Stoklosa, Wen-Han Hwang and David I. Warton.
