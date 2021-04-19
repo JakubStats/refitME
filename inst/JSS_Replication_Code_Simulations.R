@@ -453,7 +453,7 @@ for(i in 1:length(sigma.sq.u_vec)) {
 
   while(c.sim) {
 
-    # Alternate here to change the true distribution of X.
+    # Alternate/change here to change the true distribution of X.
 
     x1 <- (rchisq(n, 3) - 3)/sqrt(6)   # Case (i). True covariate is a Chi-square distribution.
     #x1 <- rsnorm(n, mean = 0, sd = 1, xi = 3) # Case (ii). True covariate is a (skewed) normal distribution.

@@ -205,7 +205,7 @@ p.wt[Y1 == 0] <- 1
 
 Y <- Y1/p.wt
 
-X <- cbind(MNT,Rain,sqrt(D.Main))
+X <- cbind(MNT, Rain, sqrt(D.Main))
 colnames(X) <- c("w1", "z1", "z2")
 
 # Training/test data.
