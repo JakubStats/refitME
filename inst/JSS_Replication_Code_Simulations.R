@@ -1,15 +1,254 @@
 #----------------------------------------------------------------------------
 # JSS_Replication_Code_Examples.R
 #
-# Simulations (results for Section 5, Web Figures 1-2, and Web Appendix A.3).
+# Simulations (results for Figures 1-2, Section 5, and Web Appendix A.3).
 #----------------------------------------------------------------------------
+
+# Figure 1: Checking the effective sample size (ESS) across model dimensions and measurement error variance.
+
+library(refitME)
+
+setwd(system.file(package = 'refitME'))
+source('MCEM_prog.R')
+
+set.seed(2019)
+
+B <- 50
+
+n <- 1000
+
+dim_vec <- c(1:10)
+
+sigma.sq.e <- diag(c(rep(1, 10))) # True predictor covariance (sigma).
+
+alpha <- c(rep(0, 10))
+
+beta_vec <- c(0.5, rep(1, 10))
+
+sigma.sq.u_big <- diag(c(rep(0.5, 10)))
+
+x1 <- rnorm(n, alpha[1], sd = sqrt(sigma.sq.e[1, 1]))
+x2 <- rnorm(n, alpha[2], sd = sqrt(sigma.sq.e[2, 2]))
+x3 <- rnorm(n, alpha[3], sd = sqrt(sigma.sq.e[3, 3]))
+x4 <- rnorm(n, alpha[4], sd = sqrt(sigma.sq.e[4, 4]))
+x5 <- rnorm(n, alpha[5], sd = sqrt(sigma.sq.e[5, 5]))
+x6 <- rnorm(n, alpha[6], sd = sqrt(sigma.sq.e[6, 6]))
+x7 <- rnorm(n, alpha[7], sd = sqrt(sigma.sq.e[7, 7]))
+x8 <- rnorm(n, alpha[8], sd = sqrt(sigma.sq.e[8, 8]))
+x9 <- rnorm(n, alpha[9], sd = sqrt(sigma.sq.e[9, 9]))
+x10 <- rnorm(n, alpha[10], sd = sqrt(sigma.sq.e[10, 10]))
+
+X_big <- cbind(rep(1, n), x1, x2, x3, x4, x5, x6, x7, x8, x9, x10)
+
+w1 <- x1 + rnorm(n, 0, sd = sqrt(sigma.sq.u_big[1, 1]))
+w2 <- x2 + rnorm(n, 0, sd = sqrt(sigma.sq.u_big[2, 2]))
+w3 <- x3 + rnorm(n, 0, sd = sqrt(sigma.sq.u_big[3, 3]))
+w4 <- x4 + rnorm(n, 0, sd = sqrt(sigma.sq.u_big[4, 4]))
+w5 <- x5 + rnorm(n, 0, sd = sqrt(sigma.sq.u_big[5, 5]))
+w6 <- x6 + rnorm(n, 0, sd = sqrt(sigma.sq.u_big[6, 6]))
+w7 <- x7 + rnorm(n, 0, sd = sqrt(sigma.sq.u_big[7, 7]))
+w8 <- x8 + rnorm(n, 0, sd = sqrt(sigma.sq.u_big[8, 8]))
+w9 <- x9 + rnorm(n, 0, sd = sqrt(sigma.sq.u_big[9, 9]))
+w10 <- x10 + rnorm(n, 0, sd = sqrt(sigma.sq.u_big[10, 10]))
+
+W_big <- cbind(w1, w2 ,w3, w4, w5, w6, w7, w8, w9, w10)
+
+eff_vec1 <- c()
+eff_vec2 <- c()
+
+for(i in 1:length(dim_vec)) {
+  sigma.sq.u <- sigma.sq.u_big[1:i, 1:i]
+
+  W <- as.matrix(W_big[, 1:i])
+  colnames(W) <- colnames(W_big)[1:i]
+
+  X <- X_big[, 1:(1 + i)]
+  colnames(X) <- colnames(X_big)[1:(1 + i)]
+
+  eta <- X%*%beta_vec[1:(1 + i)]
+
+  mu_Y <- eta
+  Y1 <- c(mu_Y) + rnorm(n, 0, 1)
+
+  mu_Y <- exp(eta)/(1 + exp(eta))
+  Y2 <- rbinom(n, 1, prob = mu_Y)
+
+  dat1 <- data.frame(cbind(Y1, X[, -1], W))
+  dat2 <- data.frame(cbind(Y2, X[, -1], W))
+
+  colnames(dat1) <- c("Y1", colnames(X)[-1], colnames(W))
+  colnames(dat2) <- c("Y2", colnames(X)[-1], colnames(W))
+
+  if (dim_vec[i] == 1) {
+    mod_naiv1 <- lm(Y1 ~ w1, x = TRUE, data = dat1)
+    mod_naiv2 <- glm(Y2 ~ w1, x = TRUE, family = binomial, data = dat2)
+  }
+
+  if (dim_vec[i] == 2) {
+    mod_naiv1 <- lm(Y1 ~ w1 + w2, x = TRUE, data = dat1)
+    mod_naiv2 <- glm(Y2 ~ w1 + w2, x = TRUE, family = binomial, data = dat2)
+  }
+
+  if (dim_vec[i] == 3) {
+    mod_naiv1 <- lm(Y1 ~ w1 + w2 + w3, x = TRUE, data = dat1)
+    mod_naiv2 <- glm(Y2 ~ w1 + w2 + w3, x = TRUE, family = binomial, data = dat2)
+  }
+
+  if (dim_vec[i] == 4) {
+    mod_naiv1 <- lm(Y1 ~ w1 + w2 + w3 + w4, x = TRUE, data = dat1)
+    mod_naiv2 <- glm(Y2 ~ w1 + w2 + w3 + w4, x = TRUE, family = binomial, data = dat2)
+  }
+
+  if (dim_vec[i] == 5) {
+    mod_naiv1 <- lm(Y1 ~ w1 + w2 + w3 + w4 + w5, x = TRUE, data = dat1)
+    mod_naiv2 <- glm(Y2 ~ w1 + w2 + w3 + w4 + w5, x = TRUE, family = binomial, data = dat2)
+  }
+
+  if (dim_vec[i] == 6) {
+    mod_naiv1 <- lm(Y1 ~ w1 + w2 + w3 + w4 + w5 + w6, x = TRUE, data = dat1)
+    mod_naiv2 <- glm(Y2 ~ w1 + w2 + w3 + w4 + w5 + w6, x = TRUE, family = binomial, data = dat2)
+  }
+
+  if (dim_vec[i] == 7) {
+    mod_naiv1 <- lm(Y1 ~ w1 + w2 + w3 + w4 + w5 + w6 + w7, x = TRUE, data = dat1)
+    mod_naiv2 <- glm(Y2 ~ w1 + w2 + w3 + w4 + w5 + w6 + w7, x = TRUE, family = binomial, data = dat2)
+  }
+
+  if (dim_vec[i] == 8) {
+    mod_naiv1 <- lm(Y1 ~ w1 + w2 + w3 + w4 + w5 + w6 + w7 + w8, x = TRUE, data = dat1)
+    mod_naiv2 <- glm(Y2 ~ w1 + w2 + w3 + w4 + w5 + w6 + w7 + w8, x = TRUE, family = binomial, data = dat2)
+  }
+  if (dim_vec[i] == 9) {
+    mod_naiv1 <- lm(Y1 ~ w1 + w2 + w3 + w4 + w5 + w6 + w7 + w8 + w9, x = TRUE, data = dat1)
+    mod_naiv2 <- glm(Y2 ~ w1 + w2 + w3 + w4 + w5 + w6 + w7 + w8 + w9, x = TRUE, family = binomial, data = dat2)
+  }
+  if (dim_vec[i] == 10) {
+    mod_naiv1 <- lm(Y1 ~ w1 + w2 + w3 + w4 + w5 + w6 + w7 + w8 + w9 + w10, x = TRUE, data = dat1)
+    mod_naiv2 <- glm(Y2 ~ w1 + w2 + w3 + w4 + w5 + w6 + w7 + w8 + w9 + w10, x = TRUE, family = binomial, data = dat2)
+  }
+
+  est1 <- refitME(mod_naiv1, sigma.sq.u, B)
+  est2 <- refitME(mod_naiv2, sigma.sq.u, B)
+
+  eff_vec1 <- c(eff_vec1, mean(est1$eff.samp.size, na.rm = T)/B)
+  eff_vec2 <- c(eff_vec2, mean(est2$eff.samp.size, na.rm = T)/B)
+}
+
+dats1 <- as.data.frame(cbind(log(dim_vec), log(eff_vec1), log(1/dim_vec)))
+dats2 <- as.data.frame(cbind(log(dim_vec), log(eff_vec2), log(1/dim_vec)))
+
+colnames(dats1) = colnames(dats2) = c("dim_vec", "ESS", "log_dim")
+
+p1 <- ggplot(dats1, aes(x = dim_vec, y = ESS)) + geom_point() + geom_line(size = 1) +
+  geom_line(aes(x = dim_vec, y = log_dim), color = "red", linetype = "dotted", colour ="log(ESS/B)") +
+  labs(x = bquote("log(p)"), y = bquote("log(ESS/B)"), title = "Gaussian response") +
+  theme(axis.title.y = element_text(size = 20, angle = 90), text = element_text(size = 20),
+        axis.text = element_text(size = 20), axis.title = element_text(size = 20, face = "bold"))
+
+p2 <- ggplot(dats2, aes(x = dim_vec, y = ESS)) + geom_point() + geom_line(size = 1) +
+  geom_line(aes(x = dim_vec, y = log_dim), color = "red", linetype = "dotted") +
+  labs(x = bquote("log(p)"), y = bquote("log(ESS/B)"), title = "Binary response") +
+  theme(axis.title.y = element_text(size = 20, angle = 90), legend.title = element_blank(), text = element_text(size = 20),
+        legend.position = "none", axis.text = element_text(size = 20), axis.title = element_text(size = 20, face = "bold"))
+
+multiplot(p1, p2, layout = matrix(c(1, 2), ncol = 2, nrow = 1, byrow = T))
+
+#--------------------------------------------------------------
+
+# Figure 2: Effective sample size (EFF) against measurement error variance.
+
+library(refitME)
+
+setwd(system.file(package = 'refitME'))
+source('MCEM_prog.R')
+
+set.seed(2019)
+
+B <- 50
+
+n <- 1000
+
+sigma.sq.u_vec <- c(seq(0.1, 1, 0.1))
+
+sigma.sq.e <- diag(c(rep(1, 2))) # True predictor covariance (sigma).
+
+alpha <- c(rep(0, 2))
+
+beta_vec <- c(0.5, rep(1, 2))
+
+eff_vec1 <- eff_vec2 <- c()
+
+for(i in 1:length(sigma.sq.u_vec)) {
+  sigma.sq.u <- diag(c(rep(sigma.sq.u_vec[i], 2)))
+
+  x1 <- rnorm(n, alpha[1], sd = 1)
+  x2 <- rnorm(n, alpha[2], sd = 1)
+
+  X <- cbind(rep(1, n), x1, x2)
+
+  w1 <- x1 + rnorm(n, 0, sd = sqrt(sigma.sq.u[1, 1]))
+  w2 <- x2 + rnorm(n, 0, sd = sqrt(sigma.sq.u[1, 1]))
+
+  W <- cbind(w1, w2)
+
+  # Gaussian response.
+
+  eta <- X%*%beta_vec
+  mu_Y <- eta
+  Y <- c(mu_Y) + rnorm(n, 0, 1)
+  dat <- data.frame(cbind(Y, X, W))
+  names(dat)[2] <- "(Intercept)"
+
+  mod_naiv1 <- lm(Y ~ w1 + w2, x = TRUE, data = dat)
+
+  est <- refitME(mod_naiv1, sigma.sq.u, B)
+  eff_vec1 <- c(eff_vec1, mean(est$eff.samp.size, na.rm = T)/B)
+
+  # Binomial response.
+
+  mu_Y <- exp(eta)/(1 + exp(eta))
+  Y <- rbinom(n, 1, prob = mu_Y)
+  dat <- data.frame(cbind(Y, X, W))
+  names(dat)[2] <- "(Intercept)"
+
+  mod_naiv1 <- glm(Y ~ w1 + w2, x = TRUE, family = binomial, data = dat)
+
+  est <- refitME(mod_naiv1, sigma.sq.u, B)
+  eff_vec2 <- c(eff_vec2, mean(est$eff.samp.size, na.rm = T)/B)
+}
+
+dat1 <- as.data.frame(cbind(sigma.sq.u_vec, eff_vec1))
+dat2 <- as.data.frame(cbind(sigma.sq.u_vec, eff_vec2))
+
+colnames(dat1) = colnames(dat2) = c("sigma.sq.u_big", "ESS")
+
+p1 <- ggplot(dat1, aes(x = sigma.sq.u_vec, y = ESS)) + geom_point() + geom_line(size = 1) +
+  labs(x = bquote("ME variance"), y = bquote("ESS/B"), title = "Gaussian response") +
+  xlab(expression(sigma[u]^2)) +
+  theme(axis.title.y = element_text(size = 20, angle = 90), text = element_text(size = 20),
+        axis.text = element_text(size = 20), axis.title = element_text(size = 20, face = "bold"))
+
+p2 <- ggplot(dat2, aes(x = sigma.sq.u_vec, y = ESS)) + geom_point() + geom_line(size = 1) +
+  labs(x = bquote("ME variance"), y = bquote("ESS/B"), title = "Binary response") +
+  xlab(expression(sigma[u]^2)) +
+  theme(axis.title.y = element_text(size = 20, angle = 90), legend.title = element_blank(), text = element_text(size = 20),
+        legend.position = "none", axis.text = element_text(size = 20),
+        axis.title = element_text(size = 20, face = "bold"))
+
+par(mfrow = c(1, 2), las = 1)
+
+multiplot(p1, p2, layout = matrix(c(1, 2), ncol = 2, nrow = 1, byrow = T))
+
+#-----------------------------------------------------------------------------
 
 # Sections 5.1 and 5.2: Simulation study examining bias, efficiency and
 # confidence interval coverage for model parameters, and prediction.
 
-rm(list = ls())
+library(refitME)
+library(mgcv)
 
-source("/Users/z3409479/Desktop/Post Doc/Algorithms and R-programs/MCEM Wrapper/MCEM_prog.r")
+setwd(system.file(package = 'refitME'))
+source('MCEM_prog.R')
 
 set.seed(2016)
 
@@ -23,14 +262,14 @@ n_test <- n - n_train
 
 # Set true parameter values here.
 
-sigma.sq.e <- c(1, 1) # True covariate sigma.
+sigma.sq.e <- c(1, 1) # True predictor covariance (sigma).
 alpha <- c(0, 0)
 
 beta <- c(0.5, 1, -0.3); par.int <- 3
 
-#par.int <- "spline" # Remove the hash if you want to fit spline models.
+par.int <- "spline" # Remove/toggle the hash (#) if you want to fit spline models.
 
-scen_par <- 0.5  # Additional shift in "future" covariate values.
+scen_par <- 0.5  # Additional shift in "future" predictor values.
 
 test.W <- F
 
@@ -45,6 +284,7 @@ CV_mat1 <- c()
 CV_mat2 <- c()
 
 family <- "binomial"
+#family <- "poisson"
 
 start <- Sys.time()
 
@@ -85,7 +325,7 @@ for(i in 1:length(sigma.sq.u_vec)) {
     if (par.int == 3) X <- cbind(rep(1, n), x1, x1^2)
     if (par.int == "spline") X <- NA
 
-    w1 <- x1 + rnorm(n, 0, sd = sqrt(sigma.sq.u1))  # Add/contaminate the covariate with error.
+    w1 <- x1 + rnorm(n, 0, sd = sqrt(sigma.sq.u1))  # Add/contaminate the predictor with error.
 
     if (par.int == 3) {
       W <- cbind(rep(1, n), w1, w1^2)
@@ -95,10 +335,16 @@ for(i in 1:length(sigma.sq.u_vec)) {
     if (par.int == "spline") W <- w1
 
     if (par.int != "spline") eta <- X%*%beta
-    if (par.int == "spline" & family == "binomial") eta <- sin(x1/2 + 0.25)
-
-    mu_Y <- logit_fun(eta)
-    Y <- rbinom(n, 1, prob = mu_Y)
+    if (par.int == "spline" & family == "binomial") {
+      eta <- sin(x1/2 + 0.25)
+      mu_Y <- logit_fun(eta)
+      Y <- rbinom(n, 1, prob = mu_Y)
+    }
+    if (par.int == "spline" & family == "poisson") {
+      eta <- sin(x1/2 + 0.25)
+      mu_Y <- exp(eta)
+      Y <- rpois(n, lambda = mu_Y)
+    }
 
     dat <- data.frame(cbind(Y, w1, x1))
 
@@ -124,10 +370,18 @@ for(i in 1:length(sigma.sq.u_vec)) {
     if (par.int == "spline") X_test_scen <- cbind(x1_test_scen)
 
     if (par.int != "spline") eta_test_scen <- as.matrix(X_test_scen)%*%beta
-    if (par.int == "spline" & family == "binomial") eta_test_scen <- sin(x1_test_scen/2 + 0.25)
+    if (par.int == "spline") {
+      eta_test_scen <- sin(x1_test_scen/2 + 0.25)
 
-    mu_test_scen <- logit_fun(eta_test_scen)
-    Y_test_scen <- rbinom(n_test, 1, prob = mu_test_scen)
+      if (family == "binomial") {
+        mu_test_scen <- logit_fun(eta_test_scen)
+        Y_test_scen <- rbinom(n_test, 1, prob = mu_test_scen)
+      }
+      if (family == "poisson") {
+        mu_test_scen <- exp(eta_test_scen)
+        Y_test_scen <- rpois(n_test, lambda = mu_test_scen)
+      }
+    }
 
     w1_test_scen <- x1_test_scen + rnorm(n_test, 0, sd = sqrt(sigma.sq.u_test))
 
@@ -151,8 +405,14 @@ for(i in 1:length(sigma.sq.u_vec)) {
     }
 
     if (par.int == "spline") {
-      mod_true1 <- gam(Y ~ s(x1), family = binomial, data = dat_train, gamma = 1.4, select = T)
-      mod_naiv1 <- gam(Y ~ s(w1), family = binomial, data = dat_train, gamma = 1.4, select = T)
+      if (family == "binomial") {
+        mod_true1 <- gam(Y ~ s(x1), family = binomial, data = dat_train, gamma = 1.4, select = T)
+        mod_naiv1 <- gam(Y ~ s(w1), family = binomial, data = dat_train, gamma = 1.4, select = T)
+      }
+      if (family == "poisson") {
+      mod_true1 <- gam(Y ~ s(x1), family = poisson, data = dat_train, gamma = 1.4, select = T)
+      mod_naiv1 <- gam(Y ~ s(w1), family = poisson, data = dat_train, gamma = 1.4, select = T)
+      }
     }
 
     if (par.int != "spline") W_train <- W[1:n_train, ]
@@ -161,7 +421,7 @@ for(i in 1:length(sigma.sq.u_vec)) {
     if (par.int != "spline") est <- try(refitME(mod_naiv1, sigma.sq.u, B), silent = TRUE)  # MCEM GLM.
     if (par.int == "spline") est <- try(refitME(mod_naiv1, sigma.sq.u, B), silent = TRUE)  # MCEM GAM.
 
-    if (class(est) == "try-error") next
+    if (class(est)[1] == "try-error") next
     nocrash <- c(nocrash, 1)
 
     k <- k + 1
@@ -377,13 +637,16 @@ if (par.int == "spline") {
   multiplot(p1_pred, p2_pred, layout = matrix(c(1, 2), ncol = 1, nrow = 2, byrow = T))
 }
 
+detach(package:mgcv)
+
 #------------------------------------------------------------------------------------
 
 # Section 5.3: Simulation study examining model robustness.
 
-rm(list = ls())
+library(refitME)
 
-source("/Users/z3409479/Desktop/Post Doc/Algorithms and R-programs/MCEM Wrapper/MCEM_prog.r")
+setwd(system.file(package = 'refitME'))
+source('MCEM_prog.R')
 
 set.seed(2016)
 
@@ -397,14 +660,14 @@ n_test <- n - n_train
 
 # Set true parameters here.
 
-sigma.sq.e <- c(1, 1) # True covariate sigma.
+sigma.sq.e <- c(1, 1) # True predictor covariance (sigma).
 
 alpha <- c(0, 0)
 beta <- c(0.5, 1, -0.3); par.int <- 3
 
 #par.int <- "spline"
 
-scen_par <- 0.5  # Additional shift in "future" covariate values.
+scen_par <- 0.5  # Additional shift in "future" predictor values.
 
 sigma.sq.u_vec <- c(0.0001, 0.05, 0.1, 0.25, 0.5)
 
@@ -455,13 +718,13 @@ for(i in 1:length(sigma.sq.u_vec)) {
 
     # Alternate/change here to change the true distribution of X.
 
-    x1 <- (rchisq(n, 3) - 3)/sqrt(6)   # Case (i). True covariate is a Chi-square distribution.
-    #x1 <- rsnorm(n, mean = 0, sd = 1, xi = 3) # Case (ii). True covariate is a (skewed) normal distribution.
+    #x1 <- (rchisq(n, 3) - 3)/sqrt(6)   # Case (i). True predictor is a Chi-square distribution.
+    x1 <- rsnorm(n, mean = 0, sd = 1, xi = 3) # Case (ii). True predictor is a (skewed) normal distribution.
 
     if (par.int == 3) X <- cbind(rep(1, n), x1, x1^2)
     if (par.int == "spline") X <- NA
 
-    w1 <- x1 + rnorm(n, 0, sd = sqrt(sigma.sq.u1))  # Add/contaminate the covariate with error.
+    w1 <- x1 + rnorm(n, 0, sd = sqrt(sigma.sq.u1))  # Add/contaminate the predictor with error.
 
     if (par.int == 3) {
       W <- cbind(rep(1, n), w1, w1^2)
@@ -532,7 +795,7 @@ for(i in 1:length(sigma.sq.u_vec)) {
 
     est <- try(refitME(mod_naiv1, sigma.sq.u, B), silent = TRUE)  # MCEM GLM.
 
-    if (class(est) == "try-error") next
+    if (class(est)[1] == "try-error") next
     nocrash <- c(nocrash, 1)
 
     k <- k + 1
@@ -547,7 +810,7 @@ for(i in 1:length(sigma.sq.u_vec)) {
       beta_mat.se0 <- rbind(beta_mat.se0, sqrt(diag(vcov(mod_true1))))
       beta_mat.se1 <- rbind(beta_mat.se1, sqrt(diag(vcov(mod_naiv1))))
       beta_mat.se2 <- rbind(beta_mat.se2, sqrt(diag(mod_simex1$variance.jackknife)))
-      beta_mat.se3 <- rbind(beta_mat.se3, est$se1)
+      beta_mat.se3 <- rbind(beta_mat.se3, est$se)
     }
 
     # CV/MSE on test data.
@@ -661,252 +924,15 @@ if (par.int != "spline") {
   multiplot(p1, p2, p3, layout = matrix(c(1, 2, 3, 3), ncol = 2, nrow = 2, byrow = T))
 }
 
-#---------------------------------------------------------------------------------------------------------------
-
-# Web Figure 1: Checking the effective sample size (ESS) across model dimensions and measurement error variance.
-
-rm(list = ls())
-
-source("/Users/z3409479/Desktop/Post Doc/Algorithms and R-programs/MCEM Wrapper/MCEM_prog.r")
-
-set.seed(2019)
-
-B <- 50
-
-n <- 1000
-
-dim_vec <- c(1:10)
-
-sigma.sq.e <- diag(c(rep(1, 10))) # True covariate sigma.
-
-alpha <- c(rep(0, 10))
-
-beta_vec <- c(0.5, rep(1, 10))
-
-sigma.sq.u_big <- diag(c(rep(0.5, 10)))
-
-x1 <- rnorm(n, alpha[1], sd = sqrt(sigma.sq.e[1, 1]))
-x2 <- rnorm(n, alpha[2], sd = sqrt(sigma.sq.e[2, 2]))
-x3 <- rnorm(n, alpha[3], sd = sqrt(sigma.sq.e[3, 3]))
-x4 <- rnorm(n, alpha[4], sd = sqrt(sigma.sq.e[4, 4]))
-x5 <- rnorm(n, alpha[5], sd = sqrt(sigma.sq.e[5, 5]))
-x6 <- rnorm(n, alpha[6], sd = sqrt(sigma.sq.e[6, 6]))
-x7 <- rnorm(n, alpha[7], sd = sqrt(sigma.sq.e[7, 7]))
-x8 <- rnorm(n, alpha[8], sd = sqrt(sigma.sq.e[8, 8]))
-x9 <- rnorm(n, alpha[9], sd = sqrt(sigma.sq.e[9, 9]))
-x10 <- rnorm(n, alpha[10], sd = sqrt(sigma.sq.e[10, 10]))
-
-X_big <- cbind(rep(1, n), x1, x2, x3, x4, x5, x6, x7, x8, x9, x10)
-
-w1 <- x1 + rnorm(n, 0, sd = sqrt(sigma.sq.u_big[1, 1]))
-w2 <- x2 + rnorm(n, 0, sd = sqrt(sigma.sq.u_big[2, 2]))
-w3 <- x3 + rnorm(n, 0, sd = sqrt(sigma.sq.u_big[3, 3]))
-w4 <- x4 + rnorm(n, 0, sd = sqrt(sigma.sq.u_big[4, 4]))
-w5 <- x5 + rnorm(n, 0, sd = sqrt(sigma.sq.u_big[5, 5]))
-w6 <- x6 + rnorm(n, 0, sd = sqrt(sigma.sq.u_big[6, 6]))
-w7 <- x7 + rnorm(n, 0, sd = sqrt(sigma.sq.u_big[7, 7]))
-w8 <- x8 + rnorm(n, 0, sd = sqrt(sigma.sq.u_big[8, 8]))
-w9 <- x9 + rnorm(n, 0, sd = sqrt(sigma.sq.u_big[9, 9]))
-w10 <- x10 + rnorm(n, 0, sd = sqrt(sigma.sq.u_big[10, 10]))
-
-W_big <- cbind(w1, w2 ,w3, w4, w5, w6, w7, w8, w9, w10)
-
-eff_vec1 <- c()
-eff_vec2 <- c()
-
-for(i in 1:length(dim_vec)) {
-  sigma.sq.u <- sigma.sq.u_big[1:i, 1:i]
-
-  W <- as.matrix(W_big[, 1:i])
-  colnames(W) <- colnames(W_big)[1:i]
-
-  X <- X_big[, 1:(1 + i)]
-  colnames(X) <- colnames(X_big)[1:(1 + i)]
-
-  eta <- X%*%beta_vec[1:(1 + i)]
-
-  mu_Y <- eta
-  Y1 <- c(mu_Y) + rnorm(n, 0, 1)
-
-  mu_Y <- exp(eta)/(1 + exp(eta))
-  Y2 <- rbinom(n, 1, prob = mu_Y)
-
-  dat1 <- data.frame(cbind(Y1, X[, -1], W))
-  dat2 <- data.frame(cbind(Y2, X[, -1], W))
-
-  colnames(dat1) <- c("Y1", colnames(X)[-1], colnames(W))
-  colnames(dat2) <- c("Y2", colnames(X)[-1], colnames(W))
-
-  if (dim_vec[i] == 1) {
-    mod_naiv1 <- lm(Y1 ~ w1, x = TRUE, data = dat1)
-    mod_naiv2 <- glm(Y2 ~ w1, x = TRUE, family = binomial, data = dat2)
-  }
-
-  if (dim_vec[i] == 2) {
-    mod_naiv1 <- lm(Y1 ~ w1 + w2, x = TRUE, data = dat1)
-    mod_naiv2 <- glm(Y2 ~ w1 + w2, x = TRUE, family = binomial, data = dat2)
-  }
-
-  if (dim_vec[i] == 3) {
-    mod_naiv1 <- lm(Y1 ~ w1 + w2 + w3, x = TRUE, data = dat1)
-    mod_naiv2 <- glm(Y2 ~ w1 + w2 + w3, x = TRUE, family = binomial, data = dat2)
-  }
-
-  if (dim_vec[i] == 4) {
-    mod_naiv1 <- lm(Y1 ~ w1 + w2 + w3 + w4, x = TRUE, data = dat1)
-    mod_naiv2 <- glm(Y2 ~ w1 + w2 + w3 + w4, x = TRUE, family = binomial, data = dat2)
-  }
-
-  if (dim_vec[i] == 5) {
-    mod_naiv1 <- lm(Y1 ~ w1 + w2 + w3 + w4 + w5, x = TRUE, data = dat1)
-    mod_naiv2 <- glm(Y2 ~ w1 + w2 + w3 + w4 + w5, x = TRUE, family = binomial, data = dat2)
-  }
-
-  if (dim_vec[i] == 6) {
-    mod_naiv1 <- lm(Y1 ~ w1 + w2 + w3 + w4 + w5 + w6, x = TRUE, data = dat1)
-    mod_naiv2 <- glm(Y2 ~ w1 + w2 + w3 + w4 + w5 + w6, x = TRUE, family = binomial, data = dat2)
-  }
-
-  if (dim_vec[i] == 7) {
-    mod_naiv1 <- lm(Y1 ~ w1 + w2 + w3 + w4 + w5 + w6 + w7, x = TRUE, data = dat1)
-    mod_naiv2 <- glm(Y2 ~ w1 + w2 + w3 + w4 + w5 + w6 + w7, x = TRUE, family = binomial, data = dat2)
-  }
-
-  if (dim_vec[i] == 8) {
-    mod_naiv1 <- lm(Y1 ~ w1 + w2 + w3 + w4 + w5 + w6 + w7 + w8, x = TRUE, data = dat1)
-    mod_naiv2 <- glm(Y2 ~ w1 + w2 + w3 + w4 + w5 + w6 + w7 + w8, x = TRUE, family = binomial, data = dat2)
-  }
-  if (dim_vec[i] == 9) {
-    mod_naiv1 <- lm(Y1 ~ w1 + w2 + w3 + w4 + w5 + w6 + w7 + w8 + w9, x = TRUE, data = dat1)
-    mod_naiv2 <- glm(Y2 ~ w1 + w2 + w3 + w4 + w5 + w6 + w7 + w8 + w9, x = TRUE, family = binomial, data = dat2)
-  }
-  if (dim_vec[i] == 10) {
-    mod_naiv1 <- lm(Y1 ~ w1 + w2 + w3 + w4 + w5 + w6 + w7 + w8 + w9 + w10, x = TRUE, data = dat1)
-    mod_naiv2 <- glm(Y2 ~ w1 + w2 + w3 + w4 + w5 + w6 + w7 + w8 + w9 + w10, x = TRUE, family = binomial, data = dat2)
-  }
-
-  mod <- mod_naiv1; family <- "gaussian"; sigma.sq.e = 1; epsilon = 0.00001; silent = FALSE
-  #mod <- mod_naiv2; family <- mod$family$family; sigma.sq.e = 1; epsilon = 0.00001; silent = FALSE
-
-  est1 <- refitME(mod_naiv1, sigma.sq.u, B)
-  est2 <- refitME(mod_naiv2, sigma.sq.u, B)
-
-  eff_vec1 <- c(eff_vec1, mean(est1$eff.samp.size, na.rm = T)/B)
-  eff_vec2 <- c(eff_vec2, mean(est2$eff.samp.size, na.rm = T)/B)
-}
-
-dats1 <- as.data.frame(cbind(log(dim_vec), log(eff_vec1), log(1/dim_vec)))
-dats2 <- as.data.frame(cbind(log(dim_vec), log(eff_vec2), log(1/dim_vec)))
-
-colnames(dats1) = colnames(dats2) = c("dim_vec", "ESS", "log_dim")
-
-p1 <- ggplot(dats1, aes(x = dim_vec, y = ESS)) + geom_point() + geom_line(size = 1) +
-  geom_line(aes(x = dim_vec, y = log_dim), color = "red", linetype = "dotted", colour ="log(ESS/B)") +
-  labs(x = bquote("log(p)"), y = bquote("log(ESS/B)"), title = "Gaussian response") +
-  theme(axis.title.y = element_text(size = 20, angle = 90), text = element_text(size = 20),
-        axis.text = element_text(size = 20), axis.title = element_text(size = 20, face = "bold"))
-
-p2 <- ggplot(dats2, aes(x = dim_vec, y = ESS)) + geom_point() + geom_line(size = 1) +
-  geom_line(aes(x = dim_vec, y = log_dim), color = "red", linetype = "dotted") +
-  labs(x = bquote("log(p)"), y = bquote("log(ESS/B)"), title = "Binary response") +
-  theme(axis.title.y = element_text(size = 20, angle = 90), legend.title = element_blank(), text = element_text(size = 20),
-        legend.position = "none", axis.text = element_text(size = 20), axis.title = element_text(size = 20, face = "bold"))
-
-multiplot(p1, p2, layout = matrix(c(1, 2), ncol = 2, nrow = 1, byrow = T))
-
-#--------------------------------------------------------------
-
-# Web Figure 2: Effective sample size (EFF) against measurement error variance.
-
-rm(list = ls())
-
-source("/Users/z3409479/Desktop/Post Doc/Algorithms and R-programs/MCEM Wrapper/MCEM_prog.r")
-
-set.seed(2019)
-
-B <- 50
-
-n <- 1000
-
-sigma.sq.u_vec <- c(seq(0.1, 1, 0.1))
-
-sigma.sq.e <- diag(c(rep(1, 2))) # True covariate sigma.
-
-alpha <- c(rep(0, 2))
-
-beta_vec <- c(0.5, rep(1, 2))
-
-sigma.sq.u_big <- diag(c(rep(0.5, 10)))
-
-eff_vec1 <- eff_vec2 <- c()
-
-for(i in 1:length(sigma.sq.u_vec)) {
-  sigma.sq.u <- diag(c(rep(sigma.sq.u_vec[i], 2)))
-
-  x1 <- rnorm(n, alpha[1], sd = 1)
-  x2 <- rnorm(n, alpha[2], sd = 1)
-
-  X <- cbind(rep(1, n), x1, x2)
-
-  w1 <- x1 + rnorm(n, 0, sd = sqrt(sigma.sq.u[1, 1]))
-  w2 <- x2 + rnorm(n, 0, sd = sqrt(sigma.sq.u[1, 1]))
-
-  W <- cbind(w1, w2)
-
-  # Gaussian response.
-
-  eta <- X%*%beta_vec
-  mu_Y <- eta
-  Y <- c(mu_Y) + rnorm(n, 0, 1)
-  dat <- data.frame(cbind(Y, X, W))
-  mod_naiv1 <- lm(Y ~ w1 + w2, x = TRUE, data = dat)
-
-  #mod <- mod_naiv1
-
-  est <- refitME(mod_naiv1, sigma.sq.u, B)
-  eff_vec1 <- c(eff_vec1, mean(est$eff.samp.size, na.rm = T)/B)
-
-  # Binomial response.
-
-  mu_Y <- exp(eta)/(1 + exp(eta))
-  Y <- rbinom(n, 1, prob = mu_Y)
-  dat <- data.frame(cbind(Y, X, W))
-  mod_naiv1 <- glm(Y ~ w1 + w2, x = TRUE, family = binomial, data = dat)
-  est <- refitME(mod_naiv1, sigma.sq.u, B)
-  eff_vec2 <- c(eff_vec2, mean(est$eff.samp.size, na.rm = T)/B)
-}
-
-dat1 <- as.data.frame(cbind(sigma.sq.u_vec, eff_vec1))
-dat2 <- as.data.frame(cbind(sigma.sq.u_vec, eff_vec2))
-
-colnames(dat1) = colnames(dat2) = c("sigma.sq.u_big", "ESS")
-
-p1 <- ggplot(dat1, aes(x = sigma.sq.u_vec, y = ESS)) + geom_point() + geom_line(size = 1) +
-  labs(x = bquote("ME variance"), y = bquote("ESS/B"), title = "Gaussian response") +
-  xlab(expression(sigma[u]^2)) +
-  theme(axis.title.y = element_text(size = 20, angle = 90), text = element_text(size = 20),
-        axis.text = element_text(size = 20), axis.title = element_text(size = 20, face = "bold"))
-
-p2 <- ggplot(dat2, aes(x = sigma.sq.u_vec, y = ESS)) + geom_point() + geom_line(size = 1) +
-  labs(x = bquote("ME variance"), y = bquote("ESS/B"), title = "Binary response") +
-  xlab(expression(sigma[u]^2)) +
-  theme(axis.title.y = element_text(size = 20, angle = 90), legend.title = element_blank(), text = element_text(size = 20),
-        legend.position = "none", axis.text = element_text(size = 20),
-        axis.title = element_text(size = 20, face = "bold"))
-
-par(mfrow = c(1, 2), las = 1)
-
-multiplot(p1, p2, layout = matrix(c(1, 2), ncol = 2, nrow = 1, byrow = T))
-
-#-------------------------------------------------------------
+#-----------------------------------------------------------------------------------------
 
 # Web Appendix A.3: Capture-recapture simulation study.
 
-rm(list = ls())
-
-source("/Users/z3409479/Desktop/Post Doc/Algorithms and R-programs/MCEM Wrapper/MCEM_prog.r")
-
+library(refitME)
 library(VGAM)
+
+setwd(system.file(package = 'refitME'))
+source('MCEM_prog.R')
 
 set.seed(2016)
 
@@ -922,9 +948,9 @@ tau <- 7
 
 beta <- c(-1, 1);  par.int <- 2
 
-# Un-hash below if you want to fit quadratic models.
+# Un-hash/toggle below if you want to fit quadratic models.
 
-#beta <- c(0.5, 0, -0.3); par.int <- 3
+beta <- c(0.5, 0, -0.3); par.int <- 3
 
 sigma.sq.e <- 1
 
@@ -1149,3 +1175,5 @@ p6 <- ggplot(CP_N_mat, aes(x = sigma.sq, y = coverage, colour = model, group = m
   theme(aspect.ratio = 1)
 
 multiplot(p4, p5, p6, layout = matrix(c(1, 2, 3, 3), ncol = 2, nrow = 2, byrow = T))
+
+detach(package:VGAM)

@@ -49,19 +49,17 @@ library(VGAM)
 data(Priniadata)
 
 tau <- 17   # No. of capture occasions.
-w1 <- Priniadata$w1
+w1 <- Priniadata$w1 # Bird wing length predictor.
 
-CR_naiv1 <- vglm(cbind(cap, noncap) ~ w1,
+CR_naiv <- vglm(cbind(cap, noncap) ~ w1,
    VGAM::posbinomial(omit.constant = TRUE, parallel = TRUE ~ w1),
    data = Priniadata, trace = FALSE)
 
-CR_naiv2 <- vgam(cbind(cap, noncap) ~ VGAM::s(w1, df = 2),
-   VGAM::posbinomial(omit.constant = TRUE, parallel = TRUE ~ VGAM::s(w1, df = 2)),
-   data = Priniadata, trace = FALSE)
+sigma.sq.u <- 0.37 # ME variance.
 
-sigma.sq.u <- 0.37/var(w1) # ME variance.
+CR_MCEM <- refitME(CR_naiv, sigma.sq.u)
 
-CR_MCEM <- refitME(CR_naiv2, sigma.sq.u)
+detach(package:VGAM)
 
 }
 \references{

@@ -60,7 +60,7 @@
 #'
 #' Function that extracts the fitted (naive) model object and wraps the MCEM algorithm to correct for measurement error/error-in-variables (currently available for \code{lm()}, \code{glm()} and \code{gam()}, excludes \code{lme()}, \code{nlme()} and \code{polr()} models).
 #' @name refitME
-#' @param mod : a \code{lm/glm/gam} object (S3 classes) or a \code{vlgm/vgam} object (S4 class) when using the \code{posbinomial} family. This is the naive fitted model. Make sure the first \eqn{p} input predictor variables entered in the naive model are the specified error-contaminated variables. These \eqn{p} predictors also need the measurement error variance to be specified in \code{sigma.sq.u}, see below.
+#' @param mod : a \code{lm/glm/gam} object (S3 classes) or an \code{vlgm/vgam} object (S4 class) when using the \code{posbinomial} family. This is the naive fitted model. Make sure the first \eqn{p} input predictor variables entered in the naive model are the specified error-contaminated variables. These \eqn{p} predictors also need the measurement error variance to be specified in \code{sigma.sq.u}, see below.
 #' @param sigma.sq.u : measurement error (ME) variance. A scalar if there is only one error-contaminated predictor variable, otherwise this must be stored as a covariance matrix.
 #' @param B : the number of Monte Carlo replication values (default is set 50).
 #' @param epsilon : convergence threshold (default is set to 0.00001).
@@ -70,8 +70,6 @@
 #' @author Jakub Stoklosa, Wen-Han Hwang and David I. Warton.
 #' @references Carroll, R. J., Ruppert, D., Stefanski, L. A., and Crainiceanu, C. M. (2006). \emph{Measurement Error in Nonlinear Models: A Modern Perspective.} 2nd Ed. London: Chapman & Hall/CRC.
 #' @references Stoklosa, J., Hwang, W-H., and Warton, D.I. \pkg{refitME}: Measurement Error Modelling using Monte Carlo Expectation Maximization in \proglang{R}.
-#' @import mvtnorm MASS mgcv sandwich expm caret
-#' @importFrom stats Gamma
 #' @export
 #' @seealso \code{\link{MCEMfit_glm}} and \code{\link{MCEMfit_gam}}
 #' @source See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
@@ -168,8 +166,11 @@ refitME <- function(mod, sigma.sq.u, B = 50, epsilon = 0.00001, silent = FALSE, 
 #' @author Jakub Stoklosa, Wen-Han Hwang and David I. Warton.
 #' @references Carroll, R. J., Ruppert, D., Stefanski, L. A., and Crainiceanu, C. M. (2006). \emph{Measurement Error in Nonlinear Models: A Modern Perspective.} 2nd Ed. London: Chapman & Hall/CRC.
 #' @references Stoklosa, J., Hwang, W-H., and Warton, D.I. \pkg{refitME}: Measurement Error Modelling using Monte Carlo Expectation Maximization in \proglang{R}.
-#' @import mvtnorm MASS mgcv sandwich expm caret
 #' @importFrom stats Gamma
+#' @importFrom mvtnorm dmvnorm
+#' @importFrom MASS glm.nb
+#' @importFrom sandwich estfun
+#' @importFrom expm sqrtm
 #' @export
 #' @seealso \code{\link{MCEMfit_gam}}
 #' @source See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
@@ -473,7 +474,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
       sigma.sq.est <- (summary(mod)$sigma)^2
     }
     if (family == "binomial") mod <- suppressWarnings(stats::glm(formula = form.name, family = "binomial", data = new.dat, weights = weights1, ...))
-    if (family == "poisson") mod <- suppressWarnings(stats::glm(formula = form.name, family = "poisson", data = new.dat, weights = weights1, ...))
+    if (family == "poisson") mod <- suppressWarnings(stats::glm(formula = form.name, family = "poisson", data = new.dat, weights = weights1))
     if (family == "Gamma") mod <- suppressWarnings(stats::glm(formula = form.name, family = Gamma(link = "log"), data = new.dat, weights = weights1, ...))
     if (family == "negbin") mod <- suppressWarnings(MASS::glm.nb(formula = form.name, init.theta = theta.est, data = new.dat, weights = weights1, ...))
 
@@ -692,8 +693,10 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
 #' @references Ganguli, B, Staudenmayer, J., and Wand, M. P. (2005). Additive models with predictors subject to measurement error. \emph{Australian & New Zealand Journal of Statistics}, \strong{47}, 193–202.
 #' @references Wand, M. P. (2018). \pkg{SemiPar}: Semiparametic Regression. \proglang{R} package version 1.0-4.2., URL \url{https://CRAN.R-project.org/package=SemiPar}.
 #' @references Stoklosa, J., Hwang, W-H., and Warton, D.I. \pkg{refitME}: Measurement Error Modelling using Monte Carlo Expectation Maximization in \proglang{R}.
-#' @import mvtnorm MASS mgcv sandwich SemiPar
 #' @importFrom stats Gamma
+#' @importFrom mgcv nb
+#' @importFrom mvtnorm dmvnorm
+#' @importFrom sandwich estfun
 #' @export
 #' @seealso \code{\link{MCEMfit_glm}}
 #' @source See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
@@ -726,6 +729,8 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
 #' B <- 10  # Consider increasing this if you want a more accurate answer.
 #'
 #' gam_MCEM <- refitME(gam_naiv, sigma.sq.u, B)
+#'
+#' detach(package:mgcv)
 #'
 MCEMfit_gam <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon = 0.00001, silent = FALSE, theta.est = 1, shape.est = 10, ...) {
 
@@ -882,7 +887,7 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
     if (family == "binomial") mod <- suppressWarnings(mgcv::gam(formula = form.name, family = "binomial", gamma = 1.4, data = new.dat, weights = weights1, ...))
     if (family == "poisson") mod <- suppressWarnings(mgcv::gam(formula = form.name, family = "poisson", data = new.dat, weights = weights1, ...))
     if (family == "Gamma") mod <- suppressWarnings(mgcv::gam(formula = form.name, family = Gamma(link = "log"), data = new.dat, weights = weights1, ...))
-    if (family == "negbin") mod <- suppressWarnings(mgcv::gam(form.name, family = nb(), data = new.dat, weights = weights1, ...))
+    if (family == "negbin") mod <- suppressWarnings(mgcv::gam(form.name, family = mgcv::nb(), data = new.dat, weights = weights1, ...))
 
     beta.update <- stats::coef(mod)
 
@@ -1060,8 +1065,11 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
 #' @author Jakub Stoklosa, Wen-Han Hwang and David I. Warton.
 #' @references Carroll, R. J., Ruppert, D., Stefanski, L. A., and Crainiceanu, C. M. (2006). \emph{Measurement Error in Nonlinear Models: A Modern Perspective.} 2nd Ed. London: Chapman & Hall/CRC.
 #' @references Stoklosa, J., Hwang, W-H., and Warton, D.I. \pkg{refitME}: Measurement Error Modelling using Monte Carlo Expectation Maximization in \proglang{R}.
-#' @import mvtnorm MASS
 #' @importFrom stats Gamma
+#' @importFrom mvtnorm dmvnorm
+#' @importFrom MASS glm.nb
+#' @importFrom sandwich estfun
+#' @importFrom mgcv nb
 #' @export
 #' @seealso \code{\link{MCEMfit_glm}} and \code{\link{MCEMfit_gam}}
 #'
@@ -1516,8 +1524,7 @@ MCEMfit_gen <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
 #' @return \code{MCEMfit_CR} returns model coefficient and population size estimates with standard errors and the effective sample size.
 #' @author Jakub Stoklosa, Wen-Han Hwang and David I. Warton.
 #' @references Stoklosa, J., Hwang, W-H., and Warton, D.I. \pkg{refitME}: Measurement Error Modelling using Monte Carlo Expectation Maximization in \proglang{R}.
-#' @import MASS
-#' @importFrom VGAM posbinomial
+#' @importFrom VGAM s posbinomial
 #' @importFrom VGAMdata dposbinom
 #' @export
 #' @seealso \code{\link{MCEMfit_glm}}
@@ -1530,19 +1537,17 @@ MCEMfit_gen <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
 #' data(Priniadata)
 #'
 #' tau <- 17   # No. of capture occasions.
-#' w1 <- Priniadata$w1
+#' w1 <- Priniadata$w1 # Bird wing length predictor.
 #'
-#' CR_naiv1 <- vglm(cbind(cap, noncap) ~ w1,
+#' CR_naiv <- vglm(cbind(cap, noncap) ~ w1,
 #'    VGAM::posbinomial(omit.constant = TRUE, parallel = TRUE ~ w1),
 #'    data = Priniadata, trace = FALSE)
 #'
-#' CR_naiv2 <- vgam(cbind(cap, noncap) ~ VGAM::s(w1, df = 2),
-#'    VGAM::posbinomial(omit.constant = TRUE, parallel = TRUE ~ VGAM::s(w1, df = 2)),
-#'    data = Priniadata, trace = FALSE)
+#' sigma.sq.u <- 0.37 # ME variance.
 #'
-#' sigma.sq.u <- 0.37/var(w1) # ME variance.
+#' CR_MCEM <- refitME(CR_naiv, sigma.sq.u)
 #'
-#' CR_MCEM <- refitME(CR_naiv2, sigma.sq.u)
+#' detach(package:VGAM)
 #'
 MCEMfit_CR <- function(mod, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon = 0.00001, silent = FALSE) {
 
@@ -1629,11 +1634,11 @@ MCEMfit_CR <- function(mod, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon = 0.0000
     weights1 <- as.vector(bigW)/sumW
 
     if (p1 == 1) mod <- suppressWarnings(VGAM::vglm(cbind(cap, noncap) ~ x1, VGAM::posbinomial(omit.constant = TRUE, parallel = TRUE ~ x1), data = CR_dat, trace = F, weights = weights1))
-    if (p1 == 2) mod <- suppressWarnings(VGAM::vglm(cbind(cap, noncap) ~ x1 + I(x1^2), VGAM::posbinomial(omit.constant = TRUE, parallel = TRUE ~ x1 + I(x1^2)), data = CR_dat, trace = F, weights = as.vector(bigW)/sumW))
-    if (p1 == 3) mod <- suppressWarnings(VGAM::vglm(cbind(cap, noncap) ~ x1 + I(x1^2) + I(x1^3), VGAM::posbinomial(omit.constant = TRUE, parallel = TRUE ~ x1 + I(x1^2)), data = CR_dat, trace = F, weights = as.vector(bigW)/sumW))
-    if (p1 == "spline") mod <- suppressWarnings(VGAM::vgam(cbind(cap, noncap) ~ VGAM::s(x1, df = 2), VGAM::posbinomial(omit.constant = TRUE, parallel = TRUE ~ VGAM::s(x1, df = 2)), data = CR_dat, trace = F, weights = as.vector(bigW)/sumW))
+    if (p1 == 2) mod <- suppressWarnings(VGAM::vglm(cbind(cap, noncap) ~ x1 + I(x1^2), VGAM::posbinomial(omit.constant = TRUE, parallel = TRUE ~ x1 + I(x1^2)), data = CR_dat, trace = F, weights = weights1))
+    if (p1 == 3) mod <- suppressWarnings(VGAM::vglm(cbind(cap, noncap) ~ x1 + I(x1^2) + I(x1^3), VGAM::posbinomial(omit.constant = TRUE, parallel = TRUE ~ x1 + I(x1^2)), data = CR_dat, trace = F, weights = weights1))
+    if (p1 == "spline") mod <- suppressWarnings(VGAM::vgam(cbind(cap, noncap) ~ s(x1, df = 2), VGAM::posbinomial(omit.constant = TRUE, parallel = TRUE ~ s(x1, df = 2)), data = CR_dat, trace = F, weights = weights1))
 
-    beta.update <- VGAM::coef(mod)
+    beta.update <- stats::coef(mod)
     if (p1 == 1 | p1 == 2 | p1 == 3) muPred <- 1/(1 + exp(-VGAM::predictvglm(mod, type = "link")))
     if (p1 == "spline") muPred <- 1/(1 + exp(-VGAM::predict.vgam(mod, type = "link")))
 
@@ -1904,6 +1909,7 @@ logLik.refitME <- function(object, ...) {
     p <- object$rank
     if (fam %in% c("gaussian", "Gamma", "inverse.gaussian"))
       p <- p + 1
+
     val <- p - object$aic/2
     attr(val, "nobs") <- sum(!is.na(object$residuals))
     attr(val, "df") <- p

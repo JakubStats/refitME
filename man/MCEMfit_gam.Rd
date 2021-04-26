@@ -78,6 +78,8 @@ B <- 10  # Consider increasing this if you want a more accurate answer.
 
 gam_MCEM <- refitME(gam_naiv, sigma.sq.u, B)
 
+detach(package:mgcv)
+
 }
 \references{
 Ganguli, B, Staudenmayer, J., and Wand, M. P. (2005). Additive models with predictors subject to measurement error. \emph{Australian & New Zealand Journal of Statistics}, \strong{47}, 193–202.

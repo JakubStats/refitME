@@ -6,8 +6,6 @@
 
 # Example 1: A simple GLM example taken from Carroll et al. (2006) - The Framingham heart study data set.
 
-rm(list = ls())
-
 library(refitME)
 library(simex)
 
@@ -64,10 +62,10 @@ round(est.beta.se, digits = 3)
 names(comp.time) <- c("SIMEX", "MCEM")
 round(comp.time, digits = 3)
 
-# Check a generic functions, e.g. summary, ANOVA, etc.
+# Check a generic functions, e.g., summary, ANOVA, etc.
 
 summary(glm_naiv)
-summary(glm_naiv)
+summary(glm_MCEM)
 
 anova(glm_naiv)
 anova(glm_MCEM)
@@ -76,10 +74,9 @@ anova(glm_MCEM)
 
 # Example 2: A GAM example taken from Ganguli et al. (2005) - The air pollution data set.
 
-rm(list = ls())
-
 library(refitME)
 library(SemiPar)
+library(mgcv)
 
 set.seed(2020)
 
@@ -113,9 +110,7 @@ sigma.sq.u <- 0.09154219 # Rel. ratio of 70%.
 rel.rat <- (1 - sigma.sq.u/var(dat$w1))*100
 rel.rat
 
-B <- 3
-
-gam_MCEM <- refitME(gam_naiv, sigma.sq.u, B)
+gam_MCEM <- refitME(gam_naiv, sigma.sq.u)
 
 # Plots (examine all smooth terms against covariates).
 
@@ -170,11 +165,11 @@ title(main = "MCEM (Poisson GAM) fitted to the air pollution data.", outer = T, 
 
 par(op)
 
+detach(package:mgcv)
+
 #----------------------------------------------------------------------------------------
 
 # Example 3: A Point Process model (PPM) example using Corymbia eximia presence-only data.
-
-rm(list = ls())
 
 library(refitME)
 library(caret)
@@ -214,8 +209,8 @@ train <- (1:n)
 n.train <- n.test <- n
 test <- (1:n)
 
-data.tr <- data.frame(cbind(Y[train], p.wt[train], X[train, ]))
-colnames(data.tr)[1:2] <- c("Y", "p.wt")
+data.tr <- data.frame(cbind(Y[train], X[train, ], p.wt[train]))
+colnames(data.tr)[c(1, ncol(data.tr))] <- c("Y", "p.wt")
 
 PPM_naiv <- glm(Y ~ poly(w1, degree = 2, raw = TRUE) + poly(z1, degree = 2, raw = TRUE) + poly(z2, degree = 2, raw = TRUE), family = "poisson", weights = p.wt, data = data.tr)
 
@@ -223,9 +218,9 @@ PPM_naiv <- glm(Y ~ poly(w1, degree = 2, raw = TRUE) + poly(z1, degree = 2, raw 
 
 # Set the measurement error variance here (we considered three values in this example).
 
-#sigma.sq.u <- 0.25
+sigma.sq.u <- 0.25
 #sigma.sq.u <- 0.5
-sigma.sq.u <- 1
+#sigma.sq.u <- 1
 
 W <- MNT # Max. temp (measured with error).
 W.train <- W[train]
@@ -282,20 +277,22 @@ weighted.mean(coord.dat1[, 2], w = preds4)
 
 # Example 4: A capture-recapture example using the Hong Kong prinia bird data.
 
-rm(list = ls())
-
-source("/Users/z3409479/Desktop/Post Doc/Algorithms and R-programs/MCEM Wrapper/MCEM_prog.r")
-
 library(refitME)
 library(VGAM)
 
+setwd(system.file(package = 'refitME'))
+source('MCEM_prog.R')
+
 set.seed(2020)
 
-load("Priniadata.RData")
+data(Priniadata)
 
 tau <- 17
 
-w1 <- Priniadata$w1
+# Standardize the bird wing length predictor.
+
+w2 <- c(scale(Priniadata$w1))
+Priniadata$w2 <- w2
 
 y <- Priniadata$cap
 
@@ -303,21 +300,21 @@ y <- Priniadata$cap
 
 # Naive model.
 
-CR_naiv1 <- vglm(cbind(cap, noncap) ~ w1, VGAM::posbinomial(omit.constant = TRUE, parallel = TRUE ~ w1), data = Priniadata, trace = FALSE)
+CR_naiv1 <- vglm(cbind(cap, noncap) ~ w2, VGAM::posbinomial(omit.constant = TRUE, parallel = TRUE ~ w2), data = Priniadata, trace = FALSE)
 
 # Conditional score (CS) model.
 
-sigma.sq.u <- 0.37/var(w1) # ME variance.
+sigma.sq.u <- 0.37/var(Priniadata$w1) # ME variance.
 
-CS_beta.est <- nleqslv(coef(CR_naiv1), est.cs, y = y, w1 = w1, tau = tau, sigma.sq.u = sigma.sq.u, method = c("Newton"))$x
-CS_N.est <- N.CS.est(CS_beta.est, y, w1, tau, sigma.sq.u)
+CS_beta.est <- nleqslv(coef(CR_naiv1), est.cs, y = y, w1 = w2, tau = tau, sigma.sq.u = sigma.sq.u, method = c("Newton"))$x
+CS_N.est <- N.CS.est(CS_beta.est, y, w2, tau, sigma.sq.u)
 
-var.ests1 <- var.CS(CS_beta.est, y, w1, tau, sigma.sq.u)
+var.ests1 <- var.CS(CS_beta.est, y, w2, tau, sigma.sq.u)
 CS_beta.est.se <- sqrt(var.ests1)[1:2]
 
 # MCEM model.
 
-CR_naiv2 <- vgam(cbind(cap, noncap) ~ VGAM::s(w1, df = 2), VGAM::posbinomial(omit.constant = TRUE, parallel = TRUE ~ VGAM::s(w1, df = 2)), data = Priniadata, trace = FALSE)
+CR_naiv2 <- vgam(cbind(cap, noncap) ~ s(w2, df = 2), VGAM::posbinomial(omit.constant = TRUE, parallel = TRUE ~ s(w2, df = 2)), data = Priniadata, trace = FALSE)
 
 B <- 100
 
@@ -327,7 +324,7 @@ N.hat_MCEM <- CR_MCEM$N.est
 
 N.hat.se_MCEM <- CR_MCEM$N.est.se
 
-# Model selection.
+# Model selection using AIC.
 
 AIC.mod <- c(round(AIC(CR_naiv1), digits = 2), NA, round(AIC(CR_naiv2), digits = 2), round(CR_MCEM$aic.value, digits = 2))
 
@@ -343,3 +340,5 @@ row.names(est) <- c("Naive GLM", "Conditional Score", "Naive GAM", "MCEM")
 colnames(est) <- c("AIC", "N hat", "SE(N hat)")
 
 est
+
+detach(package:VGAM)

@@ -199,6 +199,8 @@ for(i in 1:4) {
 
 title(main = "MCEM (Poisson GAM) fitted to the air pollution data.", outer = T, line = -2)
 par(op)
+
+detach(package:mgcv)
 ```
 
 \clearpage
@@ -238,8 +240,8 @@ X <- cbind(rep(1, length(Y)), poly(MNT, degree = 2, raw = TRUE),
 
 colnames(X) <- c("(Intercept)", "X1", "X2", "Z1", "Z2", "Z3", "Z4")
 
-dat1 <- data.frame(cbind(Y, p.wt, X))
-colnames(dat1)[1:2] <- c("Y", "p.wt")
+dat1 <- data.frame(cbind(Y, X, p.wt))
+colnames(dat1)[c(1, ncol(dat1))] <- c("Y", "p.wt")
 ```
 
 ### Fit the naive (PPM) model.
@@ -291,26 +293,29 @@ data(Priniadata)
 
 ```{r, echo=TRUE}
 tau <- 17   # No. of capture occasions.
-w1 <- Priniadata$w1
+w2 <- c(scale(Priniadata$w1)) # Standardize the wing length predictor.
+Priniadata$w2 <- w2
 ```
 
 ### Fit the naive `vglm` and `vgam` capture-recapture models.
 
 ```{r, echo=TRUE}
-CR_naiv1 <- vglm(cbind(cap, noncap) ~ w1,
+CR_naiv1 <- vglm(cbind(cap, noncap) ~ w2,
                  VGAM::posbinomial(omit.constant = TRUE, 
-                                   parallel = TRUE ~ w1),
+                                   parallel = TRUE ~ w2),
                  data = Priniadata, trace = FALSE)
-CR_naiv2 <- vgam(cbind(cap, noncap) ~ VGAM::s(w1, df = 2),
+CR_naiv2 <- vgam(cbind(cap, noncap) ~ s(w2, df = 2),
                  VGAM::posbinomial(omit.constant = TRUE, 
-                                   parallel = TRUE ~ VGAM::s(w1, df = 2)),
+                                   parallel = TRUE ~ s(w2, df = 2)),
                  data = Priniadata, trace = FALSE)
 ```
 
 ### Fit the MCEM capture-recapture model.
 
 ```{r, echo=TRUE}
-sigma.sq.u <- 0.37/var(w1) # Measurement error variance.
+sigma.sq.u <- 0.37/var(Priniadata$w1) # Measurement error variance.
 B <- 100
 CR_MCEM <- refitME(CR_naiv2, sigma.sq.u, B)
+
+detach(package:VGAM)
 ```

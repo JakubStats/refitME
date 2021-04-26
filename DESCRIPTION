@@ -1,11 +1,26 @@
 Package: refitME
-Title: Monte Carlo Expectation Maximization - Measurement Error Modelling Wrapper Function
+Title: Measurement Error Modelling using MCEM
 Version: 1.2.0
-Author: Jakub Stoklosa and David I. Warton
-Maintainer: Jakub Stoklosa <j.stoklosa@unsw.edu.au>
-Description: Fits measurement error models using Monte Carlo Expectation Maximization. For more specific details on the methodology, see: Stoklosa, Hwang and Warton (2021). Sumbitted to Journal of Statistical Software. For more examples using the methods, see the RMarkdown "refitME R-package tutorial".
+Authors@R: 
+  c(person(given = "Jakub",
+           family = "Stoklosa",
+           role = c("aut", "cre"),
+           email = "j.stoklosa@unsw.edu.au",
+           comment = c(ORCID = "0000-0002-6523-4524")),
+    person(given = "Wenhan",
+           family = "Hwang",
+           role = c("aut", "ctb")),
+    person(given = "David",
+           family = "Warton",
+           role = c("aut", "ctb")),
+    person(given = "Jeremy",
+           family = "Vanderwal",
+           role = "ctb",
+           email = "jjvanderwal@@gmail.com",
+           comment = c("Used the wt.var() function written by Jeremy VanDerWal")))
+Description: Fits measurement error models using Monte Carlo Expectation Maximization (MCEM). For specific details on the methodology, see: Greg C. G. Wei & Martin A. Tanner (1990) A Monte Carlo Implementation of the EM Algorithm and the Poor Man's Data Augmentation Algorithms, Journal of the American Statistical Association, 85:411, 699-704 <doi:10.1080/01621459.1990.10474930> For more examples on measurement error modelling using MCEM, see the 'RMarkdown' vignette: "'refitME' R-package tutorial".
 Depends: R (>= 4.0.0)
-Imports: MASS, SemiPar, VGAM, VGAMdata, caret, expm, mgcv, mvtnorm, sandwich, stats, dplyr
+Imports: MASS, SemiPar, mgcv, VGAM, VGAMdata, caret, expm, mvtnorm, sandwich, stats, dplyr
 License: GPL-2
 Encoding: UTF-8
 LazyData: true

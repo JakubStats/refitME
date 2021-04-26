@@ -10,7 +10,7 @@ See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with e
 refitME(mod, sigma.sq.u, B = 50, epsilon = 1e-05, silent = FALSE, ...)
 }
 \arguments{
-\item{mod}{: a \code{lm/glm/gam} object (S3 classes) or a \code{vlgm/vgam} object (S4 class) when using the \code{posbinomial} family. This is the naive fitted model. Make sure the first \eqn{p} input predictor variables entered in the naive model are the specified error-contaminated variables. These \eqn{p} predictors also need the measurement error variance to be specified in \code{sigma.sq.u}, see below.}
+\item{mod}{: a \code{lm/glm/gam} object (S3 classes) or an \code{vlgm/vgam} object (S4 class) when using the \code{posbinomial} family. This is the naive fitted model. Make sure the first \eqn{p} input predictor variables entered in the naive model are the specified error-contaminated variables. These \eqn{p} predictors also need the measurement error variance to be specified in \code{sigma.sq.u}, see below.}
 
 \item{sigma.sq.u}{: measurement error (ME) variance. A scalar if there is only one error-contaminated predictor variable, otherwise this must be stored as a covariance matrix.}
 
