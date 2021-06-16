@@ -13,6 +13,7 @@ library(ggplot2)
 library(nleqslv)
 library(fGarch)
 library(gamlss)
+library(scales)
 
 #------------------------------------------------------------------------------------------------------
 

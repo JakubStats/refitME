@@ -25,7 +25,7 @@ MCEMfit_gam(
 
 \item{family}{: a specified family/distribution.}
 
-\item{sigma.sq.u}{: measurement error variance. A scalar if there is only one error-contaminated predictor variable, otherwise this must be stored as a covariance matrix.}
+\item{sigma.sq.u}{: measurement error (ME) variance. A scalar if there is only one error-contaminated predictor variable, otherwise this must be stored as a vector (of ME variances) or a matrix if the ME covariance matrix is known.}
 
 \item{sigma.sq.e}{: variance of the true predictor (\eqn{X}).}
 
@@ -77,6 +77,8 @@ sigma.sq.u <- 0.0915 # Measurement error variance.
 B <- 10  # Consider increasing this if you want a more accurate answer.
 
 gam_MCEM <- refitME(gam_naiv, sigma.sq.u, B)
+
+plot(gam_MCEM, select = 1)
 
 detach(package:mgcv)
 

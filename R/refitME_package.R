@@ -58,20 +58,20 @@
 
 #' A wrapper function for correcting measurement error in predictor variables via the MCEM algorithm
 #'
-#' Function that extracts the fitted (naive) model object and wraps the MCEM algorithm to correct for measurement error/error-in-variables (currently available for \code{lm()}, \code{glm()} and \code{gam()}, excludes \code{lme()}, \code{nlme()} and \code{polr()} models).
+#' Function that extracts the fitted (naive) model object and wraps the MCEM algorithm to correct for measurement error/error-in-variables in predictors.
 #' @name refitME
-#' @param mod : a \code{lm/glm/gam} object (S3 classes) or an \code{vlgm/vgam} object (S4 class) when using the \code{posbinomial} family. This is the naive fitted model. Make sure the first \eqn{p} input predictor variables entered in the naive model are the specified error-contaminated variables. These \eqn{p} predictors also need the measurement error variance to be specified in \code{sigma.sq.u}, see below.
-#' @param sigma.sq.u : measurement error (ME) variance. A scalar if there is only one error-contaminated predictor variable, otherwise this must be stored as a covariance matrix.
+#' @param mod : any (S3 class) fitted object that responds to the generic functions \code{family}, \code{model.frame}, \code{update} and \code{predict}, and accepts weighted observations via \code{weights}. The \code{mod} argument specifies the naive fitted model. Make sure the first \eqn{p} input predictor variables in the naive model are the selected error-contaminated predictors variables. Also, the \code{mod} argument allows \code{vlgm/vgam} (S4 class) model objects when using the \code{posbinomial} family -- this is a specific function developed for fitting closed population capture--recapture models, see \code{\link{MCEMfit_CR}}.
+#' @param sigma.sq.u : measurement error (ME) variance. A scalar if there is only one error-contaminated predictor variable, otherwise this must be stored as a vector (of known ME variances) or a matrix if the ME covariance matrix is known.
 #' @param B : the number of Monte Carlo replication values (default is set 50).
 #' @param epsilon : convergence threshold (default is set to 0.00001).
 #' @param silent : if \code{TRUE}, the convergence message (which tells the user if the model has converged and reports the number of iterations required) is suppressed (default is set to \code{FALSE}).
-#' @param ... : further arguments passed through to \code{lm}, \code{glm} or \code{gam}.
-#' @return \code{refitME} returns the naive fitted model object where coefficient estimates, the covariance matrix, fitted values, the log-likelihood, and residuals have been replaced with the final MCEM model fit. Standard errors and the effective sample size (which diagnose how closely the proposal distribution matches the posterior, see equation (2) of Stoklosa, Hwang and Warton) have also been included as outputs.
+#' @param ... : further arguments passed through to the function that was used to fit \code{mod}, that will be used in refitting. These need only be specified if making changes to the arguments as compared to the original call that produced \code{mod}.
+#' @return \code{refitME} returns the naive fitted model object where coefficient estimates, the covariance matrix, fitted values, the log-likelihood, and residuals have been replaced with the final MCEM model fit. Standard errors are included and returned, if \code{mod} is a class of object accepted by the \pkg{sandwich} package (such as \code{glm}, \code{gam}, \code{survreg} and many more). The effective sample size (which diagnose how closely the proposal distribution matches the posterior, see equation (2) of Stoklosa, Hwang and Warton) have also been included as outputs.
 #' @author Jakub Stoklosa, Wen-Han Hwang and David I. Warton.
 #' @references Carroll, R. J., Ruppert, D., Stefanski, L. A., and Crainiceanu, C. M. (2006). \emph{Measurement Error in Nonlinear Models: A Modern Perspective.} 2nd Ed. London: Chapman & Hall/CRC.
 #' @references Stoklosa, J., Hwang, W-H., and Warton, D.I. \pkg{refitME}: Measurement Error Modelling using Monte Carlo Expectation Maximization in \proglang{R}.
 #' @export
-#' @seealso \code{\link{MCEMfit_glm}} and \code{\link{MCEMfit_gam}}
+#' @seealso \code{\link{MCEMfit_glm}}, \code{\link{MCEMfit_gam}} and \code{\link{MCEMfit_gen}}
 #' @source See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
 #' @examples # A GLM example I - binary response data.
 #'
@@ -98,15 +98,26 @@ refitME <- function(mod, sigma.sq.u, B = 50, epsilon = 0.00001, silent = FALSE, 
 
         n <- dim(stats::model.frame(mod))[1]
 
-        W1 <- as.data.frame(stats::model.frame(mod)[, -1])[1]
+        if (length(sigma.sq.u) == 1) {
+          W1 <- as.data.frame(stats::model.frame(mod)[, -1])[1]
 
-        if (dim(as.matrix(W1))[2] != 1) {
-          if (class(stats::model.frame(mod)[, -1][, 1])[1] == "poly") W1 <- W1[, 1][, 1]
+          if (dim(as.matrix(W1))[2] != 1) {
+            if (class(stats::model.frame(mod)[, -1][, 1])[1] == "poly") W1 <- W1[, 1][, 1]
+          }
+
+          message("One specified error-contaminated predictor/covariate.")
+
+          sigma.sq.e <- stats::var(W1) - sigma.sq.u
         }
 
-        message("One specified error-contaminated predictor/covariate.")
+        if (length(sigma.sq.u) > 1) {
+          message("Multiple specified error-contaminated predictors/covariates.")
 
-        sigma.sq.e <- stats::var(W1) - sigma.sq.u
+          sigma.sq.u <- diag(sigma.sq.u)
+
+          q1 <- dim(sigma.sq.u)[2]
+          sigma.sq.e <- c(rep(1, q1))
+        }
       }
 
       if (is.matrix(sigma.sq.u) == TRUE) {
@@ -154,7 +165,7 @@ refitME <- function(mod, sigma.sq.u, B = 50, epsilon = 0.00001, silent = FALSE, 
 #' @name MCEMfit_glm
 #' @param mod : a \code{lm/glm} object (this is the naive fitted model). Make sure the first \eqn{p} input predictor variables entered in the naive model are the specified error-contaminated variables. These \eqn{p} predictors also need the measurement error variance to be specified in \code{sigma.sq.u}, see below.
 #' @param family : a specified family/distribution.
-#' @param sigma.sq.u : measurement error (ME) variance. A scalar if there is only one error-contaminated predictor variable, otherwise this must be stored as a covariance matrix.
+#' @param sigma.sq.u : measurement error (ME) variance. A scalar if there is only one error-contaminated predictor variable, otherwise this must be stored as a vector (of ME variances) or a matrix if the ME covariance matrix is known.
 #' @param sigma.sq.e : variance of the true predictor (\eqn{X}).
 #' @param B : the number of Monte Carlo replication values (default is set to 50).
 #' @param epsilon : a set convergence threshold (default is set to 0.00001).
@@ -680,7 +691,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
 #' @name MCEMfit_gam
 #' @param mod : a \code{gam} object (this is the naive fitted model). Make sure the first \eqn{p} input predictor variables entered in the naive model are the specified error-contaminated variables. These \eqn{p} predictors also need the measurement error variance to be specified in \code{sigma.sq.u}, see below.
 #' @param family : a specified family/distribution.
-#' @param sigma.sq.u : measurement error variance. A scalar if there is only one error-contaminated predictor variable, otherwise this must be stored as a covariance matrix.
+#' @param sigma.sq.u : measurement error (ME) variance. A scalar if there is only one error-contaminated predictor variable, otherwise this must be stored as a vector (of ME variances) or a matrix if the ME covariance matrix is known.
 #' @param sigma.sq.e : variance of the true predictor (\eqn{X}).
 #' @param B : the number of Monte Carlo replication values (default is set to 50).
 #' @param epsilon : convergence threshold (default is set to 0.00001).
@@ -729,6 +740,8 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
 #' B <- 10  # Consider increasing this if you want a more accurate answer.
 #'
 #' gam_MCEM <- refitME(gam_naiv, sigma.sq.u, B)
+#'
+#' plot(gam_MCEM, select = 1)
 #'
 #' detach(package:mgcv)
 #'
@@ -983,6 +996,9 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
   names(beta.est) <- names(stats::coef(mod_n))
   mod$coefficients <- beta.est
 
+  #mod_n$linear.predictors <- eta <- stats::predict(mod_n, newdata = eval(stats::getCall(mod_n)$data, environment(stats::formula(mod_n))))
+  #mod_n$fitted.values <- stats::predict(mod_n, type = "response", newdata = eval(stats::getCall(mod_n)$data, environment(stats::formula(mod_n)))
+
   sumW <- apply(bigW, 1, sum, na.rm = T)
   weights1 <- as.vector(bigW)/sumW
   weights1[is.nan(weights1)] <- 0
@@ -1053,15 +1069,15 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
 #' @name MCEMfit_gen
 #' @param mod : a model object (this is the naive fitted model). Make sure the first \eqn{p} input predictor variables entered in the naive model are the specified error-contaminated variables. These \eqn{p} predictors also need the measurement error variance to be specified in \code{sigma.sq.u}, see below.
 #' @param family : a specified family/distribution.
-#' @param sigma.sq.u : measurement error variance. A scalar if there is only one error-contaminated variable, otherwise this must be stored as a covariance matrix.
+#' @param sigma.sq.u : measurement error (ME) variance. A scalar if there is only one error-contaminated predictor variable, otherwise this must be stored as a vector (of ME variances) or a matrix if the ME covariance matrix is known.
 #' @param sigma.sq.e : variance of the true predictor (\eqn{X}).
 #' @param B : the number of Monte Carlo replication values (default is set to 50).
 #' @param epsilon : a set convergence threshold (default is set to 0.00001).
 #' @param silent : if \code{TRUE}, the convergence message (which tells the user if the model has converged and reports the number of iterations required) is suppressed (default is set to \code{FALSE}).
 #' @param theta.est : an initial value for the dispersion parameter (this is required for fitting negative binomial models).
 #' @param shape.est : an initial value for the shape parameter (this is required for fitting gamma models).
-#' @param ... : further arguments.
-#' @return \code{MCEMfit_gen} returns the original naive fitted model object but coefficient estimates and residuals have been replaced with the final MCEM model fit.
+#' @param ... : further arguments passed through to the function that was used to fit \code{mod}, that will be used in refitting. These need only be specified if making changes to the arguments as compared to the original call that produced \code{mod}.
+#' @return \code{MCEMfit_gen} returns the original naive fitted model object but coefficient estimates and residuals have been replaced with the final MCEM model fit. Standard errors are included and returned, if \code{mod} is a class of object accepted by the \pkg{sandwich} package (such as \code{glm}, \code{gam}, \code{survreg} and many more).
 #' @author Jakub Stoklosa, Wen-Han Hwang and David I. Warton.
 #' @references Carroll, R. J., Ruppert, D., Stefanski, L. A., and Crainiceanu, C. M. (2006). \emph{Measurement Error in Nonlinear Models: A Modern Perspective.} 2nd Ed. London: Chapman & Hall/CRC.
 #' @references Stoklosa, J., Hwang, W-H., and Warton, D.I. \pkg{refitME}: Measurement Error Modelling using Monte Carlo Expectation Maximization in \proglang{R}.
@@ -1516,7 +1532,7 @@ MCEMfit_gen <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
 #' @section Warning:
 #' This function is still under development. Currently the function can only fit the CR model used in the manuscript. IT DOES NOT SUPPORT ALL \code{VGAM} families.
 #' @param mod : a \code{vglm/vgam} object (this is the naive CR model). Make sure the first \eqn{p} input predictor variables in the naive model are the selected error-contaminated variables.
-#' @param sigma.sq.u : measurement error variance. A scalar if there is only one error-contaminated variable, otherwise this must be stored as a covariance matrix.
+#' @param sigma.sq.u : measurement error (ME) variance. A scalar if there is only one error-contaminated predictor variable, otherwise this must be stored as a vector (of ME variances) or a matrix if the ME covariance matrix is known.
 #' @param sigma.sq.e : variance of the true predictor (\eqn{X}).
 #' @param B : the number of Monte Carlo replication values (default is set to 50).
 #' @param epsilon : a set convergence threshold (default is set to 0.00001).

@@ -22,7 +22,7 @@ MCEMfit_gen(
 
 \item{family}{: a specified family/distribution.}
 
-\item{sigma.sq.u}{: measurement error variance. A scalar if there is only one error-contaminated variable, otherwise this must be stored as a covariance matrix.}
+\item{sigma.sq.u}{: measurement error (ME) variance. A scalar if there is only one error-contaminated predictor variable, otherwise this must be stored as a vector (of ME variances) or a matrix if the ME covariance matrix is known.}
 
 \item{sigma.sq.e}{: variance of the true predictor (\eqn{X}).}
 
@@ -36,10 +36,10 @@ MCEMfit_gen(
 
 \item{shape.est}{: an initial value for the shape parameter (this is required for fitting gamma models).}
 
-\item{...}{: further arguments.}
+\item{...}{: further arguments passed through to the function that was used to fit \code{mod}, that will be used in refitting. These need only be specified if making changes to the arguments as compared to the original call that produced \code{mod}.}
 }
 \value{
-\code{MCEMfit_gen} returns the original naive fitted model object but coefficient estimates and residuals have been replaced with the final MCEM model fit.
+\code{MCEMfit_gen} returns the original naive fitted model object but coefficient estimates and residuals have been replaced with the final MCEM model fit. Standard errors are included and returned, if \code{mod} is a class of object accepted by the \pkg{sandwich} package (such as \code{glm}, \code{gam}, \code{survreg} and many more).
 }
 \description{
 Function for wrapping the MCEM algorithm on any likelihood-based model where predictors are subject to measurement error/error-in-variables.
