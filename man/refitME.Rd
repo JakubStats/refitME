@@ -10,9 +10,9 @@ See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with e
 refitME(mod, sigma.sq.u, B = 50, epsilon = 1e-05, silent = FALSE, ...)
 }
 \arguments{
-\item{mod}{: a \code{lm/glm/gam} object (S3 classes) or an \code{vlgm/vgam} object (S4 class) when using the \code{posbinomial} family. This is the naive fitted model. Make sure the first \eqn{p} input predictor variables entered in the naive model are the specified error-contaminated variables. These \eqn{p} predictors also need the measurement error variance to be specified in \code{sigma.sq.u}, see below.}
+\item{mod}{: any (S3 class) fitted object that responds to the generic functions \code{family}, \code{model.frame}, \code{update} and \code{predict}, and accepts weighted observations via \code{weights}. The \code{mod} argument specifies the naive fitted model. Make sure the first \eqn{p} input predictor variables in the naive model are the selected error-contaminated predictors variables. Also, the \code{mod} argument allows \code{vlgm/vgam} (S4 class) model objects when using the \code{posbinomial} family -- this is a specific function developed for fitting closed population capture--recapture models, see \code{\link{MCEMfit_CR}}.}
 
-\item{sigma.sq.u}{: measurement error (ME) variance. A scalar if there is only one error-contaminated predictor variable, otherwise this must be stored as a covariance matrix.}
+\item{sigma.sq.u}{: measurement error (ME) variance. A scalar if there is only one error-contaminated predictor variable, otherwise this must be stored as a vector (of known ME variances) or a matrix if the ME covariance matrix is known.}
 
 \item{B}{: the number of Monte Carlo replication values (default is set 50).}
 
@@ -20,13 +20,13 @@ refitME(mod, sigma.sq.u, B = 50, epsilon = 1e-05, silent = FALSE, ...)
 
 \item{silent}{: if \code{TRUE}, the convergence message (which tells the user if the model has converged and reports the number of iterations required) is suppressed (default is set to \code{FALSE}).}
 
-\item{...}{: further arguments passed through to \code{lm}, \code{glm} or \code{gam}.}
+\item{...}{: further arguments passed through to the function that was used to fit \code{mod}, that will be used in refitting. These need only be specified if making changes to the arguments as compared to the original call that produced \code{mod}.}
 }
 \value{
-\code{refitME} returns the naive fitted model object where coefficient estimates, the covariance matrix, fitted values, the log-likelihood, and residuals have been replaced with the final MCEM model fit. Standard errors and the effective sample size (which diagnose how closely the proposal distribution matches the posterior, see equation (2) of Stoklosa, Hwang and Warton) have also been included as outputs.
+\code{refitME} returns the naive fitted model object where coefficient estimates, the covariance matrix, fitted values, the log-likelihood, and residuals have been replaced with the final MCEM model fit. Standard errors are included and returned, if \code{mod} is a class of object accepted by the \pkg{sandwich} package (such as \code{glm}, \code{gam}, \code{survreg} and many more). The effective sample size (which diagnose how closely the proposal distribution matches the posterior, see equation (2) of Stoklosa, Hwang and Warton) have also been included as outputs.
 }
 \description{
-Function that extracts the fitted (naive) model object and wraps the MCEM algorithm to correct for measurement error/error-in-variables (currently available for \code{lm()}, \code{glm()} and \code{gam()}, excludes \code{lme()}, \code{nlme()} and \code{polr()} models).
+Function that extracts the fitted (naive) model object and wraps the MCEM algorithm to correct for measurement error/error-in-variables in predictors.
 }
 \examples{
 # A GLM example I - binary response data.
@@ -52,7 +52,7 @@ Carroll, R. J., Ruppert, D., Stefanski, L. A., and Crainiceanu, C. M. (2006). \e
 Stoklosa, J., Hwang, W-H., and Warton, D.I. \pkg{refitME}: Measurement Error Modelling using Monte Carlo Expectation Maximization in \proglang{R}.
 }
 \seealso{
-\code{\link{MCEMfit_glm}} and \code{\link{MCEMfit_gam}}
+\code{\link{MCEMfit_glm}}, \code{\link{MCEMfit_gam}} and \code{\link{MCEMfit_gen}}
 }
 \author{
 Jakub Stoklosa, Wen-Han Hwang and David I. Warton.

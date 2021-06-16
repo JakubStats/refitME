@@ -58,20 +58,20 @@
 
 #' A wrapper function for correcting measurement error in predictor variables via the MCEM algorithm
 #'
-#' Function that extracts the fitted (naive) model object and wraps the MCEM algorithm to correct for measurement error/error-in-variables (currently available for \code{lm()}, \code{glm()} and \code{gam()}, excludes \code{lme()}, \code{nlme()} and \code{polr()} models).
+#' Function that extracts the fitted (naive) model object and wraps the MCEM algorithm to correct for measurement error/error-in-variables in predictors.
 #' @name refitME
-#' @param mod : a \code{lm/glm/gam} object (S3 classes) or an \code{vlgm/vgam} object (S4 class) when using the \code{posbinomial} family. This is the naive fitted model. Make sure the first \eqn{p} input predictor variables entered in the naive model are the specified error-contaminated variables. These \eqn{p} predictors also need the measurement error variance to be specified in \code{sigma.sq.u}, see below.
-#' @param sigma.sq.u : measurement error (ME) variance. A scalar if there is only one error-contaminated predictor variable, otherwise this must be stored as a covariance matrix.
+#' @param mod : any (S3 class) fitted object that responds to the generic functions \code{family}, \code{model.frame}, \code{update} and \code{predict}, and accepts weighted observations via \code{weights}. The \code{mod} argument specifies the naive fitted model. Make sure the first \eqn{p} input predictor variables in the naive model are the selected error-contaminated predictors variables. Also, the \code{mod} argument allows \code{vlgm/vgam} (S4 class) model objects when using the \code{posbinomial} family -- this is a specific function developed for fitting closed population capture--recapture models, see \code{\link{MCEMfit_CR}}.
+#' @param sigma.sq.u : measurement error (ME) variance. A scalar if there is only one error-contaminated predictor variable, otherwise this must be stored as a vector (of known ME variances) or a matrix if the ME covariance matrix is known.
 #' @param B : the number of Monte Carlo replication values (default is set 50).
 #' @param epsilon : convergence threshold (default is set to 0.00001).
 #' @param silent : if \code{TRUE}, the convergence message (which tells the user if the model has converged and reports the number of iterations required) is suppressed (default is set to \code{FALSE}).
-#' @param ... : further arguments passed through to \code{lm}, \code{glm} or \code{gam}.
-#' @return \code{refitME} returns the naive fitted model object where coefficient estimates, the covariance matrix, fitted values, the log-likelihood, and residuals have been replaced with the final MCEM model fit. Standard errors and the effective sample size (which diagnose how closely the proposal distribution matches the posterior, see equation (2) of Stoklosa, Hwang and Warton) have also been included as outputs.
+#' @param ... : further arguments passed through to the function that was used to fit \code{mod}, that will be used in refitting. These need only be specified if making changes to the arguments as compared to the original call that produced \code{mod}.
+#' @return \code{refitME} returns the naive fitted model object where coefficient estimates, the covariance matrix, fitted values, the log-likelihood, and residuals have been replaced with the final MCEM model fit. Standard errors are included and returned, if \code{mod} is a class of object accepted by the \pkg{sandwich} package (such as \code{glm}, \code{gam}, \code{survreg} and many more). The effective sample size (which diagnose how closely the proposal distribution matches the posterior, see equation (2) of Stoklosa, Hwang and Warton) have also been included as outputs.
 #' @author Jakub Stoklosa, Wen-Han Hwang and David I. Warton.
 #' @references Carroll, R. J., Ruppert, D., Stefanski, L. A., and Crainiceanu, C. M. (2006). \emph{Measurement Error in Nonlinear Models: A Modern Perspective.} 2nd Ed. London: Chapman & Hall/CRC.
 #' @references Stoklosa, J., Hwang, W-H., and Warton, D.I. \pkg{refitME}: Measurement Error Modelling using Monte Carlo Expectation Maximization in \proglang{R}.
 #' @export
-#' @seealso \code{\link{MCEMfit_glm}} and \code{\link{MCEMfit_gam}}
+#' @seealso \code{\link{MCEMfit_glm}}, \code{\link{MCEMfit_gam}} and \code{\link{MCEMfit_gen}}
 #' @source See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
 #' @examples # A GLM example I - binary response data.
 #'
@@ -98,22 +98,29 @@ refitME <- function(mod, sigma.sq.u, B = 50, epsilon = 0.00001, silent = FALSE, 
 
         n <- dim(stats::model.frame(mod))[1]
 
-        W1 <- as.data.frame(stats::model.frame(mod)[, -1])[1]
+        if (length(sigma.sq.u) == 1) {
+          W1 <- as.data.frame(stats::model.frame(mod)[, -1])[1]
 
-        if (dim(as.matrix(W1))[2] != 1) {
-          if (class(stats::model.frame(mod)[, -1][, 1])[1] == "poly") W1 <- W1[, 1][, 1]
+          if (dim(as.matrix(W1))[2] != 1) {
+            if (class(stats::model.frame(mod)[, -1][, 1])[1] == "poly") W1 <- W1[, 1][, 1]
+          }
+
+          message("One specified error-contaminated predictor/covariate.")
         }
 
-        message("One specified error-contaminated predictor/covariate.")
+        if (length(sigma.sq.u) > 1) {
+          message("Multiple specified error-contaminated predictors/covariates.")
 
-        sigma.sq.e <- stats::var(W1) - sigma.sq.u
+          sigma.sq.u <- diag(sigma.sq.u)
+
+          q1 <- dim(sigma.sq.u)[2]
+        }
       }
 
       if (is.matrix(sigma.sq.u) == TRUE) {
         message("Multiple specified error-contaminated predictors/covariates.")
 
         q1 <- dim(sigma.sq.u)[2]
-        sigma.sq.e <- c(rep(1, q1))
       }
     }
 
@@ -124,28 +131,25 @@ refitME <- function(mod, sigma.sq.u, B = 50, epsilon = 0.00001, silent = FALSE, 
       if (ob.type == "glm") family <- mod$family$family
       if (ob.type == "negbin") family <- "negbin"
 
-      return(MCEMfit_glm(mod, family, sigma.sq.u, sigma.sq.e, B, epsilon, silent, ...))
+      return(MCEMfit_glm(mod, family, sigma.sq.u, B, epsilon, silent, ...))
     }
 
     if (ob.type == "gam") {
       family <- mod$family$family
       if (strsplit(family, NULL)[[1]][1] == "N") family <- "negbin"
 
-      return(MCEMfit_gam(mod, family, sigma.sq.u, sigma.sq.e, B, epsilon, silent, ...))
+      return(MCEMfit_gam(mod, family, sigma.sq.u, B, epsilon, silent, ...))
     }
 
     if (ob.type != "lm" | ob.type != "glm" | ob.type != "negbin" | ob.type != "gam") {
       family <- mod$family$family
       if (strsplit(family, NULL)[[1]][1] == "N") family <- "negbin"
 
-      return(MCEMfit_gen(mod, family, sigma.sq.u, sigma.sq.e, B, epsilon, silent, ...))
+      return(MCEMfit_gen(mod, family, sigma.sq.u, B, epsilon, silent, ...))
     }
   }
 
-  if (isS4(mod)) {
-    sigma.sq.e <- stats::var(mod@x[, 2]) - sigma.sq.u
-    return(MCEMfit_CR(mod, sigma.sq.u, sigma.sq.e, B, epsilon, silent))
-  }
+  if (isS4(mod)) return(MCEMfit_CR(mod, sigma.sq.u, B, epsilon, silent))
 }
 
 #' Function for wrapping the MCEM algorithm on \code{lm} or \code{glm} objects
@@ -154,13 +158,10 @@ refitME <- function(mod, sigma.sq.u, B = 50, epsilon = 0.00001, silent = FALSE, 
 #' @name MCEMfit_glm
 #' @param mod : a \code{lm/glm} object (this is the naive fitted model). Make sure the first \eqn{p} input predictor variables entered in the naive model are the specified error-contaminated variables. These \eqn{p} predictors also need the measurement error variance to be specified in \code{sigma.sq.u}, see below.
 #' @param family : a specified family/distribution.
-#' @param sigma.sq.u : measurement error (ME) variance. A scalar if there is only one error-contaminated predictor variable, otherwise this must be stored as a covariance matrix.
-#' @param sigma.sq.e : variance of the true predictor (\eqn{X}).
+#' @param sigma.sq.u : measurement error (ME) variance. A scalar if there is only one error-contaminated predictor variable, otherwise this must be stored as a vector (of ME variances) or a matrix if the ME covariance matrix is known.
 #' @param B : the number of Monte Carlo replication values (default is set to 50).
 #' @param epsilon : a set convergence threshold (default is set to 0.00001).
 #' @param silent : if \code{TRUE}, the convergence message (which tells the user if the model has converged and reports the number of iterations required) is suppressed (default is set to \code{FALSE}).
-#' @param theta.est : an initial value for the dispersion parameter (this is required for fitting negative binomial models).
-#' @param shape.est : an initial value for the shape parameter (this is required for fitting gamma models).
 #' @param ... : further arguments passed to \code{lm} or \code{glm}.
 #' @return \code{MCEMfit_glm} returns the naive fitted model object where coefficient estimates, the covariance matrix, fitted values, the log-likelihood, and residuals have been replaced with the final MCEM model fit. Standard errors and the effective sample size (which diagnose how closely the proposal distribution matches the posterior, see equation (2) of Stoklosa, Hwang and Warton) have also been included as outputs.
 #' @author Jakub Stoklosa, Wen-Han Hwang and David I. Warton.
@@ -184,13 +185,13 @@ refitME <- function(mod, sigma.sq.u, B = 50, epsilon = 0.00001, silent = FALSE, 
 #'
 #' # The error-contaminated predictor in this example is systolic blood pressure (w1).
 #'
-#' sigma.sq.u <- 0.01259/2  # ME variance, as obtained from Carroll et al. (2006) monograph.
+#' sigma.sq.u <- 0.006295  # ME variance, as obtained from Carroll et al. (2006) monograph.
 #'
 #' B <- 50 # The number of Monte Carlo replication values.
 #'
 #' glm_MCEM <- refitME(glm_naiv, sigma.sq.u, B)
 #'
-MCEMfit_glm <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon = 0.00001, silent = FALSE, theta.est = 1, shape.est = 1, ...) {
+MCEMfit_glm <- function(mod, family, sigma.sq.u, B = 50, epsilon = 0.00001, silent = FALSE, ...) {
 
   mod_n <- mod
 
@@ -200,7 +201,12 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
     mod$data <- eval(stats::getCall(mod)$data, environment(stats::formula(mod)))
   }
 
-  if (family == "negbin") mod$data <- eval(stats::getCall(mod)$data, environment(stats::formula(mod)))
+  if (family == "negbin") {
+    mod$data <- eval(stats::getCall(mod)$data, environment(stats::formula(mod)))
+    theta.est <- mod$theta
+  }
+
+  if (family == "Gamma") shape.est <- summary(mod)[14]$dispersion
 
   reps <- 0
   cond <- TRUE
@@ -242,7 +248,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
     if (class(w)[1] == "poly") w <- w[, 1]
 
     sigma.sq.u1 <- sigma.sq.u
-    sigma.sq.e1 <- sigma.sq.e
+    sigma.sq.e1 <- stats::var(w) - sigma.sq.u1
 
     U <- stats::rnorm(n*B, 0, sd = sqrt(rep(sigma.sq.u1, B)))
     X <- rep(w, B) - U
@@ -566,8 +572,6 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
 
   mod_n$sigma.sq.u <- sigma.sq.u
 
-  mod_n$sigma.sq.e <- sigma.sq.e
-
   mod_n$B <- B
 
   names(beta.est) <- names(stats::coef(mod_n))
@@ -680,13 +684,10 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
 #' @name MCEMfit_gam
 #' @param mod : a \code{gam} object (this is the naive fitted model). Make sure the first \eqn{p} input predictor variables entered in the naive model are the specified error-contaminated variables. These \eqn{p} predictors also need the measurement error variance to be specified in \code{sigma.sq.u}, see below.
 #' @param family : a specified family/distribution.
-#' @param sigma.sq.u : measurement error variance. A scalar if there is only one error-contaminated predictor variable, otherwise this must be stored as a covariance matrix.
-#' @param sigma.sq.e : variance of the true predictor (\eqn{X}).
+#' @param sigma.sq.u : measurement error (ME) variance. A scalar if there is only one error-contaminated predictor variable, otherwise this must be stored as a vector (of ME variances) or a matrix if the ME covariance matrix is known.
 #' @param B : the number of Monte Carlo replication values (default is set to 50).
 #' @param epsilon : convergence threshold (default is set to 0.00001).
 #' @param silent : if \code{TRUE}, the convergence message (which tells the user if the model has converged and reports the number of iterations required) is suppressed (default is set to \code{FALSE}).
-#' @param theta.est : an initial value for the dispersion parameter (this is required for fitting negative binomial models).
-#' @param shape.est : an initial value for the shape parameter (this is required for fitting gamma models).
 #' @param ... : further arguments passed to \code{gam}.
 #' @return \code{MCEMfit_gam} returns the original naive fitted model object but coefficient estimates and the covariance matrix have been replaced with the final MCEM model fit. Standard errors and the effective sample size (which diagnose how closely the proposal distribution matches the posterior, see equation (2) of Stoklosa, Hwang and Warton) have also been included as outputs.
 #' @author Jakub Stoklosa, Wen-Han Hwang and David I. Warton.
@@ -730,9 +731,11 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
 #'
 #' gam_MCEM <- refitME(gam_naiv, sigma.sq.u, B)
 #'
+#' plot(gam_MCEM, select = 1)
+#'
 #' detach(package:mgcv)
 #'
-MCEMfit_gam <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon = 0.00001, silent = FALSE, theta.est = 1, shape.est = 10, ...) {
+MCEMfit_gam <- function(mod, family, sigma.sq.u, B = 50, epsilon = 0.00001, silent = FALSE, ...) {
 
   mod_n <- mod
 
@@ -750,6 +753,9 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
     if (!is.null(stats::weights(mod))) p.wt <- stats::weights(mod)
   }
   if (family != "gaussian") p.wt <- stats::weights(mod)
+
+  if (family == "negbin") theta.est <- mod$family$getTheta(TRUE)
+  if (family == "Gamma") shape.est <- MASS::gamma.shape(mod)[1]$alpha
 
   bigp.wt <- rep(p.wt, B)
 
@@ -769,7 +775,7 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
     names.w <- names(W)[1]
 
     sigma.sq.u1 <- sigma.sq.u
-    sigma.sq.e1 <- sigma.sq.e
+    sigma.sq.e1 <- stats::var(w) - sigma.sq.u1
 
     U <- stats::rnorm(n*B, 0, sd = sqrt(rep(sigma.sq.u1, B)))
     X <- rep(w, B) - U
@@ -975,13 +981,14 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
 
   mod$sigma.sq.u <- sigma.sq.u
 
-  mod$sigma.sq.e <- sigma.sq.e
-
   mod$B <- B
 
   beta.est <- stats::coef(mod)
   names(beta.est) <- names(stats::coef(mod_n))
   mod$coefficients <- beta.est
+
+  #mod_n$linear.predictors <- eta <- stats::predict(mod_n, newdata = eval(stats::getCall(mod_n)$data, environment(stats::formula(mod_n))))
+  #mod_n$fitted.values <- stats::predict(mod_n, type = "response", newdata = eval(stats::getCall(mod_n)$data, environment(stats::formula(mod_n)))
 
   sumW <- apply(bigW, 1, sum, na.rm = T)
   weights1 <- as.vector(bigW)/sumW
@@ -1053,15 +1060,14 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
 #' @name MCEMfit_gen
 #' @param mod : a model object (this is the naive fitted model). Make sure the first \eqn{p} input predictor variables entered in the naive model are the specified error-contaminated variables. These \eqn{p} predictors also need the measurement error variance to be specified in \code{sigma.sq.u}, see below.
 #' @param family : a specified family/distribution.
-#' @param sigma.sq.u : measurement error variance. A scalar if there is only one error-contaminated variable, otherwise this must be stored as a covariance matrix.
-#' @param sigma.sq.e : variance of the true predictor (\eqn{X}).
+#' @param sigma.sq.u : measurement error (ME) variance. A scalar if there is only one error-contaminated predictor variable, otherwise this must be stored as a vector (of ME variances) or a matrix if the ME covariance matrix is known.
 #' @param B : the number of Monte Carlo replication values (default is set to 50).
 #' @param epsilon : a set convergence threshold (default is set to 0.00001).
 #' @param silent : if \code{TRUE}, the convergence message (which tells the user if the model has converged and reports the number of iterations required) is suppressed (default is set to \code{FALSE}).
 #' @param theta.est : an initial value for the dispersion parameter (this is required for fitting negative binomial models).
 #' @param shape.est : an initial value for the shape parameter (this is required for fitting gamma models).
-#' @param ... : further arguments.
-#' @return \code{MCEMfit_gen} returns the original naive fitted model object but coefficient estimates and residuals have been replaced with the final MCEM model fit.
+#' @param ... : further arguments passed through to the function that was used to fit \code{mod}, that will be used in refitting. These need only be specified if making changes to the arguments as compared to the original call that produced \code{mod}.
+#' @return \code{MCEMfit_gen} returns the original naive fitted model object but coefficient estimates and residuals have been replaced with the final MCEM model fit. Standard errors are included and returned, if \code{mod} is a class of object accepted by the \pkg{sandwich} package (such as \code{glm}, \code{gam}, \code{survreg} and many more).
 #' @author Jakub Stoklosa, Wen-Han Hwang and David I. Warton.
 #' @references Carroll, R. J., Ruppert, D., Stefanski, L. A., and Crainiceanu, C. M. (2006). \emph{Measurement Error in Nonlinear Models: A Modern Perspective.} 2nd Ed. London: Chapman & Hall/CRC.
 #' @references Stoklosa, J., Hwang, W-H., and Warton, D.I. \pkg{refitME}: Measurement Error Modelling using Monte Carlo Expectation Maximization in \proglang{R}.
@@ -1073,11 +1079,18 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
 #' @export
 #' @seealso \code{\link{MCEMfit_glm}} and \code{\link{MCEMfit_gam}}
 #'
-MCEMfit_gen <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon = 0.00001, silent = FALSE, theta.est = 1, shape.est = 1, ...) {
+MCEMfit_gen <- function(mod, family, sigma.sq.u, B = 50, epsilon = 0.00001, silent = FALSE, theta.est = 1, shape.est = 1, ...) {
 
   mod_n <- mod
 
   if (family == "gaussian" | family == "negbin") mod$data <- eval(stats::getCall(mod)$data, environment(stats::formula(mod)))
+
+  if (family == "negbin") {
+    mod$data <- eval(stats::getCall(mod)$data, environment(stats::formula(mod)))
+    theta.est <- mod$theta
+  }
+
+  if (family == "Gamma") shape.est <- summary(mod)[14]$dispersion
 
   if (is.null(mod$data)) mod$data <- eval(stats::getCall(mod)$data, environment(stats::formula(mod)))
 
@@ -1119,7 +1132,7 @@ MCEMfit_gen <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
     if (class(w)[1] == "poly") w <- w[, 1]
 
     sigma.sq.u1 <- sigma.sq.u
-    sigma.sq.e1 <- sigma.sq.e
+    sigma.sq.e1 <- stats::var(w) - sigma.sq.u1
 
     U <- stats::rnorm(n*B, 0, sd = sqrt(rep(sigma.sq.u1, B)))
     X <- rep(w, B) - U
@@ -1434,8 +1447,6 @@ MCEMfit_gen <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
 
   mod_n$sigma.sq.u <- sigma.sq.u
 
-  mod_n$sigma.sq.e <- sigma.sq.e
-
   mod_n$B <- B
 
   names(beta.est) <- names(stats::coef(mod_n))
@@ -1516,8 +1527,7 @@ MCEMfit_gen <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
 #' @section Warning:
 #' This function is still under development. Currently the function can only fit the CR model used in the manuscript. IT DOES NOT SUPPORT ALL \code{VGAM} families.
 #' @param mod : a \code{vglm/vgam} object (this is the naive CR model). Make sure the first \eqn{p} input predictor variables in the naive model are the selected error-contaminated variables.
-#' @param sigma.sq.u : measurement error variance. A scalar if there is only one error-contaminated variable, otherwise this must be stored as a covariance matrix.
-#' @param sigma.sq.e : variance of the true predictor (\eqn{X}).
+#' @param sigma.sq.u : measurement error (ME) variance. A scalar if there is only one error-contaminated predictor variable, otherwise this must be stored as a vector (of ME variances) or a matrix if the ME covariance matrix is known.
 #' @param B : the number of Monte Carlo replication values (default is set to 50).
 #' @param epsilon : a set convergence threshold (default is set to 0.00001).
 #' @param silent : if \code{TRUE}, the convergence message (which tells the user if the model has converged and reports the number of iterations required) is suppressed (default is set to \code{FALSE}).
@@ -1549,7 +1559,7 @@ MCEMfit_gen <- function(mod, family, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon
 #'
 #' detach(package:VGAM)
 #'
-MCEMfit_CR <- function(mod, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon = 0.00001, silent = FALSE) {
+MCEMfit_CR <- function(mod, sigma.sq.u, B = 50, epsilon = 0.00001, silent = FALSE) {
 
   reps <- 0
   cond <- TRUE
@@ -1582,7 +1592,7 @@ MCEMfit_CR <- function(mod, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon = 0.0000
   }
 
   sigma.sq.u1 <- sigma.sq.u
-  sigma.sq.e1 <- sigma.sq.e
+  sigma.sq.e1 <- stats::var(mod@x[, 2]) - sigma.sq.u
 
   U1_j <- stats::rnorm(n*B, 0, sd = sqrt(sigma.sq.u1))
   X1_j <- rep(w1, B) - U1_j
@@ -1745,7 +1755,6 @@ MCEMfit_CR <- function(mod, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon = 0.0000
 #' @param x : a vector of numerical data.
 #' @param w : a vector of equal length to \code{x} representing the weights.
 #' @return \code{wt.var} returns a single value from analysis requested.
-#' @author Jeremy VanDerWal \email{jjvanderwal@@gmail.com}
 #' @examples # Define simple data
 #' x = 1:25 # Set of numbers.
 #' wt = runif(25) # Some arbitrary weights.
@@ -1754,7 +1763,7 @@ MCEMfit_CR <- function(mod, sigma.sq.u, sigma.sq.e = 1, B = 50, epsilon = 0.0000
 #' var(x)
 #' wt.var(x, wt)
 #' @export
-#' @source See \url{https://rdrr.io/cran/SDMTools/src/R/wt.mean.R}
+#' @source The developer of this function is Jeremy VanDerWal. See \url{https://rdrr.io/cran/SDMTools/src/R/wt.mean.R}
 #'
 wt.var <- function(x, w) {
   s <- which(is.finite(x + w))
@@ -1938,7 +1947,6 @@ logLik.refitME <- function(object, ...) {
 #'
 anova_MCEMfit_glm <- function(object, ..., dispersion = NULL, test = NULL) {
   B <- object$B
-  sigma.sq.e <- object$sigma.sq.e
   family <- object$family$family
   sigma.sq.u <- object$sigma.sq.u
   dotargs <- list(...)
@@ -1986,14 +1994,14 @@ anova_MCEMfit_glm <- function(object, ..., dispersion = NULL, test = NULL) {
       dat.n <- as.data.frame(cbind(y, x1[, -1]))
       colnames(dat.n) <- c("y", colnames(x1)[-1])
       mod <- stats::glm(y ~ ., family = family, data = dat.n)
-      fit <- eval(call(if (is.function(method)) "method" else method, mod = mod, family = family, sigma.sq.u = sigma.sq.u, B = B, sigma.sq.e = sigma.sq.e, silent = TRUE))
+      fit <- eval(call(if (is.function(method)) "method" else method, mod = mod, family = family, sigma.sq.u = sigma.sq.u, B = B, silent = TRUE))
 
       if (doscore) {
         x1 <- x[, varseq <= i, drop = FALSE]
         dat.n <- as.data.frame(cbind(y, x1[, -1]))
         colnames(dat.n) <- c("y", colnames(x1)[-1])
         mod <- stats::glm(y ~ ., family = family, data = dat.n)
-        zz <- eval(call(if (is.function(method)) "method" else method, mod = mod, family = family, sigma.sq.u = sigma.sq.u, B = B, sigma.sq.e = sigma.sq.e, silent = TRUE, y = r, weights = w, intercept = icpt))
+        zz <- eval(call(if (is.function(method)) "method" else method, mod = mod, family = family, sigma.sq.u = sigma.sq.u, B = B, silent = TRUE, y = r, weights = w, intercept = icpt))
         score[i] <- zz$null.deviance - zz$deviance
         r <- fit$residuals
         w <- fit$weights

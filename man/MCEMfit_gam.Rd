@@ -11,12 +11,9 @@ MCEMfit_gam(
   mod,
   family,
   sigma.sq.u,
-  sigma.sq.e = 1,
   B = 50,
   epsilon = 1e-05,
   silent = FALSE,
-  theta.est = 1,
-  shape.est = 10,
   ...
 )
 }
@@ -25,19 +22,13 @@ MCEMfit_gam(
 
 \item{family}{: a specified family/distribution.}
 
-\item{sigma.sq.u}{: measurement error variance. A scalar if there is only one error-contaminated predictor variable, otherwise this must be stored as a covariance matrix.}
-
-\item{sigma.sq.e}{: variance of the true predictor (\eqn{X}).}
+\item{sigma.sq.u}{: measurement error (ME) variance. A scalar if there is only one error-contaminated predictor variable, otherwise this must be stored as a vector (of ME variances) or a matrix if the ME covariance matrix is known.}
 
 \item{B}{: the number of Monte Carlo replication values (default is set to 50).}
 
 \item{epsilon}{: convergence threshold (default is set to 0.00001).}
 
 \item{silent}{: if \code{TRUE}, the convergence message (which tells the user if the model has converged and reports the number of iterations required) is suppressed (default is set to \code{FALSE}).}
-
-\item{theta.est}{: an initial value for the dispersion parameter (this is required for fitting negative binomial models).}
-
-\item{shape.est}{: an initial value for the shape parameter (this is required for fitting gamma models).}
 
 \item{...}{: further arguments passed to \code{gam}.}
 }
@@ -77,6 +68,8 @@ sigma.sq.u <- 0.0915 # Measurement error variance.
 B <- 10  # Consider increasing this if you want a more accurate answer.
 
 gam_MCEM <- refitME(gam_naiv, sigma.sq.u, B)
+
+plot(gam_MCEM, select = 1)
 
 detach(package:mgcv)
 

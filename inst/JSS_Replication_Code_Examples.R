@@ -1,8 +1,9 @@
-#--------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 # JSS_Replication_Code_Examples.R
 #
-# Examples 1 to 4 of Section 4 of the manuscript.
-#-------------------------------------------------------------------------------------------------------
+# This file reproduces all the results (Tables 1-2, Figure 3-4 and 10-11) for
+# Examples 1 to 4 of Section 4 and Appendix B of the manuscript.
+#------------------------------------------------------------------------------
 
 # Example 1: A simple GLM example taken from Carroll et al. (2006) - The Framingham heart study data set.
 
@@ -15,7 +16,7 @@ data(Framinghamdata)
 
 glm_naiv <- glm(Y ~ w1 + z1 + z2 + z3, x = TRUE, family = binomial, data = Framinghamdata)
 
-sigma.sq.u <- 0.01259/2 # Measurement error variance, obtained from Carroll et al. (2006) monograph.
+sigma.sq.u <- 0.006295 # Measurement error variance, obtained from Carroll et al. (2006) monograph.
 
 rel.rat <- (1 - sigma.sq.u/var(Framinghamdata$w1))*100
 
@@ -218,9 +219,9 @@ PPM_naiv <- glm(Y ~ poly(w1, degree = 2, raw = TRUE) + poly(z1, degree = 2, raw 
 
 # Set the measurement error variance here (we considered three values in this example).
 
-sigma.sq.u <- 0.25
+#sigma.sq.u <- 0.25
 #sigma.sq.u <- 0.5
-#sigma.sq.u <- 1
+sigma.sq.u <- 1
 
 W <- MNT # Max. temp (measured with error).
 W.train <- W[train]
@@ -261,10 +262,10 @@ pred.dats <- rbind(p1, p2, p3, p4)
 
 op <- par(mfrow = c(2, 2), las = 1)
 
-plots <- factor(pred.dats[, 4], labels = c("(c) PPM MCEM", "(d) PPM MCEM (+1.5 degrees)", "(a) PPM", "(b) PPM (+1.5 degrees)"))
+plots <- factor(pred.dats[, 4], labels = c("(c) PPM MCEM", "(d) PPM MCEM (+1 degrees)", "(a) PPM", "(b) PPM (+1 degrees)"))
 pred.dats <- as.data.frame(pred.dats)
 colnames(pred.dats) <- c("x", "y", "preds", "plot")
-levelplot(preds ~ x + y | plots, cex = 1, data = pred.dats, asp = "iso", ylab = "Latitude", xlab = "Longitude", col.regions = heat.colors(1024)[900:1], cuts = 900, main = list("", cex = 5), scales = list(y = list(draw = FALSE), x = list(draw = FALSE), relation = "free"), colorkey = list(labels = list(cex = 0.8)))
+levelplot(preds ~ x + y | plots, cex = 1, data = pred.dats, asp = "iso", ylab = "Latitude", xlab = "Longitude", col.regions = heat.colors(1024)[900:1], cuts = 900, main = list("", cex = 5), scales = list(y = list(draw = FALSE), x = list(draw = FALSE)), colorkey = list(labels = list(cex = 0.8)))
 
 par(op)
 

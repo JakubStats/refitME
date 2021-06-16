@@ -1,6 +1,7 @@
 #-------------------------------------------------------------------------------------------------------
 # Some functions used in the MCEM algorithm measurement error paper. These function are mainly required
-# for the capture-recapture modelling example (Section 4.4) and the simulation studies (Section 5).
+# for the capture-recapture modelling example (Section 4.4) and the simulation studies (Section 5) of
+# the manuscript.
 #-------------------------------------------------------------------------------------------------------
 
 # Load R-packages.
@@ -13,6 +14,7 @@ library(ggplot2)
 library(nleqslv)
 library(fGarch)
 library(gamlss)
+library(scales)
 
 #------------------------------------------------------------------------------------------------------
 

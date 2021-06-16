@@ -4,7 +4,7 @@
 \alias{wt.var}
 \title{Function that calculates a weighted variance}
 \source{
-See \url{https://rdrr.io/cran/SDMTools/src/R/wt.mean.R}
+The developer of this function is Jeremy VanDerWal. See \url{https://rdrr.io/cran/SDMTools/src/R/wt.mean.R}
 }
 \usage{
 wt.var(x, w)
@@ -28,7 +28,4 @@ wt = runif(25) # Some arbitrary weights.
 # Display variances (unweighted and then weighted).
 var(x)
 wt.var(x, wt)
-}
-\author{
-Jeremy VanDerWal \email{jjvanderwal@gmail.com}
 }

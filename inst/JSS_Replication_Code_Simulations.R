@@ -1,7 +1,8 @@
 #----------------------------------------------------------------------------
 # JSS_Replication_Code_Examples.R
 #
-# Simulations (results for Figures 1-2, Section 5, and Web Appendix A.3).
+# This file reproduces all the results for the simulations (results for
+# Figures 1-2, Figures 5-9 (Section 5), and Figures 12-13 Appendix B).
 #----------------------------------------------------------------------------
 
 # Figure 1: Checking the effective sample size (ESS) across model dimensions and measurement error variance.
@@ -15,7 +16,7 @@ set.seed(2019)
 
 B <- 50
 
-n <- 1000
+n <- 10000
 
 dim_vec <- c(1:10)
 
@@ -134,22 +135,26 @@ for(i in 1:length(dim_vec)) {
   eff_vec2 <- c(eff_vec2, mean(est2$eff.samp.size, na.rm = T)/B)
 }
 
-dats1 <- as.data.frame(cbind(log(dim_vec), log(eff_vec1), log(1/dim_vec)))
-dats2 <- as.data.frame(cbind(log(dim_vec), log(eff_vec2), log(1/dim_vec)))
+dats1 <- as.data.frame(cbind((dim_vec), (eff_vec1), (1/dim_vec)))
+dats2 <- as.data.frame(cbind((dim_vec), (eff_vec2), (1/dim_vec)))
 
-colnames(dats1) = colnames(dats2) = c("dim_vec", "ESS", "log_dim")
+colnames(dats1) = colnames(dats2) = c("dim_vec", "ESS", "dim_inv")
 
 p1 <- ggplot(dats1, aes(x = dim_vec, y = ESS)) + geom_point() + geom_line(size = 1) +
-  geom_line(aes(x = dim_vec, y = log_dim), color = "red", linetype = "dotted", colour ="log(ESS/B)") +
-  labs(x = bquote("log(p)"), y = bquote("log(ESS/B)"), title = "Gaussian response") +
+  geom_line(aes(x = dim_vec, y = dim_inv), color = "red", linetype = "dotted", colour ="ESS/B", size = 2) +
+  labs(x = bquote("p"), y = bquote("ESS/B"), title = "Gaussian response") +
   theme(axis.title.y = element_text(size = 20, angle = 90), text = element_text(size = 20),
-        axis.text = element_text(size = 20), axis.title = element_text(size = 20, face = "bold"))
+        axis.text = element_text(size = 20), axis.title = element_text(size = 20, face = "bold")) +
+  scale_y_continuous(trans = "log", breaks = trans_breaks("log", function(x) round(exp(x), digits = 2))) +
+  scale_x_continuous(trans = "log", breaks = trans_breaks("log", function(x) round(exp(x), digits = 0)))
 
 p2 <- ggplot(dats2, aes(x = dim_vec, y = ESS)) + geom_point() + geom_line(size = 1) +
-  geom_line(aes(x = dim_vec, y = log_dim), color = "red", linetype = "dotted") +
-  labs(x = bquote("log(p)"), y = bquote("log(ESS/B)"), title = "Binary response") +
+  geom_line(aes(x = dim_vec, y = dim_inv), color = "red", linetype = "dotted", size = 2) +
+  labs(x = bquote("p"), y = bquote("ESS/B"), title = "Binary response") +
   theme(axis.title.y = element_text(size = 20, angle = 90), legend.title = element_blank(), text = element_text(size = 20),
-        legend.position = "none", axis.text = element_text(size = 20), axis.title = element_text(size = 20, face = "bold"))
+        legend.position = "none", axis.text = element_text(size = 20), axis.title = element_text(size = 20, face = "bold")) +
+  scale_y_continuous(trans = "log", breaks = trans_breaks("log", function(x) round(exp(x), digits = 2))) +
+  scale_x_continuous(trans = "log", breaks = trans_breaks("log", function(x) round(exp(x), digits = 0)))
 
 multiplot(p1, p2, layout = matrix(c(1, 2), ncol = 2, nrow = 1, byrow = T))
 
@@ -166,7 +171,7 @@ set.seed(2019)
 
 B <- 50
 
-n <- 1000
+n <- 10000
 
 sigma.sq.u_vec <- c(seq(0.1, 1, 0.1))
 
@@ -283,8 +288,8 @@ RMSE_mat <- c()
 CV_mat1 <- c()
 CV_mat2 <- c()
 
-family <- "binomial"
-#family <- "poisson"
+#family <- "binomial"
+family <- "poisson"
 
 start <- Sys.time()
 
@@ -336,12 +341,12 @@ for(i in 1:length(sigma.sq.u_vec)) {
 
     if (par.int != "spline") eta <- X%*%beta
     if (par.int == "spline" & family == "binomial") {
-      eta <- sin(x1/2 + 0.25)
+      eta <- cos(2*x1 + 0.25)
       mu_Y <- logit_fun(eta)
       Y <- rbinom(n, 1, prob = mu_Y)
     }
     if (par.int == "spline" & family == "poisson") {
-      eta <- sin(x1/2 + 0.25)
+      eta <- cos(2*x1 + 0.25)
       mu_Y <- exp(eta)
       Y <- rpois(n, lambda = mu_Y)
     }
@@ -370,25 +375,14 @@ for(i in 1:length(sigma.sq.u_vec)) {
     if (par.int == "spline") X_test_scen <- cbind(x1_test_scen)
 
     if (par.int != "spline") eta_test_scen <- as.matrix(X_test_scen)%*%beta
-    if (par.int == "spline") {
-      eta_test_scen <- sin(x1_test_scen/2 + 0.25)
-
-      if (family == "binomial") {
-        mu_test_scen <- logit_fun(eta_test_scen)
-        Y_test_scen <- rbinom(n_test, 1, prob = mu_test_scen)
-      }
-      if (family == "poisson") {
-        mu_test_scen <- exp(eta_test_scen)
-        Y_test_scen <- rpois(n_test, lambda = mu_test_scen)
-      }
-    }
+    if (par.int == "spline") eta_test_scen <- cos(x1_test_scen*2 + 0.25)
 
     w1_test_scen <- x1_test_scen + rnorm(n_test, 0, sd = sqrt(sigma.sq.u_test))
 
     if (par.int == 3) W_test_scen <- cbind(rep(1, n_test), w1_test_scen, w1_test_scen^2)
 
-    dat_test_scen <- data.frame(cbind(Y_test_scen, w1_test_scen, x1_test_scen))
-    colnames(dat_test_scen) <- colnames(dat_train)
+    dat_test_scen <- data.frame(cbind(w1_test_scen, x1_test_scen))
+    colnames(dat_test_scen) <- colnames(dat_train)[-1]
 
     # Start fitting models here.
 
@@ -410,16 +404,12 @@ for(i in 1:length(sigma.sq.u_vec)) {
         mod_naiv1 <- gam(Y ~ s(w1), family = binomial, data = dat_train, gamma = 1.4, select = T)
       }
       if (family == "poisson") {
-      mod_true1 <- gam(Y ~ s(x1), family = poisson, data = dat_train, gamma = 1.4, select = T)
-      mod_naiv1 <- gam(Y ~ s(w1), family = poisson, data = dat_train, gamma = 1.4, select = T)
+        mod_true1 <- gam(Y ~ s(x1), family = poisson, data = dat_train, gamma = 1.4, select = T)
+        mod_naiv1 <- gam(Y ~ s(w1), family = poisson, data = dat_train, gamma = 1.4, select = T)
       }
     }
 
-    if (par.int != "spline") W_train <- W[1:n_train, ]
-    if (par.int == "spline") W_train <- as.matrix(dat_train$w1)
-
-    if (par.int != "spline") est <- try(refitME(mod_naiv1, sigma.sq.u, B), silent = TRUE)  # MCEM GLM.
-    if (par.int == "spline") est <- try(refitME(mod_naiv1, sigma.sq.u, B), silent = TRUE)  # MCEM GAM.
+    est <- try(refitME(mod_naiv1, sigma.sq.u, B), silent = TRUE)  # MCEM.
 
     if (class(est)[1] == "try-error") next
     nocrash <- c(nocrash, 1)
@@ -437,11 +427,9 @@ for(i in 1:length(sigma.sq.u_vec)) {
       beta_mat.se1 <- rbind(beta_mat.se1, sqrt(diag(vcov(mod_naiv1))))
       beta_mat.se2 <- rbind(beta_mat.se2, sqrt(diag(mod_simex1$variance.jackknife)))
       beta_mat.se3 <- rbind(beta_mat.se3, est$se)
-    }
 
-    # CV/MSE on test data.
+      # CV/MSE on test data.
 
-    if (par.int != "spline") {
       eta_pred_true <- as.matrix(X_test)%*%mod_true1$coef
       RMSE_CV0a <- c(RMSE_CV0a, sqrt(mean((eta_test - eta_pred_true)^2)))
       eta_pred_true <- as.matrix(X_test_scen)%*%mod_true1$coef
@@ -459,34 +447,27 @@ for(i in 1:length(sigma.sq.u_vec)) {
       RMSE_CV2a <- c(RMSE_CV2a, sqrt(mean((eta_test - eta_pred_simex)^2)))
       if (test.W == F) eta_pred_simex <- as.matrix(X_test_scen)%*%mod_simex1$coef
       if (test.W == T) eta_pred_simex <- as.matrix(W_test_scen)%*%mod_simex1$coef
-      RMSE_CV2b <- c(RMSE_CV2b, sqrt(mean((eta_test_scen-eta_pred_simex)^2)))
+      RMSE_CV2b <- c(RMSE_CV2b, sqrt(mean((eta_test_scen - eta_pred_simex)^2)))
 
       if (test.W == F) eta_pred_mcem <- as.matrix(X_test)%*%est$coef
       if (test.W == T) eta_pred_mcem <- as.matrix(W_test)%*%est$coef
-      RMSE_CV3a <- c(RMSE_CV3a, sqrt(mean((eta_test-eta_pred_mcem)^2)))
+      RMSE_CV3a <- c(RMSE_CV3a, sqrt(mean((eta_test - eta_pred_mcem)^2)))
       if (test.W == F) eta_pred_mcem <- as.matrix(X_test_scen)%*%est$coef
       if (test.W == T) eta_pred_mcem <- as.matrix(W_test_scen)%*%est$coef
       RMSE_CV3b <- c(RMSE_CV3b, sqrt(mean((eta_test_scen - eta_pred_mcem)^2)))
     }
 
     if (par.int == "spline") {
-
       if (test.W == F) dat_test$w1 <- dat_test$x1
 
       eta_pred_true <- predict(mod_true1, newdata = dat_test, type = "link")
-      RMSE_CV0a <- c(RMSE_CV0a, sqrt(mean((eta_test-eta_pred_true)^2)))
-      eta_pred_true <- predict(mod_true1, newdata = dat_test_scen, type = "link")
-      RMSE_CV0b <- c(RMSE_CV0b, sqrt(mean((eta_test_scen - eta_pred_true)^2)))
+      RMSE_CV0a <- c(RMSE_CV0a, sqrt(mean((eta_test - eta_pred_true)^2)))
 
       eta_pred_naiv <- predict(mod_naiv1, newdata = dat_test, type = "link")
       RMSE_CV1a <- c(RMSE_CV1a, sqrt(mean((eta_test - eta_pred_naiv)^2)))
-      eta_pred_naiv <- predict(mod_naiv1, newdata = dat_test_scen, type = "link")
-      RMSE_CV1b <- c(RMSE_CV1b, sqrt(mean((eta_test_scen - eta_pred_naiv)^2)))
 
       eta_pred_mcem <- predict(est, newdata = dat_test, type = "link")
       RMSE_CV3a <- c(RMSE_CV3a, sqrt(mean((eta_test - eta_pred_mcem)^2)))
-      eta_pred_mcem <- predict(est, newdata = dat_test_scen, type = "link")
-      RMSE_CV3b <- c(RMSE_CV3b, sqrt(mean((eta_test_scen - eta_pred_mcem)^2)))
     }
 
     if (length(nocrash) >= N.sim) c.sim <- FALSE
@@ -495,9 +476,6 @@ for(i in 1:length(sigma.sq.u_vec)) {
   if (par.int != "spline") {
     SE_mat <- cbind(beta_mat.se0[, par.int], beta_mat.se1[, par.int], beta_mat.se2[, par.int], beta_mat.se3[, par.int])
     SD_mat <- c(sd(beta_mat0[, par.int], na.rm = T), sd(beta_mat1[, par.int], na.rm = T), sd(beta_mat2[, par.int], na.rm = T), sd(beta_mat3[, par.int], na.rm = T), sd(beta_mat3[, par.int], na.rm = T))
-
-    print(c(mean(SE_mat[, 1], na.rm = T), mean(SE_mat[, 2], na.rm = T), mean(SE_mat[, 3], na.rm = T), mean(SE_mat[, 4], na.rm = T)))
-    print(SD_mat)
 
     bias_mat1 <- c(mean((beta_mat0[, par.int] - beta[par.int])/beta[par.int], na.rm = T), mean((beta_mat1[, par.int] - beta[par.int])/beta[par.int], na.rm = T), mean((beta_mat2[, par.int] - beta[par.int])/beta[par.int], na.rm = T), mean((beta_mat3[, par.int] - beta[par.int])/beta[par.int], na.rm = T))
     RMSE_mat1 <- c(sqrt(mean((beta_mat0[, par.int] - beta[par.int])^2, na.rm = T)), sqrt(mean((beta_mat1[, par.int] - beta[par.int])^2, na.rm = T)), sqrt(mean((beta_mat2[, par.int] - beta[par.int])^2, na.rm = T)), sqrt(mean((beta_mat3[, par.int] - beta[par.int])^2, na.rm = T)))
@@ -516,10 +494,7 @@ for(i in 1:length(sigma.sq.u_vec)) {
     CV_mat2 <- rbind(CV_mat2, c(mean(RMSE_CV0b, na.rm = T), mean(RMSE_CV1b, na.rm = T), mean(RMSE_CV2b, na.rm = T), mean(RMSE_CV3b, na.rm = T)))
   }
 
-  if (par.int == "spline") {
-    CV_mat1 <- rbind(CV_mat1, c(mean(RMSE_CV0a, na.rm = T), mean(RMSE_CV1a, na.rm = T), mean(RMSE_CV3a, na.rm = T)))
-    CV_mat2 <- rbind(CV_mat2, c(mean(RMSE_CV0b, na.rm = T), mean(RMSE_CV1b, na.rm = T), mean(RMSE_CV3b, na.rm = T)))
-  }
+  if (par.int == "spline") CV_mat1 <- rbind(CV_mat1, c(mean(RMSE_CV0a, na.rm = T), mean(RMSE_CV1a, na.rm = T), mean(RMSE_CV3a, na.rm = T)))
 
   print("___________________________________")
 }
@@ -589,17 +564,19 @@ CV_mat1 <- stack(as.data.frame(CV_mat1))
 CV_mat1 <- cbind(CV_mat1, rep(sigma.sq.u_vec, meth.len))
 colnames(CV_mat1) <- c("RMSE", "model", "sigma.sq")
 
-colnames(CV_mat2) <- est.names
-CV_mat2 <- stack(as.data.frame(CV_mat2))
-CV_mat2 <- cbind(CV_mat2, rep(sigma.sq.u_vec, meth.len))
-colnames(CV_mat2) <- c("RMSE", "model", "sigma.sq")
+if (par.int != "spline") {
+  colnames(CV_mat2) <- est.names
+  CV_mat2 <- stack(as.data.frame(CV_mat2))
+  CV_mat2 <- cbind(CV_mat2, rep(sigma.sq.u_vec, meth.len))
+  colnames(CV_mat2) <- c("RMSE", "model", "sigma.sq")
+}
 
 if (test.W == T) my.title1 <- bquote("(i) RMSE on linear predictor using the true test data" ~ paste((W[t])))
 if (test.W == F) my.title1 <- bquote("(i) RMSE on linear predictor using the true test data" ~ paste((X[t])))
 
-my.title2 <- bquote("(ii) RMSE on linear predictor using test data with a shift")
-
 if (par.int != "spline") {
+  my.title2 <- bquote("(ii) RMSE on linear predictor using test data with a shift")
+
   p1_pred <- ggplot(CV_mat1, aes(x = sigma.sq, y = RMSE, colour = model, group = model)) +
     geom_line(size = 2, aes(linetype = model)) + ggtitle(my.title1) + xlab(expression(sigma[u]^2)) +
     theme(axis.text = element_text(size = 14), axis.title = element_text(size = 16, face = "bold")) +
@@ -619,6 +596,7 @@ if (par.int != "spline") {
 }
 
 if (par.int == "spline") {
+  my.title1 <- bquote("RMSE on linear predictor using the true test data" ~ paste((X[t])))
 
   p1_pred <- ggplot(CV_mat1, aes(x = sigma.sq, y = RMSE, colour = model, group = model)) +
     geom_line(size = 2, aes(linetype = model)) + ggtitle(my.title1) + xlab(expression(sigma[u]^2)) +
@@ -626,15 +604,7 @@ if (par.int == "spline") {
     scale_linetype_manual(values = c(1, 2, 4)) + scale_color_manual(values = c("Red", "Black", "Blueviolet")) +
     theme(legend.position = "top", legend.title = element_blank()) + guides(fill = guide_legend(keywidth = 1, keyheight = 2), linetype = guide_legend(keywidth = 7, keyheight = 2), colour = guide_legend(keywidth = 3, keyheight = 1))
 
-  p2_pred <- ggplot(CV_mat2, aes(x = sigma.sq, y = RMSE, colour = model, group = model)) +
-    geom_line(size = 2, aes(linetype = model)) + ggtitle(my.title2) + xlab(expression(sigma[u]^2)) +
-    theme(axis.text = element_text(size = 14), axis.title = element_text(size = 16, face = "bold")) +
-    scale_linetype_manual(values = c(1, 2, 4)) + scale_color_manual(values = c("Red", "Black", "Blueviolet")) +
-    theme(legend.position = "none", legend.title = element_blank())
-
-  x11()
-
-  multiplot(p1_pred, p2_pred, layout = matrix(c(1, 2), ncol = 1, nrow = 2, byrow = T))
+  p1_pred
 }
 
 detach(package:mgcv)
@@ -658,14 +628,13 @@ n <- 1000
 n_train <- 800
 n_test <- n - n_train
 
-# Set true parameters here.
+# Set true parameter values here.
 
 sigma.sq.e <- c(1, 1) # True predictor covariance (sigma).
 
 alpha <- c(0, 0)
-beta <- c(0.5, 1, -0.3); par.int <- 3
-
-#par.int <- "spline"
+beta <- c(0.5, 1, -0.3)
+par.int <- 3
 
 scen_par <- 0.5  # Additional shift in "future" predictor values.
 
@@ -721,20 +690,14 @@ for(i in 1:length(sigma.sq.u_vec)) {
     #x1 <- (rchisq(n, 3) - 3)/sqrt(6)   # Case (i). True predictor is a Chi-square distribution.
     x1 <- rsnorm(n, mean = 0, sd = 1, xi = 3) # Case (ii). True predictor is a (skewed) normal distribution.
 
-    if (par.int == 3) X <- cbind(rep(1, n), x1, x1^2)
-    if (par.int == "spline") X <- NA
+    X <- cbind(rep(1, n), x1, x1^2)
 
     w1 <- x1 + rnorm(n, 0, sd = sqrt(sigma.sq.u1))  # Add/contaminate the predictor with error.
 
-    if (par.int == 3) {
-      W <- cbind(rep(1, n), w1, w1^2)
-      colnames(W) <- c("Intercept", "w1", "I(w1^2)")
-    }
+    W <- cbind(rep(1, n), w1, w1^2)
+    colnames(W) <- c("Intercept", "w1", "I(w1^2)")
 
-    if (par.int == "spline") W <- NA
-
-    if (par.int != "spline") eta <- X%*%beta
-    if (par.int == "spline") eta <- sin(0.85*x1)
+    eta <- X%*%beta
 
     mu_Y <- logit_fun(eta)
     Y <- rbinom(n, 1, prob = mu_Y)
@@ -751,47 +714,32 @@ for(i in 1:length(sigma.sq.u_vec)) {
 
     x1_test <- dat_test$x1
 
-    if (par.int == 3) {
-      X_test <- cbind(rep(1, nrow(dat_test)), x1_test, x1_test^2)
-      W_test <- cbind(rep(1, nrow(dat_test)), dat_test$w1, dat_test$w1^2)
-    }
+    X_test <- cbind(rep(1, nrow(dat_test)), x1_test, x1_test^2)
+    W_test <- cbind(rep(1, nrow(dat_test)), dat_test$w1, dat_test$w1^2)
 
     # Create new data (containing X, W and Y) as a future climate scenario - i.e., slightly increase X_test.
 
-    if (par.int != "spline") {
-      x1_test_scen <- x1_test + scen_par
+    x1_test_scen <- x1_test + scen_par
 
-      X_test_scen <- cbind(rep(1, nrow(dat_test)), x1_test_scen, x1_test_scen^2)
+    X_test_scen <- cbind(rep(1, nrow(dat_test)), x1_test_scen, x1_test_scen^2)
 
-      eta_test_scen <- as.matrix(X_test_scen)%*%beta
-      mu_test_scen <- logit_fun(eta_test_scen)
-      Y_test_scen <- rbinom(n_test, 1, prob = mu_test_scen)
+    eta_test_scen <- as.matrix(X_test_scen)%*%beta
+    mu_test_scen <- logit_fun(eta_test_scen)
 
-      w1_test_scen <- x1_test_scen + rnorm(n_test, 0, sd = sqrt(sigma.sq.u_test))
+    w1_test_scen <- x1_test_scen + rnorm(n_test, 0, sd = sqrt(sigma.sq.u_test))
 
-      if (par.int == 3) W_test_scen <- cbind(rep(1, n_test), w1_test_scen, w1_test_scen^2)
+    W_test_scen <- cbind(rep(1, n_test), w1_test_scen, w1_test_scen^2)
 
-      dat_test_scen <- data.frame(cbind(Y_test_scen, w1_test_scen, x1_test_scen))
-      colnames(dat_test_scen) <- colnames(dat_train)
-    }
+    dat_test_scen <- data.frame(cbind(w1_test_scen, x1_test_scen))
+    colnames(dat_test_scen) <- colnames(dat_train)[-1]
 
     # Start fitting models here.
 
-    if (par.int == 3) {
-      mod_true1 <- glm(Y ~ x1 + I(x1^2), x = TRUE, family = binomial, data = dat_train)
-      mod_naiv1 <- glm(Y ~ w1 + I(w1^2), x = TRUE, family = binomial, data = dat_train)
+    mod_true1 <- glm(Y ~ x1 + I(x1^2), x = TRUE, family = binomial, data = dat_train)
+    mod_naiv1 <- glm(Y ~ w1 + I(w1^2), x = TRUE, family = binomial, data = dat_train)
 
-      mod_simex1 <- simex(mod_naiv1, SIMEXvariable = c("w1", "I(w1^2)"),
+    mod_simex1 <- simex(mod_naiv1, SIMEXvariable = c("w1", "I(w1^2)"),
                           measurement.error = cbind(sqrt(sigma.sq.u), sqrt(sigma.sq.u))) # SIMEX.
-    }
-
-    if (par.int == "spline") {
-      mod_true1 <- gam(Y ~ s(x1, k = 5), family = binomial, data = dat_train, gamma = 1.4, select = T)
-      mod_naiv1 <- gam(Y ~ s(w1, k = 5), family = binomial, data = dat_train, gamma = 1.4, select = T)
-    }
-
-    if (par.int != "spline") W_train <- W[1:n_train, ]
-    if (par.int == "spline") W_train <- as.matrix(dat_train$w1)
 
     est <- try(refitME(mod_naiv1, sigma.sq.u, B), silent = TRUE)  # MCEM GLM.
 
@@ -801,76 +749,55 @@ for(i in 1:length(sigma.sq.u_vec)) {
     k <- k + 1
     print(k)
 
-    if (par.int != "spline") {
-      beta_mat0 <- rbind(beta_mat0, mod_true1$coef)
-      beta_mat1 <- rbind(beta_mat1, mod_naiv1$coef)
-      beta_mat2 <- rbind(beta_mat2, mod_simex1$coef)
-      beta_mat3 <- rbind(beta_mat3, est$coef)
+    beta_mat0 <- rbind(beta_mat0, mod_true1$coef)
+    beta_mat1 <- rbind(beta_mat1, mod_naiv1$coef)
+    beta_mat2 <- rbind(beta_mat2, mod_simex1$coef)
+    beta_mat3 <- rbind(beta_mat3, est$coef)
 
-      beta_mat.se0 <- rbind(beta_mat.se0, sqrt(diag(vcov(mod_true1))))
-      beta_mat.se1 <- rbind(beta_mat.se1, sqrt(diag(vcov(mod_naiv1))))
-      beta_mat.se2 <- rbind(beta_mat.se2, sqrt(diag(mod_simex1$variance.jackknife)))
-      beta_mat.se3 <- rbind(beta_mat.se3, est$se)
-    }
+    beta_mat.se0 <- rbind(beta_mat.se0, sqrt(diag(vcov(mod_true1))))
+    beta_mat.se1 <- rbind(beta_mat.se1, sqrt(diag(vcov(mod_naiv1))))
+    beta_mat.se2 <- rbind(beta_mat.se2, sqrt(diag(mod_simex1$variance.jackknife)))
+    beta_mat.se3 <- rbind(beta_mat.se3, est$se)
 
     # CV/MSE on test data.
 
-    if (par.int != "spline") {
-      eta_pred_true <- as.matrix(X_test)%*%mod_true1$coef
-      RMSE_CV0a <- c(RMSE_CV0a, sqrt(mean((eta_test - eta_pred_true)^2)))
-      eta_pred_true <- as.matrix(X_test_scen)%*%mod_true1$coef
-      RMSE_CV0b <- c(RMSE_CV0b, sqrt(mean((eta_test_scen - eta_pred_true)^2)))
+    eta_pred_true <- as.matrix(X_test)%*%mod_true1$coef
+    RMSE_CV0a <- c(RMSE_CV0a, sqrt(mean((eta_test - eta_pred_true)^2)))
+    eta_pred_true <- as.matrix(X_test_scen)%*%mod_true1$coef
+    RMSE_CV0b <- c(RMSE_CV0b, sqrt(mean((eta_test_scen - eta_pred_true)^2)))
 
-      eta_pred_naiv <- as.matrix(W_test)%*%mod_naiv1$coef
-      RMSE_CV1a <- c(RMSE_CV1a, sqrt(mean((eta_test - eta_pred_naiv)^2)))
-      eta_pred_naiv <- as.matrix(W_test_scen)%*%mod_naiv1$coef
-      RMSE_CV1b <- c(RMSE_CV1b, sqrt(mean((eta_test_scen - eta_pred_naiv)^2)))
+    eta_pred_naiv <- as.matrix(W_test)%*%mod_naiv1$coef
+    RMSE_CV1a <- c(RMSE_CV1a, sqrt(mean((eta_test - eta_pred_naiv)^2)))
+    eta_pred_naiv <- as.matrix(W_test_scen)%*%mod_naiv1$coef
+    RMSE_CV1b <- c(RMSE_CV1b, sqrt(mean((eta_test_scen - eta_pred_naiv)^2)))
 
-      eta_pred_simex <- as.matrix(W_test)%*%mod_simex1$coef
-      RMSE_CV2a <- c(RMSE_CV2a, sqrt(mean((eta_test - eta_pred_simex)^2)))
-      eta_pred_simex <- as.matrix(W_test_scen)%*%mod_simex1$coef
-      RMSE_CV2b <- c(RMSE_CV2b, sqrt(mean((eta_test_scen - eta_pred_simex)^2)))
+    eta_pred_simex <- as.matrix(W_test)%*%mod_simex1$coef
+    RMSE_CV2a <- c(RMSE_CV2a, sqrt(mean((eta_test - eta_pred_simex)^2)))
+    eta_pred_simex <- as.matrix(W_test_scen)%*%mod_simex1$coef
+    RMSE_CV2b <- c(RMSE_CV2b, sqrt(mean((eta_test_scen - eta_pred_simex)^2)))
 
-      eta_pred_mcem <- as.matrix(W_test)%*%est$coef
-      RMSE_CV3a <- c(RMSE_CV3a, sqrt(mean((eta_test - eta_pred_mcem)^2)))
-      eta_pred_mcem <- as.matrix(W_test_scen)%*%est$coef
-      RMSE_CV3b <- c(RMSE_CV3b, sqrt(mean((eta_test_scen - eta_pred_mcem)^2)))
-    }
-
-    if (par.int == "spline") {
-      eta_pred_true <- predict(mod_true1, newdata = dat_test, type = "link")
-      RMSE_CV0a <- c(RMSE_CV0a, sqrt(mean((eta_test - eta_pred_true)^2)))
-
-      eta_pred_naiv <- predict(mod_naiv1, newdata = dat_test, type = "link")
-      RMSE_CV1a <- c(RMSE_CV1a, sqrt(mean((eta_test - eta_pred_naiv)^2)))
-
-      eta_pred_mcem <- predict(est$mod, newdata = dat_test, type = "link")
-      RMSE_CV3a <- c(RMSE_CV3a, sqrt(mean((eta_test - eta_pred_mcem)^2)))
-    }
+    eta_pred_mcem <- as.matrix(W_test)%*%est$coef
+    RMSE_CV3a <- c(RMSE_CV3a, sqrt(mean((eta_test - eta_pred_mcem)^2)))
+    eta_pred_mcem <- as.matrix(W_test_scen)%*%est$coef
+    RMSE_CV3b <- c(RMSE_CV3b, sqrt(mean((eta_test_scen - eta_pred_mcem)^2)))
 
     if (length(nocrash) >= N.sim) c.sim <- FALSE
   }
 
-  if (par.int != "spline") {
-    bias_mat1 <- c(mean((beta_mat0[, par.int] - beta[par.int])/beta[par.int], na.rm = T), mean((beta_mat1[, par.int] - beta[par.int])/beta[par.int], na.rm = T), mean((beta_mat2[, par.int] - beta[par.int])/beta[par.int], na.rm = T), mean((beta_mat3[, par.int] - beta[par.int])/beta[par.int], na.rm = T))
-    RMSE_mat1 <- c(sqrt(mean((beta_mat0[, par.int] - beta[par.int])^2, na.rm = T)), sqrt(mean((beta_mat1[, par.int] - beta[par.int])^2, na.rm = T)), sqrt(mean((beta_mat2[, par.int] - beta[par.int])^2, na.rm = T)), sqrt(mean((beta_mat3[, par.int] - beta[par.int])^2, na.rm = T)))
-    CP_mat_SE3 <- which(is.nan(beta_mat.se3[, par.int]) | is.na(beta_mat.se3[, par.int]))
+  bias_mat1 <- c(mean((beta_mat0[, par.int] - beta[par.int])/beta[par.int], na.rm = T), mean((beta_mat1[, par.int] - beta[par.int])/beta[par.int], na.rm = T), mean((beta_mat2[, par.int] - beta[par.int])/beta[par.int], na.rm = T), mean((beta_mat3[, par.int] - beta[par.int])/beta[par.int], na.rm = T))
+  RMSE_mat1 <- c(sqrt(mean((beta_mat0[, par.int] - beta[par.int])^2, na.rm = T)), sqrt(mean((beta_mat1[, par.int] - beta[par.int])^2, na.rm = T)), sqrt(mean((beta_mat2[, par.int] - beta[par.int])^2, na.rm = T)), sqrt(mean((beta_mat3[, par.int] - beta[par.int])^2, na.rm = T)))
+  CP_mat_SE3 <- which(is.nan(beta_mat.se3[, par.int]) | is.na(beta_mat.se3[, par.int]))
 
-    if (length(CP_mat_SE3) == 0) CP_mat3 <- cov.pc(beta, beta_mat3, beta_mat.se3, N.sim - length(CP_mat_SE3))[par.int]
-    if (length(CP_mat_SE3) > 0) CP_mat3 <- cov.pc(beta, beta_mat3[-CP_mat_SE3, ], beta_mat.se3[-CP_mat_SE3, ], N.sim - length(CP_mat_SE3))[par.int]
-    CP_mat1 <- c(cov.pc(beta, beta_mat0, beta_mat.se0, N.sim)[par.int], cov.pc(beta, beta_mat1, beta_mat.se1, N.sim)[par.int], cov.pc(beta, beta_mat2, beta_mat.se2, N.sim)[par.int], CP_mat3)
+  if (length(CP_mat_SE3) == 0) CP_mat3 <- cov.pc(beta, beta_mat3, beta_mat.se3, N.sim - length(CP_mat_SE3))[par.int]
+  if (length(CP_mat_SE3) > 0) CP_mat3 <- cov.pc(beta, beta_mat3[-CP_mat_SE3, ], beta_mat.se3[-CP_mat_SE3, ], N.sim - length(CP_mat_SE3))[par.int]
+  CP_mat1 <- c(cov.pc(beta, beta_mat0, beta_mat.se0, N.sim)[par.int], cov.pc(beta, beta_mat1, beta_mat.se1, N.sim)[par.int], cov.pc(beta, beta_mat2, beta_mat.se2, N.sim)[par.int], CP_mat3)
 
-    bias_mat <- rbind(bias_mat, bias_mat1)
-    RMSE_mat <- rbind(RMSE_mat, RMSE_mat1)
-    CP_mat <- rbind(CP_mat, CP_mat1)
-  }
+  bias_mat <- rbind(bias_mat, bias_mat1)
+  RMSE_mat <- rbind(RMSE_mat, RMSE_mat1)
+  CP_mat <- rbind(CP_mat, CP_mat1)
 
-  if (par.int != "spline") {
-    CV_mat1 <- rbind(CV_mat1, c(mean(RMSE_CV0a, na.rm = T), mean(RMSE_CV1a, na.rm = T), mean(RMSE_CV2a, na.rm = T), mean(RMSE_CV3a, na.rm = T)))
-    CV_mat2 <- rbind(CV_mat2, c(mean(RMSE_CV0b, na.rm = T), mean(RMSE_CV1b, na.rm = T), mean(RMSE_CV2b, na.rm = T), mean(RMSE_CV3b, na.rm = T)))
-  }
-
-  if (par.int == "spline") CV_mat1 <- rbind(CV_mat1, c(mean(RMSE_CV0a, na.rm = T), mean(RMSE_CV1a, na.rm = T), mean(RMSE_CV3a, na.rm = T)))
+  CV_mat1 <- rbind(CV_mat1, c(mean(RMSE_CV0a, na.rm = T), mean(RMSE_CV1a, na.rm = T), mean(RMSE_CV2a, na.rm = T), mean(RMSE_CV3a, na.rm = T)))
+  CV_mat2 <- rbind(CV_mat2, c(mean(RMSE_CV0b, na.rm = T), mean(RMSE_CV1b, na.rm = T), mean(RMSE_CV2b, na.rm = T), mean(RMSE_CV3b, na.rm = T)))
 
   print("___________________________________")
 }
@@ -878,51 +805,48 @@ for(i in 1:length(sigma.sq.u_vec)) {
 end <- Sys.time()
 end - start
 
-if (par.int != "spline") est.names <- c("true GLM", "naive GLM", "SIMEX", "MCEM")
-if (par.int == "spline") est.names <- c("true GAM", "naive GAM", "MCEM (GAM)")
+est.names <- c("true GLM", "naive GLM", "SIMEX", "MCEM")
 meth.len <- length(est.names)
 
 # Bias, RMSE and variance.
 
-if (par.int != "spline") {
-  colnames(bias_mat) = colnames(RMSE_mat) = colnames(CP_mat) = est.names
+colnames(bias_mat) = colnames(RMSE_mat) = colnames(CP_mat) = est.names
 
-  bias_mat <- stack(as.data.frame(bias_mat))
-  bias_mat <- cbind(bias_mat, rep(sigma.sq.u_vec, meth.len))
-  colnames(bias_mat) <- c("bias", "model", "sigma.sq")
+bias_mat <- stack(as.data.frame(bias_mat))
+bias_mat <- cbind(bias_mat, rep(sigma.sq.u_vec, meth.len))
+colnames(bias_mat) <- c("bias", "model", "sigma.sq")
 
-  RMSE_mat <- stack(as.data.frame(RMSE_mat))
-  RMSE_mat <- cbind(RMSE_mat, rep(sigma.sq.u_vec, meth.len))
-  colnames(RMSE_mat) <- c("RMSE", "model", "sigma.sq")
+RMSE_mat <- stack(as.data.frame(RMSE_mat))
+RMSE_mat <- cbind(RMSE_mat, rep(sigma.sq.u_vec, meth.len))
+colnames(RMSE_mat) <- c("RMSE", "model", "sigma.sq")
 
-  CP_mat <- stack(as.data.frame(CP_mat))
-  CP_mat <- cbind(CP_mat, rep(sigma.sq.u_vec, meth.len))
-  colnames(CP_mat) <- c("coverage", "model", "sigma.sq")
+CP_mat <- stack(as.data.frame(CP_mat))
+CP_mat <- cbind(CP_mat, rep(sigma.sq.u_vec, meth.len))
+colnames(CP_mat) <- c("coverage", "model", "sigma.sq")
 
-  my.title1 <- bquote("(a) Relative bias for" ~ beta[X])
-  my.title2 <- bquote("(b) RMSE for" ~ beta[X])
-  my.title3 <- bquote("(c) 95% Coverage probability for" ~ beta[X])
+my.title1 <- bquote("(a) Relative bias for" ~ beta[X])
+my.title2 <- bquote("(b) RMSE for" ~ beta[X])
+my.title3 <- bquote("(c) 95% Coverage probability for" ~ beta[X])
 
-  p1 <- ggplot(bias_mat, aes(x = sigma.sq, y = bias, colour = model, group = model)) +
+p1 <- ggplot(bias_mat, aes(x = sigma.sq, y = bias, colour = model, group = model)) +
     geom_line(size = 2, aes(linetype = model)) + ggtitle(my.title1) + xlab(expression(sigma[u]^2)) +
     theme(axis.text = element_text(size = 14), axis.title = element_text(size = 16, face = "bold")) +
     scale_linetype_manual(values = c(1, 2, 3, 4)) + scale_color_manual(values = c("Red", "Black", "Forestgreen", "Blueviolet")) +
     geom_hline(aes(yintercept = 0), colour = "grey", linetype = "dashed") + theme(legend.position = "non") + theme(aspect.ratio = 1)
 
-  p2 <- ggplot(RMSE_mat, aes(x = sigma.sq, y = RMSE, colour = model, group = model)) + geom_line(size = 2, aes(linetype = model)) +
+p2 <- ggplot(RMSE_mat, aes(x = sigma.sq, y = RMSE, colour = model, group = model)) + geom_line(size = 2, aes(linetype = model)) +
     ggtitle(my.title2) + xlab(expression(sigma[u]^2)) + theme(axis.text = element_text(size = 14), axis.title = element_text(size = 16, face = "bold")) +
     scale_linetype_manual(values = c(1, 2, 3, 4)) + scale_color_manual(values = c("Red", "Black", "Forestgreen", "Blueviolet")) +
     geom_hline(aes(yintercept = 0), colour = "grey", linetype = "dashed") + theme(legend.position = "none") + theme(aspect.ratio = 1)
 
-  p3 <- ggplot(CP_mat, aes(x = sigma.sq, y = coverage, colour = model, group = model)) + geom_line(size = 2, aes(linetype = model)) +
+p3 <- ggplot(CP_mat, aes(x = sigma.sq, y = coverage, colour = model, group = model)) + geom_line(size = 2, aes(linetype = model)) +
     ggtitle(my.title3) + xlab(expression(sigma[u]^2)) + theme(axis.text = element_text(size = 14), axis.title = element_text(size = 16, face = "bold")) +
     scale_linetype_manual(values = c(1, 2, 3, 4)) + scale_color_manual(values = c("Red", "Black", "Forestgreen", "Blueviolet")) +
     geom_hline(aes(yintercept = 0.95), colour = "grey", linetype = "dashed") + theme(legend.position = "left") +
     guides(fill = guide_legend(keywidth = 1, keyheight = 1), linetype = guide_legend(keywidth = 7, keyheight = 2), colour = guide_legend(keywidth = 3, keyheight = 1)) +
     theme(aspect.ratio = 1)
 
-  multiplot(p1, p2, p3, layout = matrix(c(1, 2, 3, 3), ncol = 2, nrow = 2, byrow = T))
-}
+multiplot(p1, p2, p3, layout = matrix(c(1, 2, 3, 3), ncol = 2, nrow = 2, byrow = T))
 
 #-----------------------------------------------------------------------------------------
 
@@ -944,7 +868,7 @@ B <- 100
 N <- 200
 tau <- 7
 
-# Set true parameters here.
+# Set true parameter values here.
 
 beta <- c(-1, 1);  par.int <- 2
 

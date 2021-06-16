@@ -52,7 +52,7 @@ glm_naiv <- glm(Y ~ w1 + z1 + z2 + z3, x = TRUE, family = binomial,
 ### Setup measurement error (ME) variance and all tuning parameters.
 
 ```{r, echo=TRUE}
-sigma.sq.u <- 0.01259/2 # ME variance, as obtained from Carroll et al. (2006).
+sigma.sq.u <- 0.006295 # ME variance, as obtained from Carroll et al. (2006).
 B <- 100  # The number of Monte Carlo replication values/SIMEX simulations.
 ```
 
@@ -103,13 +103,14 @@ The Milan mortality air pollution data set is part of the `SemiPar` package. Her
 
 ```{r, echo=TRUE}
 suppressWarnings(suppressMessages(library(refitME)))
+suppressWarnings(suppressMessages(library(dplyr)))
 suppressWarnings(suppressMessages(library(SemiPar)))
 suppressWarnings(suppressMessages(library(mgcv)))
 
-set.seed(2020)
+set.seed(2021)
 
 data(milan.mort)
-dat.air <- milan.mort
+dat.air <- sample_n(milan.mort, 100) # Take a random sample of 100.
 ``` 
 
 ### Setup all variables.
@@ -139,8 +140,6 @@ plot_gam_naiv <- plot(gam_naiv, select = 1)
 
 ### Fit the MCEM model.
 
-Note this will take a fair while to run if `B` is large (consider decreasing `B` if you want a rough answer).
-
 ```{r, echo=TRUE}
 sigma.sq.u <- 0.0915 # This gives a reliability ratio of 0.7.
 rel.rat <- round((1 - sigma.sq.u/var(dat$w1))*100, digits = 0)
@@ -155,7 +154,7 @@ op <- par(mfrow = c(2, 2), las = 1)
 
 for(i in 1:4) {
   if (i == 1) {
-    plot(gam_MCEM1, select = i, ylim = c(-0.35, 0.1), xlim = range(plot_gam_naiv[[1]]$x), 
+    plot(gam_MCEM1, select = i, ylim = c(-0.35, 0.2), xlim = range(plot_gam_naiv[[1]]$x), 
          rug = FALSE, col = "blue", all.terms = TRUE,
          xlab = xlab.names[i], ylab = "s(Mortality counts)", lwd = 2, cex.lab = 1.3, cex.axis = 1.3,
          cex.main = 2, font.lab = 1.1, cex = 1.4, shade = T)
@@ -178,7 +177,7 @@ for(i in 1:4) {
     }
   }
   if (i == 3) {
-    plot(gam_MCEM1, select = i, ylim = c(-0.2, 0.4), rug = FALSE, col = "blue", all.terms = TRUE,
+    plot(gam_MCEM1, select = i, ylim = c(-0.4, 0.4), rug = FALSE, col = "blue", all.terms = TRUE,
          xlab = xlab.names[i], ylab = "s(Mortality counts)", lwd = 2, cex.lab = 1.3, cex.axis = 1.3,
          cex.main = 2, font.lab = 1.1, cex = 1.4, shade = T)
     lines(plot_gam_naiv[[3]]$x, plot_gam_naiv[[3]]$fit, type = "l", col = "red", lwd = 2, lty = 2)
@@ -187,7 +186,7 @@ for(i in 1:4) {
     }
   }
   if (i == 4) {
-    plot(gam_MCEM1, select = i, ylim = c(-0.06, 0.08), rug = FALSE, col = "blue", all.terms = TRUE,
+    plot(gam_MCEM1, select = i, ylim = c(-0.1, 0.1), rug = FALSE, col = "blue", all.terms = TRUE,
          xlab = xlab.names[i], ylab = "s(Mortality counts)", lwd = 2, cex.lab = 1.1, cex.axis = 1.1,
          cex.main = 2, font.lab = 1.1, cex = 1.4, shade = T)
     lines(plot_gam_naiv[[4]]$x, plot_gam_naiv[[4]]$fit, type = "l", col = "red", lwd = 2, lty = 2)
@@ -258,8 +257,12 @@ PPM_naiv1 <- glm(Y ~ X1 + X2 + Z1 + Z2 + Z3 + Z4, family = "poisson",
 ```{r, echo=TRUE}
 sigma.sq.u <- 0.25
 
-PPM_MCEM1 <- refitME(PPM_naiv1, sigma.sq.u)
+B <- 20 # Consider increasing `B` if you want a more accurate answer.
+
+PPM_MCEM1 <- refitME(PPM_naiv1, sigma.sq.u, B) # Should take about 2 mins.
 ```
+
+Plot the predicted presences of _Corymbia eximia_
 
 ```{r fig2, fig.height=5.5, fig.pos='H', echo=FALSE, fig.cap="\\label{fig:fig1} *Plot of predicted presences of Corymbia eximia using presence-only data when fitting the MCEM model. Here the max temperature predictor is assumed to be error-contaminated.*"}
 coord.dat <- cbind(Corymbiaeximiadata$X, Corymbiaeximiadata$Y)
@@ -273,8 +276,7 @@ colnames(pred.dats) <- c("x", "y", "preds")
 levelplot(preds ~ x + y, data = pred.dats, asp = "iso", ylab = "Latitude", 
  xlab = "Longitude", col.regions = heat.colors(1024)[900:1], cuts = 900, 
  main = list("", cex = 5), scales = list(y = list(draw = FALSE), 
- x = list(draw = FALSE), relation = "free"), 
- colorkey = list(labels = list(cex = 0.8)))
+ x = list(draw = FALSE)), colorkey = list(labels = list(cex = 0.8)))
 ```
 
 ## Example 4: A `VGAM` example using the Prinia flaviventris capture-recapture data.
