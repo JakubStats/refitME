@@ -8,6 +8,7 @@ MCEMfit_gen(
   mod,
   family,
   sigma.sq.u,
+  sigma.sq.e = 1,
   B = 50,
   epsilon = 1e-05,
   silent = FALSE,
@@ -22,6 +23,8 @@ MCEMfit_gen(
 \item{family}{: a specified family/distribution.}
 
 \item{sigma.sq.u}{: measurement error (ME) variance. A scalar if there is only one error-contaminated predictor variable, otherwise this must be stored as a vector (of ME variances) or a matrix if the ME covariance matrix is known.}
+
+\item{sigma.sq.e}{: variance of the true predictor (\eqn{X}).}
 
 \item{B}{: the number of Monte Carlo replication values (default is set to 50).}
 

@@ -11,9 +11,12 @@ MCEMfit_glm(
   mod,
   family,
   sigma.sq.u,
+  sigma.sq.e = 1,
   B = 50,
   epsilon = 1e-05,
   silent = FALSE,
+  theta.est = 1,
+  shape.est = 1,
   ...
 )
 }
@@ -24,11 +27,17 @@ MCEMfit_glm(
 
 \item{sigma.sq.u}{: measurement error (ME) variance. A scalar if there is only one error-contaminated predictor variable, otherwise this must be stored as a vector (of ME variances) or a matrix if the ME covariance matrix is known.}
 
+\item{sigma.sq.e}{: variance of the true predictor (\eqn{X}).}
+
 \item{B}{: the number of Monte Carlo replication values (default is set to 50).}
 
 \item{epsilon}{: a set convergence threshold (default is set to 0.00001).}
 
 \item{silent}{: if \code{TRUE}, the convergence message (which tells the user if the model has converged and reports the number of iterations required) is suppressed (default is set to \code{FALSE}).}
+
+\item{theta.est}{: an initial value for the dispersion parameter (this is required for fitting negative binomial models).}
+
+\item{shape.est}{: an initial value for the shape parameter (this is required for fitting gamma models).}
 
 \item{...}{: further arguments passed to \code{lm} or \code{glm}.}
 }
@@ -49,7 +58,7 @@ glm_naiv <- glm(Y ~ w1 + z1 + z2 + z3, x = TRUE, family = binomial, data = Frami
 
 # The error-contaminated predictor in this example is systolic blood pressure (w1).
 
-sigma.sq.u <- 0.006295  # ME variance, as obtained from Carroll et al. (2006) monograph.
+sigma.sq.u <- 0.01259/2  # ME variance, as obtained from Carroll et al. (2006) monograph.
 
 B <- 50 # The number of Monte Carlo replication values.
 
