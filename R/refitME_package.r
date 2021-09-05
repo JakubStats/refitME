@@ -14,7 +14,7 @@
 #' \item{\code{z3}}{Smoking indicator - whether the patient smokes.}
 #' \item{\code{w1}}{Systolic blood pressure (SBP) of patient - this is the error contaminated variable, calculated from mean scores. The measurement error is 0.00630, see pp. 112 of Carroll \emph{et al.} (2006).}
 #' }
-#' @source See Carroll \emph{et al.} (2006) for full details on the data and study. Also, see \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial of an example that uses the data.
+#' @source See Carroll \emph{et al.} (2006) for full details on the data and study. Also, see \url{https://github.com/JakubStats/refitME} for an RMarkdown vignette of an example that uses the data.
 #' @references Carroll, R. J., Ruppert, D., Stefanski, L. A., and Crainiceanu, C. M. (2006). \emph{Measurement Error in Nonlinear Models: A Modern Perspective.} 2nd Ed. London: Chapman & Hall/CRC.
 #' @examples # Load the data.
 #'
@@ -72,7 +72,7 @@
 #' @references Stoklosa, J., Hwang, W-H., and Warton, D.I. \pkg{refitME}: Measurement Error Modelling using Monte Carlo Expectation Maximization in \proglang{R}.
 #' @export
 #' @seealso \code{\link{MCEMfit_glm}}, \code{\link{MCEMfit_gam}} and \code{\link{MCEMfit_gen}}
-#' @source See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
+#' @source See \url{https://github.com/JakubStats/refitME} for an RMarkdown vignette with examples.
 #' @examples # A GLM example I - binary response data.
 #'
 #' library(refitME)
@@ -174,7 +174,7 @@ refitME <- function(mod, sigma.sq.u, B = 50, epsilon = 0.00001, silent = FALSE, 
 #' @importFrom expm sqrtm
 #' @export
 #' @seealso \code{\link{MCEMfit_gam}}
-#' @source See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
+#' @source See \url{https://github.com/JakubStats/refitME} for an RMarkdown vignette with examples.
 #' @examples # A GLM example I - binary response data.
 #'
 #' library(refitME)
@@ -700,7 +700,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, B = 50, epsilon = 0.00001, sile
 #' @importFrom sandwich estfun
 #' @export
 #' @seealso \code{\link{MCEMfit_glm}}
-#' @source See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
+#' @source See \url{https://github.com/JakubStats/refitME} for an RMarkdown vignette with examples.
 #' @examples # A GAM example using the air pollution data set from the SemiPar package.
 #'
 #' library(refitME)
@@ -1538,7 +1538,7 @@ MCEMfit_gen <- function(mod, family, sigma.sq.u, B = 50, epsilon = 0.00001, sile
 #' @importFrom VGAMdata dposbinom
 #' @export
 #' @seealso \code{\link{MCEMfit_glm}}
-#' @source See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
+#' @source See \url{https://github.com/JakubStats/refitME} for an RMarkdown vignette with examples.
 #' @examples # A VGAM example using the Prinia flaviventris capture-recapture data.
 #'
 #' library(refitME)
