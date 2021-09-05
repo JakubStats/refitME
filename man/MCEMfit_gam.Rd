@@ -4,7 +4,7 @@
 \alias{MCEMfit_gam}
 \title{Function for wrapping the MCEM algorithm on \code{gam} objects}
 \source{
-See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
+See \url{https://github.com/JakubStats/refitME} for an RMarkdown vignette with examples.
 }
 \usage{
 MCEMfit_gam(

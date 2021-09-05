@@ -4,7 +4,7 @@
 \alias{MCEMfit_CR}
 \title{Function for fitting \code{VGAM} capture-recapture (CR) model using the MCEM algorithm}
 \source{
-See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
+See \url{https://github.com/JakubStats/refitME} for an RMarkdown vignette with examples.
 }
 \usage{
 MCEMfit_CR(mod, sigma.sq.u, B = 50, epsilon = 1e-05, silent = FALSE)

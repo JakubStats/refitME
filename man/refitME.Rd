@@ -4,7 +4,7 @@
 \alias{refitME}
 \title{A wrapper function for correcting measurement error in predictor variables via the MCEM algorithm}
 \source{
-See \url{https://github.com/JakubStats/refitME} for an RMarkdown tutorial with examples.
+See \url{https://github.com/JakubStats/refitME} for an RMarkdown vignette with examples.
 }
 \usage{
 refitME(mod, sigma.sq.u, B = 50, epsilon = 1e-05, silent = FALSE, ...)
