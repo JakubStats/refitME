@@ -1,5 +1,5 @@
 ---
-title: '`refitME`: Tutorial for fitting measurement error models using Monte Carlo Expectation Maximization in `R`'
+title: '`refitME`: Vignette for fitting measurement error models using Monte Carlo Expectation Maximization in `R`'
 author: "Jakub Stoklosa, Hwang W-H., & David Warton"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 header-includes: # Allows you to add in your own Latex packages.
@@ -23,7 +23,7 @@ knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(fig.pos = 'H')
 ```
 
-This tutorial documents fitting an MCEM algorithm via the `refitME` `R`-package. For more specific details see: *`refitME`: Measurement Error Modelling using Monte Carlo Expectation Maximization in `R`.* Also, see ```?refitME``` for further details on the fitting function, input arguments and output.
+This vignette documents fitting an MCEM algorithm via the `refitME` `R`-package. For more specific details see: *`refitME`: Measurement Error Modelling using Monte Carlo Expectation Maximization in `R`.* Also, see ```?refitME``` for further details on the fitting function, input arguments and output.
 
 ## Example 1: A simple GLM example taken from Carroll _et al._ (2006). 
 
