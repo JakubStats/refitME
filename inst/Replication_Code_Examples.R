@@ -127,7 +127,7 @@ for(i in 1:4) {
   if (i == 1) {
     plot(gam_MCEM, select = i, ylim = c(-0.35, 0.1), xlim = range(plot_gam_naiv[[1]]$x), rug = FALSE, col = "blue", all.terms = TRUE,
          xlab = xlab.names[i], ylab = "s(Mortality counts)", lwd = 2, cex.lab = 1.3, cex.axis = 1.3,
-         cex.main = 2, font.lab = 1.1, cex = 1.4, shade = T)
+         cex.main = 2, font.lab = 1.1, cex = 1.4, shade = TRUE)
     lines(plot_gam_naiv[[1]]$x, plot_gam_naiv[[1]]$fit, type= "l", col = "red", lwd = 2, lty = 2)
     title(main = bquote("Reliability ratio of predictor is" ~ .(rel.rat) ~ "%"), outer = F, line = 1, cex = 1.4)
     legend("bottomright", c("Naive GAM", "MCEM GAM"), col = c("red", "blue"), lty = c(2, 1), lwd = 2, bty = "n")
@@ -138,7 +138,7 @@ for(i in 1:4) {
   if (i == 2) {
     plot(gam_MCEM, select = i, ylim = c(-0.25, 0.3), rug = FALSE, col = "blue", all.terms = TRUE,
          xlab = xlab.names[i], ylab = "s(Mortality counts)", lwd = 2, cex.lab = 1.3, cex.axis = 1.3,
-         cex.main = 2, font.lab = 1.1, cex = 1.4, shade = T)
+         cex.main = 2, font.lab = 1.1, cex = 1.4, shade = TRUE)
     lines(plot_gam_naiv[[2]]$x, plot_gam_naiv[[2]]$fit, type= "l", col = "red", lwd = 2, lty = 2)
     for(j in 1:2) {
       axis(j, labels = FALSE)
@@ -147,7 +147,7 @@ for(i in 1:4) {
   if (i == 3) {
     plot(gam_MCEM, select = i, ylim = c(-0.2, 0.4), rug = FALSE, col = "blue", all.terms = TRUE,
          xlab = xlab.names[i], ylab = "s(Mortality counts)", lwd = 2, cex.lab = 1.3, cex.axis = 1.3,
-         cex.main = 2, font.lab = 1.1, cex = 1.4, shade = T)
+         cex.main = 2, font.lab = 1.1, cex = 1.4, shade = TRUE)
     lines(plot_gam_naiv[[3]]$x, plot_gam_naiv[[3]]$fit, type= "l", col = "red", lwd = 2, lty = 2)
     for(j in 1:2) {
       axis(j, labels = FALSE)
@@ -156,7 +156,7 @@ for(i in 1:4) {
   if (i == 4) {
     plot(gam_MCEM, select = i, ylim = c(-0.06, 0.08), rug = FALSE, col = "blue", all.terms = TRUE,
          xlab = xlab.names[i], ylab = "s(Mortality counts)", lwd = 2, cex.lab = 1.1, cex.axis = 1.1,
-         cex.main = 2, font.lab = 1.1, cex = 1.4, shade = T)
+         cex.main = 2, font.lab = 1.1, cex = 1.4, shade = TRUE)
     lines(plot_gam_naiv[[4]]$x, plot_gam_naiv[[4]]$fit, type= "l", col = "red", lwd = 2, lty = 2)
     for(j in 1:2) {
       axis(j, labels = FALSE)

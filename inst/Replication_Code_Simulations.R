@@ -132,8 +132,8 @@ for(i in 1:length(dim_vec)) {
   est1 <- refitME(mod_naiv1, sigma.sq.u, B)
   est2 <- refitME(mod_naiv2, sigma.sq.u, B)
 
-  eff_vec1 <- c(eff_vec1, mean(est1$eff.samp.size, na.rm = T)/B)
-  eff_vec2 <- c(eff_vec2, mean(est2$eff.samp.size, na.rm = T)/B)
+  eff_vec1 <- c(eff_vec1, mean(est1$eff.samp.size, na.rm = TRUE)/B)
+  eff_vec2 <- c(eff_vec2, mean(est2$eff.samp.size, na.rm = TRUE)/B)
 }
 
 dats1 <- as.data.frame(cbind((dim_vec), (eff_vec1), (1/dim_vec)))
@@ -157,7 +157,7 @@ p2 <- ggplot(dats2, aes(x = dim_vec, y = ESS)) + geom_point() + geom_line(size =
   scale_y_continuous(trans = "log", breaks = trans_breaks("log", function(x) round(exp(x), digits = 2))) +
   scale_x_continuous(trans = "log", breaks = trans_breaks("log", function(x) round(exp(x), digits = 0)))
 
-multiplot(p1, p2, layout = matrix(c(1, 2), ncol = 2, nrow = 1, byrow = T))
+multiplot(p1, p2, layout = matrix(c(1, 2), ncol = 2, nrow = 1, byrow = TRUE))
 
 #--------------------------------------------------------------
 
@@ -208,7 +208,7 @@ for(i in 1:length(sigma.sq.u_vec)) {
   mod_naiv1 <- lm(Y ~ w1 + w2, x = TRUE, data = dat)
 
   est <- refitME(mod_naiv1, sigma.sq.u, B)
-  eff_vec1 <- c(eff_vec1, mean(est$eff.samp.size, na.rm = T)/B)
+  eff_vec1 <- c(eff_vec1, mean(est$eff.samp.size, na.rm = TRUE)/B)
 
   # Binomial response.
 
@@ -220,7 +220,7 @@ for(i in 1:length(sigma.sq.u_vec)) {
   mod_naiv1 <- glm(Y ~ w1 + w2, x = TRUE, family = binomial, data = dat)
 
   est <- refitME(mod_naiv1, sigma.sq.u, B)
-  eff_vec2 <- c(eff_vec2, mean(est$eff.samp.size, na.rm = T)/B)
+  eff_vec2 <- c(eff_vec2, mean(est$eff.samp.size, na.rm = TRUE)/B)
 }
 
 dat1 <- as.data.frame(cbind(sigma.sq.u_vec, eff_vec1))
@@ -243,7 +243,7 @@ p2 <- ggplot(dat2, aes(x = sigma.sq.u_vec, y = ESS)) + geom_point() + geom_line(
 
 par(mfrow = c(1, 2), las = 1)
 
-multiplot(p1, p2, layout = matrix(c(1, 2), ncol = 2, nrow = 1, byrow = T))
+multiplot(p1, p2, layout = matrix(c(1, 2), ncol = 2, nrow = 1, byrow = TRUE))
 
 #-----------------------------------------------------------------------------
 
@@ -401,12 +401,12 @@ for(i in 1:length(sigma.sq.u_vec)) {
 
     if (par.int == "spline") {
       if (family == "binomial") {
-        mod_true1 <- gam(Y ~ s(x1), family = binomial, data = dat_train, gamma = 1.4, select = T)
-        mod_naiv1 <- gam(Y ~ s(w1), family = binomial, data = dat_train, gamma = 1.4, select = T)
+        mod_true1 <- gam(Y ~ s(x1), family = binomial, data = dat_train, gamma = 1.4, select = TRUE)
+        mod_naiv1 <- gam(Y ~ s(w1), family = binomial, data = dat_train, gamma = 1.4, select = TRUE)
       }
       if (family == "poisson") {
-        mod_true1 <- gam(Y ~ s(x1), family = poisson, data = dat_train, gamma = 1.4, select = T)
-        mod_naiv1 <- gam(Y ~ s(w1), family = poisson, data = dat_train, gamma = 1.4, select = T)
+        mod_true1 <- gam(Y ~ s(x1), family = poisson, data = dat_train, gamma = 1.4, select = TRUE)
+        mod_naiv1 <- gam(Y ~ s(w1), family = poisson, data = dat_train, gamma = 1.4, select = TRUE)
       }
     }
 
@@ -436,30 +436,30 @@ for(i in 1:length(sigma.sq.u_vec)) {
       eta_pred_true <- as.matrix(X_test_scen)%*%mod_true1$coef
       RMSE_CV0b <- c(RMSE_CV0b, sqrt(mean((eta_test_scen - eta_pred_true)^2)))
 
-      if (test.W == F) eta_pred_naiv <- as.matrix(X_test)%*%mod_naiv1$coef
-      if (test.W == T) eta_pred_naiv <- as.matrix(W_test)%*%mod_naiv1$coef
+      if (test.W == FALSE) eta_pred_naiv <- as.matrix(X_test)%*%mod_naiv1$coef
+      if (test.W == TRUE) eta_pred_naiv <- as.matrix(W_test)%*%mod_naiv1$coef
       RMSE_CV1a <- c(RMSE_CV1a, sqrt(mean((eta_test - eta_pred_naiv)^2)))
-      if (test.W == F) eta_pred_naiv <- as.matrix(X_test_scen)%*%mod_naiv1$coef
-      if (test.W == T) eta_pred_naiv <- as.matrix(W_test_scen)%*%mod_naiv1$coef
+      if (test.W == FALSE) eta_pred_naiv <- as.matrix(X_test_scen)%*%mod_naiv1$coef
+      if (test.W == TRUE) eta_pred_naiv <- as.matrix(W_test_scen)%*%mod_naiv1$coef
       RMSE_CV1b <- c(RMSE_CV1b, sqrt(mean((eta_test_scen - eta_pred_naiv)^2)))
 
-      if (test.W == F) eta_pred_simex <- as.matrix(X_test)%*%mod_simex1$coef
-      if (test.W == T) eta_pred_simex <- as.matrix(W_test)%*%mod_simex1$coef
+      if (test.W == FALSE) eta_pred_simex <- as.matrix(X_test)%*%mod_simex1$coef
+      if (test.W == TRUE) eta_pred_simex <- as.matrix(W_test)%*%mod_simex1$coef
       RMSE_CV2a <- c(RMSE_CV2a, sqrt(mean((eta_test - eta_pred_simex)^2)))
-      if (test.W == F) eta_pred_simex <- as.matrix(X_test_scen)%*%mod_simex1$coef
-      if (test.W == T) eta_pred_simex <- as.matrix(W_test_scen)%*%mod_simex1$coef
+      if (test.W == FALSE) eta_pred_simex <- as.matrix(X_test_scen)%*%mod_simex1$coef
+      if (test.W == TRUE) eta_pred_simex <- as.matrix(W_test_scen)%*%mod_simex1$coef
       RMSE_CV2b <- c(RMSE_CV2b, sqrt(mean((eta_test_scen - eta_pred_simex)^2)))
 
-      if (test.W == F) eta_pred_mcem <- as.matrix(X_test)%*%est$coef
-      if (test.W == T) eta_pred_mcem <- as.matrix(W_test)%*%est$coef
+      if (test.W == FALSE) eta_pred_mcem <- as.matrix(X_test)%*%est$coef
+      if (test.W == TRUE) eta_pred_mcem <- as.matrix(W_test)%*%est$coef
       RMSE_CV3a <- c(RMSE_CV3a, sqrt(mean((eta_test - eta_pred_mcem)^2)))
-      if (test.W == F) eta_pred_mcem <- as.matrix(X_test_scen)%*%est$coef
-      if (test.W == T) eta_pred_mcem <- as.matrix(W_test_scen)%*%est$coef
+      if (test.W == FALSE) eta_pred_mcem <- as.matrix(X_test_scen)%*%est$coef
+      if (test.W == TRUE) eta_pred_mcem <- as.matrix(W_test_scen)%*%est$coef
       RMSE_CV3b <- c(RMSE_CV3b, sqrt(mean((eta_test_scen - eta_pred_mcem)^2)))
     }
 
     if (par.int == "spline") {
-      if (test.W == F) dat_test$w1 <- dat_test$x1
+      if (test.W == FALSE) dat_test$w1 <- dat_test$x1
 
       eta_pred_true <- predict(mod_true1, newdata = dat_test, type = "link")
       RMSE_CV0a <- c(RMSE_CV0a, sqrt(mean((eta_test - eta_pred_true)^2)))
@@ -476,10 +476,10 @@ for(i in 1:length(sigma.sq.u_vec)) {
 
   if (par.int != "spline") {
     SE_mat <- cbind(beta_mat.se0[, par.int], beta_mat.se1[, par.int], beta_mat.se2[, par.int], beta_mat.se3[, par.int])
-    SD_mat <- c(sd(beta_mat0[, par.int], na.rm = T), sd(beta_mat1[, par.int], na.rm = T), sd(beta_mat2[, par.int], na.rm = T), sd(beta_mat3[, par.int], na.rm = T), sd(beta_mat3[, par.int], na.rm = T))
+    SD_mat <- c(sd(beta_mat0[, par.int], na.rm = TRUE), sd(beta_mat1[, par.int], na.rm = TRUE), sd(beta_mat2[, par.int], na.rm = TRUE), sd(beta_mat3[, par.int], na.rm = TRUE), sd(beta_mat3[, par.int], na.rm = TRUE))
 
-    bias_mat1 <- c(mean((beta_mat0[, par.int] - beta[par.int])/beta[par.int], na.rm = T), mean((beta_mat1[, par.int] - beta[par.int])/beta[par.int], na.rm = T), mean((beta_mat2[, par.int] - beta[par.int])/beta[par.int], na.rm = T), mean((beta_mat3[, par.int] - beta[par.int])/beta[par.int], na.rm = T))
-    RMSE_mat1 <- c(sqrt(mean((beta_mat0[, par.int] - beta[par.int])^2, na.rm = T)), sqrt(mean((beta_mat1[, par.int] - beta[par.int])^2, na.rm = T)), sqrt(mean((beta_mat2[, par.int] - beta[par.int])^2, na.rm = T)), sqrt(mean((beta_mat3[, par.int] - beta[par.int])^2, na.rm = T)))
+    bias_mat1 <- c(mean((beta_mat0[, par.int] - beta[par.int])/beta[par.int], na.rm = TRUE), mean((beta_mat1[, par.int] - beta[par.int])/beta[par.int], na.rm = TRUE), mean((beta_mat2[, par.int] - beta[par.int])/beta[par.int], na.rm = TRUE), mean((beta_mat3[, par.int] - beta[par.int])/beta[par.int], na.rm = TRUE))
+    RMSE_mat1 <- c(sqrt(mean((beta_mat0[, par.int] - beta[par.int])^2, na.rm = TRUE)), sqrt(mean((beta_mat1[, par.int] - beta[par.int])^2, na.rm = TRUE)), sqrt(mean((beta_mat2[, par.int] - beta[par.int])^2, na.rm = TRUE)), sqrt(mean((beta_mat3[, par.int] - beta[par.int])^2, na.rm = TRUE)))
     CP_mat_SE3 <- which(is.nan(beta_mat.se3[, par.int]) | is.na(beta_mat.se3[, par.int]))
     if (length(CP_mat_SE3) == 0) CP_mat3 <- cov.pc(beta, beta_mat3, beta_mat.se3, N.sim - length(CP_mat_SE3))[par.int]
     if (length(CP_mat_SE3) > 0) CP_mat3 <- cov.pc(beta, beta_mat3[-CP_mat_SE3, ], beta_mat.se3[-CP_mat_SE3, ], N.sim - length(CP_mat_SE3))[par.int]
@@ -491,11 +491,11 @@ for(i in 1:length(sigma.sq.u_vec)) {
   }
 
   if (par.int != "spline") {
-    CV_mat1 <- rbind(CV_mat1, c(mean(RMSE_CV0a, na.rm = T), mean(RMSE_CV1a, na.rm = T), mean(RMSE_CV2a, na.rm = T), mean(RMSE_CV3a, na.rm = T)))
-    CV_mat2 <- rbind(CV_mat2, c(mean(RMSE_CV0b, na.rm = T), mean(RMSE_CV1b, na.rm = T), mean(RMSE_CV2b, na.rm = T), mean(RMSE_CV3b, na.rm = T)))
+    CV_mat1 <- rbind(CV_mat1, c(mean(RMSE_CV0a, na.rm = TRUE), mean(RMSE_CV1a, na.rm = TRUE), mean(RMSE_CV2a, na.rm = TRUE), mean(RMSE_CV3a, na.rm = TRUE)))
+    CV_mat2 <- rbind(CV_mat2, c(mean(RMSE_CV0b, na.rm = TRUE), mean(RMSE_CV1b, na.rm = TRUE), mean(RMSE_CV2b, na.rm = TRUE), mean(RMSE_CV3b, na.rm = TRUE)))
   }
 
-  if (par.int == "spline") CV_mat1 <- rbind(CV_mat1, c(mean(RMSE_CV0a, na.rm = T), mean(RMSE_CV1a, na.rm = T), mean(RMSE_CV3a, na.rm = T)))
+  if (par.int == "spline") CV_mat1 <- rbind(CV_mat1, c(mean(RMSE_CV0a, na.rm = TRUE), mean(RMSE_CV1a, na.rm = TRUE), mean(RMSE_CV3a, na.rm = TRUE)))
 
   print("___________________________________")
 }
@@ -555,7 +555,7 @@ if (par.int != "spline") {
            linetype = guide_legend(keywidth = 7, keyheight = 2), colour = guide_legend(keywidth = 3, keyheight = 1)) +
     theme(aspect.ratio = 1)
 
-  multiplot(p1, p2, p3, layout = matrix(c(1, 2, 3, 3), ncol = 2, nrow = 2, byrow = T))
+  multiplot(p1, p2, p3, layout = matrix(c(1, 2, 3, 3), ncol = 2, nrow = 2, byrow = TRUE))
 }
 
 # Predictive performance on test data sets (RMSE).
@@ -572,8 +572,8 @@ if (par.int != "spline") {
   colnames(CV_mat2) <- c("RMSE", "model", "sigma.sq")
 }
 
-if (test.W == T) my.title1 <- bquote("(i) RMSE on linear predictor using the true test data" ~ paste((W[t])))
-if (test.W == F) my.title1 <- bquote("(i) RMSE on linear predictor using the true test data" ~ paste((X[t])))
+if (test.W == TRUE) my.title1 <- bquote("(i) RMSE on linear predictor using the true test data" ~ paste((W[t])))
+if (test.W == FALSE) my.title1 <- bquote("(i) RMSE on linear predictor using the true test data" ~ paste((X[t])))
 
 if (par.int != "spline") {
   my.title2 <- bquote("(ii) RMSE on linear predictor using test data with a shift")
@@ -593,7 +593,7 @@ if (par.int != "spline") {
 
   x11()
 
-  multiplot(p1_pred, p2_pred, layout = matrix(c(1, 2), ncol = 1, nrow = 2, byrow = T))
+  multiplot(p1_pred, p2_pred, layout = matrix(c(1, 2), ncol = 1, nrow = 2, byrow = TRUE))
 }
 
 if (par.int == "spline") {
@@ -785,8 +785,8 @@ for(i in 1:length(sigma.sq.u_vec)) {
     if (length(nocrash) >= N.sim) c.sim <- FALSE
   }
 
-  bias_mat1 <- c(mean((beta_mat0[, par.int] - beta[par.int])/beta[par.int], na.rm = T), mean((beta_mat1[, par.int] - beta[par.int])/beta[par.int], na.rm = T), mean((beta_mat2[, par.int] - beta[par.int])/beta[par.int], na.rm = T), mean((beta_mat3[, par.int] - beta[par.int])/beta[par.int], na.rm = T))
-  RMSE_mat1 <- c(sqrt(mean((beta_mat0[, par.int] - beta[par.int])^2, na.rm = T)), sqrt(mean((beta_mat1[, par.int] - beta[par.int])^2, na.rm = T)), sqrt(mean((beta_mat2[, par.int] - beta[par.int])^2, na.rm = T)), sqrt(mean((beta_mat3[, par.int] - beta[par.int])^2, na.rm = T)))
+  bias_mat1 <- c(mean((beta_mat0[, par.int] - beta[par.int])/beta[par.int], na.rm = TRUE), mean((beta_mat1[, par.int] - beta[par.int])/beta[par.int], na.rm = TRUE), mean((beta_mat2[, par.int] - beta[par.int])/beta[par.int], na.rm = TRUE), mean((beta_mat3[, par.int] - beta[par.int])/beta[par.int], na.rm = TRUE))
+  RMSE_mat1 <- c(sqrt(mean((beta_mat0[, par.int] - beta[par.int])^2, na.rm = TRUE)), sqrt(mean((beta_mat1[, par.int] - beta[par.int])^2, na.rm = TRUE)), sqrt(mean((beta_mat2[, par.int] - beta[par.int])^2, na.rm = TRUE)), sqrt(mean((beta_mat3[, par.int] - beta[par.int])^2, na.rm = TRUE)))
   CP_mat_SE3 <- which(is.nan(beta_mat.se3[, par.int]) | is.na(beta_mat.se3[, par.int]))
 
   if (length(CP_mat_SE3) == 0) CP_mat3 <- cov.pc(beta, beta_mat3, beta_mat.se3, N.sim - length(CP_mat_SE3))[par.int]
@@ -797,8 +797,8 @@ for(i in 1:length(sigma.sq.u_vec)) {
   RMSE_mat <- rbind(RMSE_mat, RMSE_mat1)
   CP_mat <- rbind(CP_mat, CP_mat1)
 
-  CV_mat1 <- rbind(CV_mat1, c(mean(RMSE_CV0a, na.rm = T), mean(RMSE_CV1a, na.rm = T), mean(RMSE_CV2a, na.rm = T), mean(RMSE_CV3a, na.rm = T)))
-  CV_mat2 <- rbind(CV_mat2, c(mean(RMSE_CV0b, na.rm = T), mean(RMSE_CV1b, na.rm = T), mean(RMSE_CV2b, na.rm = T), mean(RMSE_CV3b, na.rm = T)))
+  CV_mat1 <- rbind(CV_mat1, c(mean(RMSE_CV0a, na.rm = TRUE), mean(RMSE_CV1a, na.rm = TRUE), mean(RMSE_CV2a, na.rm = TRUE), mean(RMSE_CV3a, na.rm = TRUE)))
+  CV_mat2 <- rbind(CV_mat2, c(mean(RMSE_CV0b, na.rm = TRUE), mean(RMSE_CV1b, na.rm = TRUE), mean(RMSE_CV2b, na.rm = TRUE), mean(RMSE_CV3b, na.rm = TRUE)))
 
   print("___________________________________")
 }
@@ -847,7 +847,7 @@ p3 <- ggplot(CP_mat, aes(x = sigma.sq, y = coverage, colour = model, group = mod
     guides(fill = guide_legend(keywidth = 1, keyheight = 1), linetype = guide_legend(keywidth = 7, keyheight = 2), colour = guide_legend(keywidth = 3, keyheight = 1)) +
     theme(aspect.ratio = 1)
 
-multiplot(p1, p2, p3, layout = matrix(c(1, 2, 3, 3), ncol = 2, nrow = 2, byrow = T))
+multiplot(p1, p2, p3, layout = matrix(c(1, 2, 3, 3), ncol = 2, nrow = 2, byrow = TRUE))
 
 #-----------------------------------------------------------------------------------------
 
@@ -931,15 +931,15 @@ for(i in 1:length(sigma.sq.u_vec)) {
     # True and naive models.
 
     if (par.int == 2) {
-      mod_true1 <- vglm(cbind(cap, noncap) ~ x1, posbinomial(omit.constant = TRUE, parallel = TRUE ~ x1), data = CR_dat0, trace = F)
-      mod_naiv1 <- vglm(cbind(cap, noncap) ~ w1, posbinomial(omit.constant = TRUE, parallel = TRUE ~ w1), data = CR_dat1, trace = F)
+      mod_true1 <- vglm(cbind(cap, noncap) ~ x1, posbinomial(omit.constant = TRUE, parallel = TRUE ~ x1), data = CR_dat0, trace = FALSE)
+      mod_naiv1 <- vglm(cbind(cap, noncap) ~ w1, posbinomial(omit.constant = TRUE, parallel = TRUE ~ w1), data = CR_dat1, trace = FALSE)
       mod_naiv_CS <- mod_naiv1
     }
 
     if (par.int == 3) {
-      mod_true1 <- vglm(cbind(cap, noncap) ~ x1 + I(x1^2), posbinomial(omit.constant = TRUE, parallel = TRUE ~ x1 + I(x1^2)), data = CR_dat0, trace = F)
-      mod_naiv1 <- vglm(cbind(cap, noncap) ~ w1 + I(w1^2), posbinomial(omit.constant = TRUE, parallel = TRUE ~ w1 + I(w1^2)), data = CR_dat1, trace = F)
-      mod_naiv_CS <- vglm(cbind(cap, noncap) ~ w1, posbinomial(omit.constant = TRUE, parallel = TRUE ~ w1), data = CR_dat1, trace = F)
+      mod_true1 <- vglm(cbind(cap, noncap) ~ x1 + I(x1^2), posbinomial(omit.constant = TRUE, parallel = TRUE ~ x1 + I(x1^2)), data = CR_dat0, trace = FALSE)
+      mod_naiv1 <- vglm(cbind(cap, noncap) ~ w1 + I(w1^2), posbinomial(omit.constant = TRUE, parallel = TRUE ~ w1 + I(w1^2)), data = CR_dat1, trace = FALSE)
+      mod_naiv_CS <- vglm(cbind(cap, noncap) ~ w1, posbinomial(omit.constant = TRUE, parallel = TRUE ~ w1), data = CR_dat1, trace = FALSE)
     }
 
     # Conditional score method.
@@ -995,15 +995,15 @@ for(i in 1:length(sigma.sq.u_vec)) {
     if (length(nocrash) >= N.sim) c.sim <- FALSE
   }
 
-  bias_mat1 <- c(mean((beta_mat0[, par.int] - beta[par.int])/beta[par.int], na.rm = T), mean((beta_mat1[, par.int] - beta[par.int])/beta[par.int], na.rm = T), mean((beta_mat2[, par.int] - beta[par.int])/beta[par.int], na.rm = T), mean((beta_mat3[, par.int] - beta[par.int])/beta[par.int], na.rm = T))
-  RMSE_mat1 <- c(sqrt(mean((beta_mat0[, par.int] - beta[par.int])^2, na.rm = T)), sqrt(mean((beta_mat1[, par.int] - beta[par.int])^2, na.rm = T)), sqrt(mean((beta_mat2[, par.int] - beta[par.int])^2, na.rm = T)), sqrt(mean((beta_mat3[, par.int] - beta[par.int])^2, na.rm = T)))
+  bias_mat1 <- c(mean((beta_mat0[, par.int] - beta[par.int])/beta[par.int], na.rm = TRUE), mean((beta_mat1[, par.int] - beta[par.int])/beta[par.int], na.rm = TRUE), mean((beta_mat2[, par.int] - beta[par.int])/beta[par.int], na.rm = TRUE), mean((beta_mat3[, par.int] - beta[par.int])/beta[par.int], na.rm = TRUE))
+  RMSE_mat1 <- c(sqrt(mean((beta_mat0[, par.int] - beta[par.int])^2, na.rm = TRUE)), sqrt(mean((beta_mat1[, par.int] - beta[par.int])^2, na.rm = TRUE)), sqrt(mean((beta_mat2[, par.int] - beta[par.int])^2, na.rm = TRUE)), sqrt(mean((beta_mat3[, par.int] - beta[par.int])^2, na.rm = TRUE)))
   CP_mat_SE3 <- which(is.nan(beta_mat.se3[, par.int]) | is.na(beta_mat.se3[, par.int]))
   if (length(CP_mat_SE3) == 0) CP_mat3 <- cov.pc(beta, beta_mat3, beta_mat.se3, N.sim - length(CP_mat_SE3))[par.int]
   if (length(CP_mat_SE3) > 0) CP_mat3 <- cov.pc(beta, beta_mat3[-CP_mat_SE3, ], beta_mat.se3[-CP_mat_SE3, ], N.sim - length(CP_mat_SE3))[par.int]
   CP_mat1 <- c(cov.pc(beta, beta_mat0, beta_mat.se0, N.sim)[par.int], cov.pc(beta, beta_mat1, beta_mat.se1, N.sim)[par.int], cov.pc(beta, beta_mat2, beta_mat.se2, N.sim)[par.int], CP_mat3)
 
-  bias_mat2 <- c(mean((N_mat0 - N)/N, na.rm = T), mean((N_mat1 - N)/N, na.rm = T), mean((N_mat2 - N)/N, na.rm = T), mean((N_mat3 - N)/N, na.rm = T))
-  RMSE_mat2 <- c(sqrt(mean((N_mat0 - N)^2, na.rm = T)), sqrt(mean((N_mat1 - N)^2, na.rm = T)), sqrt(mean((N_mat2 - N)^2, na.rm = T)), sqrt(mean((N_mat3 - N)^2, na.rm = T)))
+  bias_mat2 <- c(mean((N_mat0 - N)/N, na.rm = TRUE), mean((N_mat1 - N)/N, na.rm = TRUE), mean((N_mat2 - N)/N, na.rm = TRUE), mean((N_mat3 - N)/N, na.rm = TRUE))
+  RMSE_mat2 <- c(sqrt(mean((N_mat0 - N)^2, na.rm = TRUE)), sqrt(mean((N_mat1 - N)^2, na.rm = TRUE)), sqrt(mean((N_mat2 - N)^2, na.rm = TRUE)), sqrt(mean((N_mat3 - N)^2, na.rm = TRUE)))
   CP_mat_SE4 <- which(is.nan(N_mat.se3) | is.na(N_mat.se3))
   if (length(CP_mat_SE4) == 0) CP_mat4 <- cov.pc_N(N, N_mat3, N_mat.se3, N.sim - length(CP_mat_SE4))
   if (length(CP_mat_SE4) > 0) CP_mat4 <- cov.pc_N(N, N_mat3[-CP_mat_SE4, ], N_mat.se3[-CP_mat_SE4, ], N.sim - length(CP_mat_SE4))
@@ -1099,6 +1099,6 @@ p6 <- ggplot(CP_N_mat, aes(x = sigma.sq, y = coverage, colour = model, group = m
   guides(fill = guide_legend(keywidth = 1, keyheight = 1), linetype = guide_legend(keywidth = 7, keyheight = 2), colour = guide_legend(keywidth = 3, keyheight = 1)) +
   theme(aspect.ratio = 1)
 
-multiplot(p4, p5, p6, layout = matrix(c(1, 2, 3, 3), ncol = 2, nrow = 2, byrow = T))
+multiplot(p4, p5, p6, layout = matrix(c(1, 2, 3, 3), ncol = 2, nrow = 2, byrow = TRUE))
 
 detach(package:VGAM)
