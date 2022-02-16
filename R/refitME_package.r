@@ -233,7 +233,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, B = 50, epsilon = 0.00001, sile
   muPred <- rep(stats::predict(mod, type = "response"), B)
   beta.est <- stats::coef(mod)
 
-  if (is.matrix(sigma.sq.u) == F) {
+  if (is.matrix(sigma.sq.u) == FALSE) {
     w <- W[, 1]
 
     names.w <- names(W)[1]
@@ -279,7 +279,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, B = 50, epsilon = 0.00001, sile
     names(new.dat)[c(1, which(names(mod$data) %in% names.w))] <- names(mod$data)[c(1, which(names(mod$data) %in% names.w))]
   }
 
-  if (is.matrix(sigma.sq.u) == T) {
+  if (is.matrix(sigma.sq.u) == TRUE) {
     q1 <- dim(sigma.sq.u)[2]
 
     names.w <- names(W)[1]
@@ -349,10 +349,10 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, B = 50, epsilon = 0.00001, sile
 
         if (ncol(as.matrix(W2)) > 1) {
           if (class(W2)[1] == "poly" | class(W2[, 1])[1] == "poly") {
-              W1 <- W[, kk]
-              w <- W1[, 1]
+            W1 <- W[, kk]
+            w <- W1[, 1]
 
-              poly.trig0 <- TRUE
+            poly.trig0 <- TRUE
           }
 
           if (class(W2)[1] != "poly" & class(W2[, 1])[1] != "poly") {
@@ -453,8 +453,8 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, B = 50, epsilon = 0.00001, sile
 
     # MC and E-step.
 
-    if (is.matrix(sigma.sq.u) == F) prX <- stats::dnorm(X, mu.e1, sd = sqrt(sigma.sq.e1))
-    if (is.matrix(sigma.sq.u) == T) prX <- mvtnorm::dmvnorm(X, mu.e1, sigma = sqrt(sigma.sq.e1))
+    if (is.matrix(sigma.sq.u) == FALSE) prX <- stats::dnorm(X, mu.e1, sd = sqrt(sigma.sq.e1))
+    if (is.matrix(sigma.sq.u) == TRUE) prX <- mvtnorm::dmvnorm(X, mu.e1, sigma = sqrt(sigma.sq.e1))
 
     if (family == "gaussian") prY <- stats::dnorm(bigY, muPred, 1)
     if (family == "binomial") prY <- stats::dbinom(bigY, 1, muPred)
@@ -465,7 +465,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, B = 50, epsilon = 0.00001, sile
     prY[prY == 0] <- 1.e-6
 
     bigW <- matrix(prY*prX, n, B)
-    sumW <- rep(apply(bigW, 1, sum, na.rm = T), B)
+    sumW <- rep(apply(bigW, 1, sum, na.rm = TRUE), B)
     weights1 <- as.vector(bigW)/sumW
 
     weights2 <- weights1
@@ -480,7 +480,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, B = 50, epsilon = 0.00001, sile
       sigma.sq.est <- (summary(mod)$sigma)^2
     }
     if (family == "binomial") mod <- suppressWarnings(stats::glm(formula = form.name, family = "binomial", data = new.dat, weights = weights1, ...))
-    if (family == "poisson") mod <- suppressWarnings(stats::glm(formula = form.name, family = "poisson", data = new.dat, weights = weights1))
+    if (family == "poisson") mod <- suppressWarnings(stats::glm(formula = form.name, family = "poisson", data = new.dat, weights = weights1, ...))
     if (family == "Gamma") mod <- suppressWarnings(stats::glm(formula = form.name, family = Gamma(link = "log"), data = new.dat, weights = weights1, ...))
     if (family == "negbin") mod <- suppressWarnings(MASS::glm.nb(formula = form.name, init.theta = theta.est, data = new.dat, weights = weights1, ...))
 
@@ -491,12 +491,12 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, B = 50, epsilon = 0.00001, sile
 
     muPred <- stats::predict(mod, type = "response")
 
-    if (is.matrix(sigma.sq.u) == F) {
+    if (is.matrix(sigma.sq.u) == FALSE) {
       sigma.sq.e1.update <- wt.var(X, w = weights2)
       mu.e1.update <- stats::weighted.mean(X, w = weights2)
     }
 
-    if (is.matrix(sigma.sq.u) == T) {
+    if (is.matrix(sigma.sq.u) == TRUE) {
       sigma.sq.e1.update <- c()
       mu.e1.update <- c()
 
@@ -518,8 +518,8 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, B = 50, epsilon = 0.00001, sile
     if (family == "negbin") theta.norm <- sum((theta.est - theta.update)^2)
     if (family == "Gamma") shape.norm <- sum((shape.est - shape.update)^2)
 
-    if (is.matrix(sigma.sq.u) == F) diff.sig_e <- abs(sigma.sq.e1.update - sigma.sq.e1)
-    if (is.matrix(sigma.sq.u) == T) diff.sig_e <- sum(abs(diag(sigma.sq.e1.update) - diag(sigma.sq.e1)))
+    if (is.matrix(sigma.sq.u) == FALSE) diff.sig_e <- abs(sigma.sq.e1.update - sigma.sq.e1)
+    if (is.matrix(sigma.sq.u) == TRUE) diff.sig_e <- sum(abs(diag(sigma.sq.e1.update) - diag(sigma.sq.e1)))
 
     diff.mu_e <- sum((mu.e1.update - mu.e1)^2)
 
@@ -598,7 +598,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, B = 50, epsilon = 0.00001, sile
 
   qq <- mod_n$rank
 
-  sumW <- apply(bigW, 1, sum, na.rm = T)
+  sumW <- apply(bigW, 1, sum, na.rm = TRUE)
   weights1 <- as.vector(bigW)/sumW
   weights1[is.nan(weights1)] <- 0
 
@@ -635,7 +635,7 @@ MCEMfit_glm <- function(mod, family, sigma.sq.u, B = 50, epsilon = 0.00001, sile
   S_1 <- matrix(0, nrow = K1, ncol = K1)
   SS_1 <- matrix(0, nrow = K1, ncol = K1)
 
-  ind_mat <- matrix(1:(n*B), ncol = n, byrow = T)
+  ind_mat <- matrix(1:(n*B), ncol = n, byrow = TRUE)
 
   for (ii in 1:n) {
     index_vec <- ind_mat[, ii]
@@ -769,7 +769,7 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, B = 50, epsilon = 0.00001, sile
 
   form.name <- stats::formula(mod)
 
-  if (is.matrix(sigma.sq.u) == F) {
+  if (is.matrix(sigma.sq.u) == FALSE) {
     w <- W[, 1]
 
     names.w <- names(W)[1]
@@ -806,7 +806,7 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, B = 50, epsilon = 0.00001, sile
     names(new.dat)[c(1, which(names(mod$data) %in% names.w))] <- names(mod$data)[c(1, which(names(mod$data) %in% names.w))]
   }
 
-  if (is.matrix(sigma.sq.u) == T) {
+  if (is.matrix(sigma.sq.u) == TRUE) {
     q1 <- dim(sigma.sq.u)[2]
 
     if (d < q1) stop("Number of error-contaminated covariates exceeds total number of covariates!")
@@ -864,8 +864,8 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, B = 50, epsilon = 0.00001, sile
 
     # MC and E-step.
 
-    if (is.matrix(sigma.sq.u) == F) prX <- stats::dnorm(X, mu.e1, sd = sqrt(sigma.sq.e1))
-    if (is.matrix(sigma.sq.u) == T) prX <- mvtnorm::dmvnorm(X, mu.e1, sigma = sqrt(sigma.sq.e1))
+    if (is.matrix(sigma.sq.u) == FALSE) prX <- stats::dnorm(X, mu.e1, sd = sqrt(sigma.sq.e1))
+    if (is.matrix(sigma.sq.u) == TRUE) prX <- mvtnorm::dmvnorm(X, mu.e1, sigma = sqrt(sigma.sq.e1))
 
     if (family == "gaussian") prY <- stats::dnorm(bigY, muPred, 1)
     if (family == "binomial") prY <- stats::dbinom(bigY, 1, muPred)
@@ -876,7 +876,7 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, B = 50, epsilon = 0.00001, sile
     prY[prY == 0] <- 1.e-6
 
     bigW <- matrix(prY*prX, n, B)
-    sumW <- rep(apply(bigW, 1, sum, na.rm = T), B)
+    sumW <- rep(apply(bigW, 1, sum, na.rm = TRUE), B)
     weights1 <- as.vector(bigW)/sumW
 
     weights2 <- weights1
@@ -902,12 +902,12 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, B = 50, epsilon = 0.00001, sile
 
     muPred <- mgcv::predict.gam(mod, type = "response")
 
-    if (is.matrix(sigma.sq.u) == F) {
+    if (is.matrix(sigma.sq.u) == FALSE) {
       sigma.sq.e1.update <- wt.var(X, w = weights2)
       mu.e1.update <- stats::weighted.mean(X, w = weights2)
     }
 
-    if (is.matrix(sigma.sq.u) == T) {
+    if (is.matrix(sigma.sq.u) == TRUE) {
       sigma.sq.e1.update <- c()
       mu.e1.update <- c()
 
@@ -928,8 +928,8 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, B = 50, epsilon = 0.00001, sile
     if (family == "negbin") theta.norm <- sum((theta.est - theta.update)^2)
     if (family == "Gamma") shape.norm <- sum((shape.est - shape.update)^2)
 
-    if (is.matrix(sigma.sq.u) == F) diff.sig_e <- abs(sigma.sq.e1.update - sigma.sq.e1)
-    if (is.matrix(sigma.sq.u) == T) diff.sig_e <- sum(abs(diag(sigma.sq.e1.update) - diag(sigma.sq.e1)))
+    if (is.matrix(sigma.sq.u) == FALSE) diff.sig_e <- abs(sigma.sq.e1.update - sigma.sq.e1)
+    if (is.matrix(sigma.sq.u) == TRUE) diff.sig_e <- sum(abs(diag(sigma.sq.e1.update) - diag(sigma.sq.e1)))
 
     diff.mu_e <- sum((mu.e1.update - mu.e1)^2)
 
@@ -987,10 +987,7 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, B = 50, epsilon = 0.00001, sile
   names(beta.est) <- names(stats::coef(mod_n))
   mod$coefficients <- beta.est
 
-  #mod_n$linear.predictors <- eta <- stats::predict(mod_n, newdata = eval(stats::getCall(mod_n)$data, environment(stats::formula(mod_n))))
-  #mod_n$fitted.values <- stats::predict(mod_n, type = "response", newdata = eval(stats::getCall(mod_n)$data, environment(stats::formula(mod_n)))
-
-  sumW <- apply(bigW, 1, sum, na.rm = T)
+  sumW <- apply(bigW, 1, sum, na.rm = TRUE)
   weights1 <- as.vector(bigW)/sumW
   weights1[is.nan(weights1)] <- 0
 
@@ -1022,7 +1019,7 @@ MCEMfit_gam <- function(mod, family, sigma.sq.u, B = 50, epsilon = 0.00001, sile
   X <- stats::model.matrix(mod)
   K1 <- ncol(X)
 
-  ind_mat <- matrix(1:(n*B), ncol = n, byrow = T)
+  ind_mat <- matrix(1:(n*B), ncol = n, byrow = TRUE)
 
   S_1 <- matrix(0, nrow = K1, ncol = K1)
   SS_1 <- matrix(0, nrow = K1, ncol = K1)
@@ -1117,7 +1114,7 @@ MCEMfit_gen <- function(mod, family, sigma.sq.u, B = 50, epsilon = 0.00001, sile
   muPred <- rep(stats::predict(mod, type = "response"), B)
   beta.est <- stats::coef(mod)
 
-  if (is.matrix(sigma.sq.u) == F) {
+  if (is.matrix(sigma.sq.u) == FALSE) {
     w <- W[, 1]
 
     names.w <- names(W)[1]
@@ -1163,7 +1160,7 @@ MCEMfit_gen <- function(mod, family, sigma.sq.u, B = 50, epsilon = 0.00001, sile
     names(new.dat)[c(1, which(names(mod$data) %in% names.w))] <- names(mod$data)[c(1, which(names(mod$data) %in% names.w))]
   }
 
-  if (is.matrix(sigma.sq.u) == T) {
+  if (is.matrix(sigma.sq.u) == TRUE) {
     q1 <- dim(sigma.sq.u)[2]
 
     names.w <- names(W)[1]
@@ -1335,8 +1332,8 @@ MCEMfit_gen <- function(mod, family, sigma.sq.u, B = 50, epsilon = 0.00001, sile
 
     # MC and E-step.
 
-    if (is.matrix(sigma.sq.u) == F) prX <- stats::dnorm(X, mu.e1, sd = sqrt(sigma.sq.e1))
-    if (is.matrix(sigma.sq.u) == T) prX <- mvtnorm::dmvnorm(X, mu.e1, sigma = sqrt(sigma.sq.e1))
+    if (is.matrix(sigma.sq.u) == FALSE) prX <- stats::dnorm(X, mu.e1, sd = sqrt(sigma.sq.e1))
+    if (is.matrix(sigma.sq.u) == TRUE) prX <- mvtnorm::dmvnorm(X, mu.e1, sigma = sqrt(sigma.sq.e1))
 
     if (family == "gaussian") prY <- stats::dnorm(bigY, muPred, 1)
     if (family == "binomial") prY <- stats::dbinom(bigY, 1, muPred)
@@ -1347,7 +1344,7 @@ MCEMfit_gen <- function(mod, family, sigma.sq.u, B = 50, epsilon = 0.00001, sile
     prY[prY == 0] <- 1.e-6
 
     bigW <- matrix(prY*prX, n, B)
-    sumW <- rep(apply(bigW, 1, sum, na.rm = T), B)
+    sumW <- rep(apply(bigW, 1, sum, na.rm = TRUE), B)
     weights1 <- as.vector(bigW)/sumW
 
     weights2 <- weights1
@@ -1366,12 +1363,12 @@ MCEMfit_gen <- function(mod, family, sigma.sq.u, B = 50, epsilon = 0.00001, sile
 
     muPred <- stats::predict(mod, type = "response")
 
-    if (is.matrix(sigma.sq.u) == F) {
+    if (is.matrix(sigma.sq.u) == FALSE) {
       sigma.sq.e1.update <- wt.var(X, w = weights2)
       mu.e1.update <- stats::weighted.mean(X, w = weights2)
     }
 
-    if (is.matrix(sigma.sq.u) == T) {
+    if (is.matrix(sigma.sq.u) == TRUE) {
       sigma.sq.e1.update <- c()
       mu.e1.update <- c()
 
@@ -1393,8 +1390,8 @@ MCEMfit_gen <- function(mod, family, sigma.sq.u, B = 50, epsilon = 0.00001, sile
     if (family == "negbin") theta.norm <- sum((theta.est - theta.update)^2)
     if (family == "Gamma") shape.norm <- sum((shape.est - shape.update)^2)
 
-    if (is.matrix(sigma.sq.u) == F) diff.sig_e <- abs(sigma.sq.e1.update - sigma.sq.e1)
-    if (is.matrix(sigma.sq.u) == T) diff.sig_e <- sum(abs(diag(sigma.sq.e1.update) - diag(sigma.sq.e1)))
+    if (is.matrix(sigma.sq.u) == FALSE) diff.sig_e <- abs(sigma.sq.e1.update - sigma.sq.e1)
+    if (is.matrix(sigma.sq.u) == TRUE) diff.sig_e <- sum(abs(diag(sigma.sq.e1.update) - diag(sigma.sq.e1)))
 
     diff.mu_e <- sum((mu.e1.update - mu.e1)^2)
 
@@ -1461,7 +1458,7 @@ MCEMfit_gen <- function(mod, family, sigma.sq.u, B = 50, epsilon = 0.00001, sile
     mod_n$linear.predictors <- eta <- stats::predict(mod_n, newdata = mod_n$model)
     mod_n$fitted.values <- stats::predict(mod_n, type = "response", newdata = mod_n$model)
   }
-  sumW <- apply(bigW, 1, sum, na.rm = T)
+  sumW <- apply(bigW, 1, sum, na.rm = TRUE)
   weights1 <- as.vector(bigW)/sumW
 
   entropy <- sum(weights1*log(weights1), na.rm = TRUE)
@@ -1485,7 +1482,7 @@ MCEMfit_gen <- function(mod, family, sigma.sq.u, B = 50, epsilon = 0.00001, sile
     S_1 <- matrix(0, nrow = K1, ncol = K1)
     SS_1 <- matrix(0, nrow = K1, ncol = K1)
 
-    ind_mat <- matrix(1:(n*B), ncol = n, byrow = T)
+    ind_mat <- matrix(1:(n*B), ncol = n, byrow = TRUE)
 
     for (ii in 1:n) {
       index_vec <- ind_mat[, ii]
@@ -1682,7 +1679,7 @@ MCEMfit_CR <- function(mod, sigma.sq.u, B = 50, epsilon = 0.00001, silent = FALS
 
   beta.est.se1 <- sqrt.na(diag(VGAM::vcov(mod))) # Naive SE estimator.
 
-  sumW <- apply(bigW, 1, sum, na.rm = T)
+  sumW <- apply(bigW, 1, sum, na.rm = TRUE)
   weights1 <- as.vector(bigW)/sumW
   weights1[is.nan(weights1)] <- 0
   entropy <- sum(weights1*log(weights1), na.rm = TRUE)/B
@@ -1714,7 +1711,7 @@ MCEMfit_CR <- function(mod, sigma.sq.u, B = 50, epsilon = 0.00001, silent = FALS
 
   iii1 <- 1
 
-  ind_mat <- matrix(1:(n*B), ncol = n, byrow = T)
+  ind_mat <- matrix(1:(n*B), ncol = n, byrow = TRUE)
 
   for (iii in 1:n) {
     index_vec <- ind_mat[, iii]
@@ -1784,7 +1781,7 @@ wt.var <- function(x, w) {
 #' @export
 #'
 sqrt.na <- function(x) {
-  id <- (x > 0) & (is.na(x) == F)
+  id <- (x > 0) & (is.na(x) == FALSE)
   sx <- rep(0, length(x))
   if (length(dim(x)) == 2) sx <- matrix(sx, dim(x))
   sx[id] <- sqrt(x[id])
@@ -1838,7 +1835,7 @@ anova.refitME <- function(object, ..., dispersion = NULL, test = NULL) {
         scale
       else resdev[bigmodel]/resdf[bigmodel]
       table <- stats::stat.anova(table = table, test = test, scale = scale,
-                          df.scale = resdf[bigmodel], n = length(objects[[bigmodel]]$residuals))
+                                 df.scale = resdf[bigmodel], n = length(objects[[bigmodel]]$residuals))
     }
     structure(table, heading = c(title, topnote), class = c("anova",
                                                             "data.frame"))
